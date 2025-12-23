@@ -134,6 +134,10 @@ This project is ready for deployment on Vercel:
 2. Import project in Vercel
 3. Deploy automatically
 
+**For Demo Mode**: No environment variables are required. The app uses mock data.
+
+See [VERCEL_ENV_SETUP.md](./VERCEL_ENV_SETUP.md) for detailed environment variables setup if needed.
+
 Or build locally:
 ```bash
 npm run build
