@@ -1,0 +1,508 @@
+/* stylelint-disable */
+/* Tailwind CSS directives - these are valid and required */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+/* @tailwind directives are valid Tailwind CSS syntax */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default dark mode */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --card-bg: 0 0% 0%;
+    --card-border: 255 0% 30%;
+  }
+
+  .light {
+    /* Light mode - subtle gray background with warm tone */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
+    --border: 0 0% 85%;
+    --card-bg: 0 0% 100%;
+    --card-border: 0 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    /* @apply is valid Tailwind CSS syntax */
+    @apply border-border;
+    box-sizing: border-box;
+  }
+  
+  html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  body {
+    /* @apply is valid Tailwind CSS syntax */
+    @apply text-foreground;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    /* Default background - will be overridden by theme */
+    background: hsl(var(--background));
+  }
+  
+  #__next,
+  [data-nextjs-scroll-focus-boundary] {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Dark mode background - solid black */
+  .dark body {
+    background: #000000;
+  }
+  
+  /* Light mode background - subtle gray gradient with warm tone */
+  .light body {
+    background: linear-gradient(135deg, #f8f9fa 0%, #f5f5f5 50%, #fafafa 100%);
+    background-attachment: fixed;
+  }
+
+  /* Ensure bg-background class uses subtle gray gradient in light mode */
+  .light .bg-background {
+    background: linear-gradient(135deg, #f8f9fa 0%, #f5f5f5 50%, #fafafa 100%) !important;
+    background-attachment: fixed;
+  }
+  
+  /* Ensure bg-background class uses black in dark mode */
+  .dark .bg-background {
+    background-color: #000000 !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-glow-red {
+    text-shadow: 
+      0 0 10px rgba(220, 38, 38, 1),
+      0 0 20px rgba(220, 38, 38, 0.8),
+      0 0 30px rgba(220, 38, 38, 0.5);
+    color: #DC2626;
+  }
+  
+  .light .text-glow-red {
+    text-shadow: 
+      0 0 8px rgba(220, 38, 38, 0.9),
+      0 0 15px rgba(220, 38, 38, 0.6),
+      0 0 25px rgba(220, 38, 38, 0.3);
+    color: #DC2626;
+  }
+  .border-glow-red {
+    box-shadow: 
+      0 0 20px rgba(220, 38, 38, 0.6),
+      0 0 40px rgba(220, 38, 38, 0.3),
+      inset 0 0 20px rgba(220, 38, 38, 0.1);
+  }
+  .bg-card-glass {
+    background: hsl(var(--card-bg));
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--card-border));
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .dark .bg-card-glass {
+    background: linear-gradient(135deg, rgba(15, 15, 15, 0.95) 0%, rgba(10, 10, 10, 0.95) 100%);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(220, 38, 38, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+  }
+  
+  .dark .bg-card-glass:hover {
+    /* Hover effects removed for dark mode */
+  }
+  
+  .light .bg-card-glass {
+    background: #ffffff;
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.08),
+      0 0 0 1px rgba(220, 38, 38, 0.2);
+    backdrop-filter: blur(10px);
+  }
+  
+  .light .bg-card-glass:hover {
+    border-color: rgba(220, 38, 38, 0.5);
+    box-shadow: 
+      0 8px 30px rgba(220, 38, 38, 0.15),
+      0 0 0 1px rgba(220, 38, 38, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  /* Card gradient overlay - only in light mode */
+  .card-gradient-overlay {
+    opacity: 0;
+  }
+  
+  /* Show gradient in dark mode */
+  .dark .card-gradient-overlay {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(220, 38, 38, 0.05) 50%, transparent 100%);
+    opacity: 0.5;
+  }
+  
+  .dark .card-gradient-overlay:hover,
+  .dark .group:hover .card-gradient-overlay {
+    opacity: 0.7;
+  }
+  
+  /* Hide gradient in light mode by default */
+  .light .card-gradient-overlay {
+    opacity: 0;
+  }
+  
+  /* Only show gradient in light mode for PersonalOverview */
+  .light .card-gradient-overlay.personal-overview-gradient {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(220, 38, 38, 0.05) 50%, transparent 100%);
+    opacity: 0.5;
+  }
+  
+  .light .card-gradient-overlay.personal-overview-gradient:hover,
+  .light .group:hover .card-gradient-overlay.personal-overview-gradient {
+    opacity: 0.7;
+  }
+  
+  .card-gradient-blur {
+    opacity: 0;
+  }
+  
+  /* Show gradient blur in dark mode */
+  .dark .card-gradient-blur {
+    background: rgba(220, 38, 38, 0.1);
+    opacity: 0.3;
+  }
+  
+  /* Hide gradient blur in light mode by default */
+  .light .card-gradient-blur {
+    opacity: 0;
+  }
+  
+  /* Only show gradient blur in light mode for PersonalOverview */
+  .light .card-gradient-blur.personal-overview-gradient {
+    background: rgba(220, 38, 38, 0.1);
+    opacity: 0.3;
+  }
+  
+  .dark .hover-glow:hover {
+    /* Hover effects removed for dark mode */
+  }
+  
+  .light .hover-glow:hover {
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.7);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  /* Theme-aware background utilities */
+  /* @apply directives are valid Tailwind CSS syntax */
+  .bg-card-inner {
+    @apply bg-white;
+    @apply transition-all duration-300;
+  }
+  
+  .dark .bg-card-inner {
+    @apply bg-gradient-to-br from-gray-900/80 via-gray-950/80 to-black/80;
+    @apply border border-red-600/30;
+  }
+  
+  .light .bg-card-inner {
+    @apply bg-white;
+    @apply border border-red-600/20;
+  }
+  
+  .bg-card-inner:hover {
+    @apply border-red-600/50;
+  }
+  
+  .dark .bg-card-inner:hover {
+    /* Hover effects removed for dark mode */
+  }
+  
+  .light .bg-card-inner:hover {
+    @apply shadow-md;
+    @apply border-red-600/40;
+  }
+  
+  /* Theme-aware text colors */
+  .text-muted {
+    @apply text-gray-600;
+  }
+  
+  .dark .text-muted {
+    @apply text-gray-400;
+  }
+  
+  .text-foreground-primary {
+    @apply text-gray-900;
+  }
+  
+  .dark .text-foreground-primary {
+    @apply text-white;
+  }
+  
+  /* Theme-aware border colors */
+  .border-muted {
+    @apply border-gray-200;
+  }
+  
+  .dark .border-muted {
+    @apply border-gray-800;
+  }
+  
+  /* Theme-aware progress bar background */
+  .bg-progress-track {
+    @apply bg-gray-200;
+  }
+  
+  .dark .bg-progress-track {
+    @apply bg-gray-800;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #ff0000;
+}
+
+/* Custom scrollbar for gaming tables */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(220, 38, 38, 0.6);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(220, 38, 38, 0.8);
+}
+
+/* Animated Gradient Background */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 4s ease infinite;
+}
+
+/* Floating Animation for Particles */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.8;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Slow Bounce Animation */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
+}
+
+/* Gradient Text Animation */
+@keyframes gradient-text {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-text {
+  animation: gradient-text 3s ease infinite;
+}
+
+/* Shimmer Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+/* Border Glow Animation */
+@keyframes border-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.3), inset 0 0 20px rgba(220, 38, 38, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(220, 38, 38, 0.6), inset 0 0 30px rgba(220, 38, 38, 0.2);
+  }
+}
+
+.animate-border-glow {
+  animation: border-glow 2s ease-in-out infinite;
+}
+
+/* Twinkle Animation for Sparkles */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-twinkle {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+/* Confetti Falling Animation */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall linear infinite;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  /* Hover effects removed for dark mode */
+  background: #ff0000;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #ff0000;
+  border-radius: 4px;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #cc0000;
+}
+
+/* Animation for count-up effect */
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 3D Perspective Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-gpu {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Podium Block - Dark and Light Mode */
+.podium-block {
+  background: linear-gradient(180deg, rgba(20, 20, 20, 1) 0%, rgba(15, 15, 15, 1) 50%, rgba(10, 10, 10, 1) 100%);
+}
+
+.podium-block:first-child,
+.podium-block.rank-1 {
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 10px 30px rgba(220, 38, 38, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.podium-block:not(:first-child):not(.rank-1) {
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 8px 20px rgba(220, 38, 38, 0.15), inset 0 -2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.light .podium-block {
+  background: linear-gradient(180deg, rgba(245, 245, 245, 1) 0%, rgba(250, 250, 250, 1) 50%, rgba(240, 240, 240, 1) 100%);
+}
+
+.light .podium-block:first-child,
+.light .podium-block.rank-1 {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15), 0 8px 25px rgba(220, 38, 38, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.light .podium-block:not(:first-child):not(.rank-1) {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12), 0 6px 18px rgba(220, 38, 38, 0.15), inset 0 -2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Pulse glow animation */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 0, 0, 0.8);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
