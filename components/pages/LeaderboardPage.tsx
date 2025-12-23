@@ -177,30 +177,48 @@ export function LeaderboardPage() {
           onFilterChange={setActiveViewFilter}
         />
 
-        {/* Time Filter Buttons - Right */}
-        <div className="flex items-center gap-2 relative" ref={datePickerRef}>
-          {['Daily', 'Weekly', 'Monthly', 'Custom'].map((filter) => (
-            <Button
-              key={filter}
-              variant={timeFilter === filter ? 'default' : 'outline'}
-              size="sm"
+        {/* Time Filter Buttons - Right (Frameless) */}
+        <div className="relative" ref={datePickerRef}>
+          <div className="inline-flex items-center gap-1">
+            {['Daily', 'Weekly', 'Monthly'].map((filter) => (
+              <button
+                key={filter}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setTimeFilter(filter as TimeFilter);
+                  setShowDateRangePicker(false);
+                }}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none ${
+                  timeFilter === filter
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-foreground-primary hover:bg-primary/10'
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
+            <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (filter === 'Custom') {
+                if (timeFilter === 'Custom') {
                   setShowDateRangePicker(!showDateRangePicker);
-                  setTimeFilter(filter as TimeFilter);
                 } else {
-                  setTimeFilter(filter as TimeFilter);
-                  setShowDateRangePicker(false);
+                  setShowDateRangePicker(true);
+                  setTimeFilter('Custom' as TimeFilter);
                 }
               }}
-              className="text-xs flex items-center gap-1 cursor-pointer select-none"
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-1.5 ${
+                timeFilter === 'Custom'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-foreground-primary hover:bg-primary/10'
+              }`}
             >
-              {filter === 'Custom' && <Calendar className="w-3 h-3" />}
-              {filter}
-            </Button>
-          ))}
+              <Calendar className="w-3.5 h-3.5" />
+              Custom
+            </button>
+          </div>
           {showDateRangePicker && timeFilter === 'Custom' && (
             <div className="absolute top-full right-0 mt-2 bg-card-inner border border-card-border rounded-lg p-4 shadow-lg z-50 min-w-[300px]">
               <div className="space-y-3">

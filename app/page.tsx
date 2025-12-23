@@ -21,7 +21,7 @@ import { SquadComparisonDashboard } from '@/components/SquadComparisonDashboard'
 import { TrafficSourceCard } from '@/components/TrafficSourceCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { User, ChevronDown } from 'lucide-react';
+import { User, ChevronDown, Calendar, X } from 'lucide-react';
 import { TimeFilter } from '@/types';
 import { DashboardData } from '@/types';
 import { SquadPage } from '@/components/pages/SquadPage';
@@ -57,11 +57,14 @@ function DashboardContent() {
   const router = useRouter();
   const [userId, setUserId] = useState('123');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [timeFilter] = useState<TimeFilter>('Daily');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('Daily');
+  const [showDateRangePicker, setShowDateRangePicker] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [refreshKey] = useState(0);
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  const datePickerRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -69,16 +72,19 @@ function DashboardContent() {
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
         setShowUserDropdown(false);
       }
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDateRangePicker(false);
+      }
     }
 
-    if (showUserDropdown) {
+    if (showUserDropdown || showDateRangePicker) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showUserDropdown]);
+  }, [showUserDropdown, showDateRangePicker]);
 
   // Set userId from rankUsername if limited access
   useEffect(() => {
@@ -86,6 +92,8 @@ function DashboardContent() {
       setUserId(rankUsername);
     }
   }, [isLimitedAccess, rankUsername]);
+
+  const selectedUser = mockUsers.find(u => u.id === userId) || mockUsers[0];
 
   const { data, isLoading: dataLoading, refetch, isFetching } = useQuery<DashboardData>({
     queryKey: ['dashboard', userId, timeFilter, refreshKey],
@@ -186,9 +194,9 @@ function DashboardContent() {
           {/* Conditional Rendering based on activeMenu */}
               {(activeMenu === 'dashboard' || activeMenu === 'overview') && data && (
             <>
-              {/* Top Section - User Button */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4 sm:mb-6 select-none">
-                {/* User Selector */}
+              {/* Top Section - User Button (Center) + Date Slicer (Center Below) */}
+              <div className="flex flex-col items-center gap-4 mb-6 select-none">
+                {/* User Selector - Center */}
                 <div className="relative" ref={userDropdownRef}>
                   <Button
                     variant="outline"
@@ -198,15 +206,14 @@ function DashboardContent() {
                       e.stopPropagation();
                       setShowUserDropdown(!showUserDropdown);
                     }}
-                    className="flex items-center gap-2 cursor-pointer select-none"
+                    className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none"
                   >
                     <User className="w-4 h-4" />
-                    <span className="hidden sm:inline">User: {userId}</span>
-                    <span className="sm:hidden">{userId}</span>
-                    <ChevronDown className="w-3 h-3" />
+                    <span className="text-sm font-medium">User: {userId}</span>
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </Button>
                   {showUserDropdown && (
-                    <div className="absolute top-full left-0 mt-2 bg-card-inner border border-card-border rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[160px] overflow-hidden">
                       {mockUsers.map((user) => (
                         <button
                           key={user.id}
@@ -216,13 +223,127 @@ function DashboardContent() {
                             setUserId(user.id);
                             setShowUserDropdown(false);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
                             userId === user.id ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground-primary'
                           }`}
                         >
                           {user.name}
                         </button>
                       ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Date Slicer - Center Below (Frameless) */}
+                <div className="relative" ref={datePickerRef}>
+                  <div className="inline-flex items-center gap-1">
+                    {['Daily', 'Weekly', 'Monthly'].map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setTimeFilter(filter as TimeFilter);
+                          setShowDateRangePicker(false);
+                        }}
+                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none ${
+                          timeFilter === filter
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-foreground-primary hover:bg-primary/10'
+                        }`}
+                      >
+                        {filter}
+                      </button>
+                    ))}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (timeFilter === 'Custom') {
+                          setShowDateRangePicker(!showDateRangePicker);
+                        } else {
+                          setShowDateRangePicker(true);
+                          setTimeFilter('Custom' as TimeFilter);
+                        }
+                      }}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-1.5 ${
+                        timeFilter === 'Custom'
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'text-foreground-primary hover:bg-primary/10'
+                      }`}
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      Custom
+                    </button>
+                  </div>
+                  {showDateRangePicker && timeFilter === 'Custom' && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-card-inner border border-card-border rounded-lg p-4 shadow-lg z-50 min-w-[300px]">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-foreground-primary">Select Date Range</h4>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowDateRangePicker(false);
+                            }}
+                            className="text-muted hover:text-foreground-primary transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground-primary mb-1">
+                            Start Date
+                          </label>
+                          <input
+                            type="date"
+                            value={dateRange.start}
+                            onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                            className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-foreground-primary mb-1">
+                            End Date
+                          </label>
+                          <input
+                            type="date"
+                            value={dateRange.end}
+                            onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                            min={dateRange.start}
+                            className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowDateRangePicker(false);
+                            }}
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (dateRange.start && dateRange.end) {
+                                setShowDateRangePicker(false);
+                              }
+                            }}
+                            className="flex-1"
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

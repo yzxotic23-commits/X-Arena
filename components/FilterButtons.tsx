@@ -27,19 +27,23 @@ export function FilterButtons({ activeFilter, onFilterChange }: FilterButtonsPro
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span className="text-sm text-muted font-semibold">View:</span>
-      {filters.map((filter) => (
-        <Button
-          key={filter}
-          variant={activeFilter === filter ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onFilterChange(filter)}
-          className="flex items-center gap-2"
-        >
-          {getIcon(filter)}
-          <span className="hidden sm:inline">{filter}</span>
-          <span className="sm:hidden">{filter.split(' ')[0]}</span>
-        </Button>
-      ))}
+      <div className="inline-flex items-center gap-1">
+        {filters.map((filter) => (
+          <button
+            key={filter}
+            onClick={() => onFilterChange(filter)}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
+              activeFilter === filter
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-foreground-primary hover:bg-primary/10'
+            }`}
+          >
+            {getIcon(filter)}
+            <span className="hidden sm:inline">{filter}</span>
+            <span className="sm:hidden">{filter.split(' ')[0]}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
