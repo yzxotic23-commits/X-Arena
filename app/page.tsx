@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -21,7 +21,7 @@ import { SquadComparisonDashboard } from '@/components/SquadComparisonDashboard'
 import { TrafficSourceCard } from '@/components/TrafficSourceCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { User } from 'lucide-react';
+import { User, ChevronDown } from 'lucide-react';
 import { TimeFilter } from '@/types';
 import { DashboardData } from '@/types';
 import { SquadPage } from '@/components/pages/SquadPage';
@@ -44,14 +44,41 @@ const queryClient = new QueryClient({
   },
 });
 
+const mockUsers = [
+  { id: '123', name: 'User 123' },
+  { id: '456', name: 'User 456' },
+  { id: '789', name: 'User 789' },
+  { id: '101', name: 'User 101' },
+  { id: '202', name: 'User 202' },
+];
+
 function DashboardContent() {
   const { isAuthenticated, isLoading: authLoading, isLimitedAccess, rankUsername } = useAuth();
   const router = useRouter();
   const [userId, setUserId] = useState('123');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [timeFilter] = useState<TimeFilter>('Daily');
   const [refreshKey] = useState(0);
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    }
+
+    if (showUserDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserDropdown]);
 
   // Set userId from rankUsername if limited access
   useEffect(() => {
@@ -160,17 +187,45 @@ function DashboardContent() {
               {(activeMenu === 'dashboard' || activeMenu === 'overview') && data && (
             <>
               {/* Top Section - User Button */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4 sm:mb-6 select-none">
                 {/* User Selector */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <User className="w-4 h-4" />
-                  <span className="hidden sm:inline">User: {userId}</span>
-                  <span className="sm:hidden">{userId}</span>
-                </Button>
+                <div className="relative" ref={userDropdownRef}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowUserDropdown(!showUserDropdown);
+                    }}
+                    className="flex items-center gap-2 cursor-pointer select-none"
+                  >
+                    <User className="w-4 h-4" />
+                    <span className="hidden sm:inline">User: {userId}</span>
+                    <span className="sm:hidden">{userId}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                  {showUserDropdown && (
+                    <div className="absolute top-full left-0 mt-2 bg-card-inner border border-card-border rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
+                      {mockUsers.map((user) => (
+                        <button
+                          key={user.id}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setUserId(user.id);
+                            setShowUserDropdown(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
+                            userId === user.id ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground-primary'
+                          }`}
+                        >
+                          {user.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Main Dashboard Grid - DRD Layout */}

@@ -73,7 +73,7 @@ export function SettingsPage() {
   });
 
   const tabs = [
-    { id: 'add-account' as SettingsTab, label: 'Tambah Akun', icon: UserPlus },
+    { id: 'add-account' as SettingsTab, label: 'User Management', icon: UserPlus },
     { id: 'notification' as SettingsTab, label: 'Notification Setting', icon: Bell },
     { id: 'language' as SettingsTab, label: 'Language & Region', icon: Globe },
     { id: 'appearance' as SettingsTab, label: 'Appearance', icon: Palette },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, User, Crown, Medal, X, TrendingUp, DollarSign, RefreshCw, UserPlus, Repeat, Users, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,6 +103,24 @@ export function LeaderboardPage() {
   const [totalUsers] = useState(23141);
   const [selectedMember, setSelectedMember] = useState<LeaderboardEntry | null>(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  // Close date picker when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDateRangePicker(false);
+      }
+    }
+
+    if (showDateRangePicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDateRangePicker]);
 
   const getPodiumHeight = (rank: number) => {
     if (rank === 1) return 'h-52 md:h-64'; // Highest - center
@@ -150,40 +168,55 @@ export function LeaderboardPage() {
   };
 
   return (
-    <div className="w-full space-y-6" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
-      {/* Filter Buttons */}
-      <div className="mb-4">
+    <div className="w-full space-y-6 select-none" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
+      {/* Top Section: Filter Buttons (Left) + Time Filter (Right) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-6">
+        {/* Filter Buttons - Left */}
         <FilterButtons
           activeFilter={activeViewFilter}
           onFilterChange={setActiveViewFilter}
         />
-      </div>
 
-      {/* Time Filter Buttons */}
-      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-6">
-        <div className="flex items-center gap-2 relative">
+        {/* Time Filter Buttons - Right */}
+        <div className="flex items-center gap-2 relative" ref={datePickerRef}>
           {['Daily', 'Weekly', 'Monthly', 'Custom'].map((filter) => (
             <Button
               key={filter}
               variant={timeFilter === filter ? 'default' : 'outline'}
               size="sm"
-              onClick={() => {
-                setTimeFilter(filter as TimeFilter);
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (filter === 'Custom') {
-                  setShowDateRangePicker(true);
+                  setShowDateRangePicker(!showDateRangePicker);
+                  setTimeFilter(filter as TimeFilter);
                 } else {
+                  setTimeFilter(filter as TimeFilter);
                   setShowDateRangePicker(false);
                 }
               }}
-              className="text-xs flex items-center gap-1"
+              className="text-xs flex items-center gap-1 cursor-pointer select-none"
             >
               {filter === 'Custom' && <Calendar className="w-3 h-3" />}
               {filter}
             </Button>
           ))}
           {showDateRangePicker && timeFilter === 'Custom' && (
-            <div className="absolute top-full left-0 mt-2 bg-card-inner border border-card-border rounded-lg p-4 shadow-lg z-50 min-w-[300px]">
+            <div className="absolute top-full right-0 mt-2 bg-card-inner border border-card-border rounded-lg p-4 shadow-lg z-50 min-w-[300px]">
               <div className="space-y-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold text-foreground-primary">Select Date Range</h4>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowDateRangePicker(false);
+                    }}
+                    className="text-muted hover:text-foreground-primary transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
                 <div>
                   <label className="block text-sm font-semibold text-foreground-primary mb-1">
                     Start Date
@@ -207,26 +240,42 @@ export function LeaderboardPage() {
                     className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                   />
                 </div>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    if (dateRange.start && dateRange.end) {
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setShowDateRangePicker(false);
-                    }
-                  }}
-                  className="w-full"
-                >
-                  Apply Date Range
-                </Button>
+                    }}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (dateRange.start && dateRange.end) {
+                        setShowDateRangePicker(false);
+                      }
+                    }}
+                    className="flex-1"
+                  >
+                    Apply
+                  </Button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-          {/* Top 3 Podium */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-end mt-16 md:mt-24 lg:mt-32">
+      {/* Top 3 Podium */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-end mt-16 md:mt-24 lg:mt-32 select-none">
         {mockPodiumUsers.map((user, index) => {
           const podiumConfig = {
             1: {
@@ -381,7 +430,7 @@ export function LeaderboardPage() {
       </div>
 
       {/* Top Performers by Category */}
-      <div className="mb-12 md:mb-16 lg:mb-20">
+      <div className="mb-12 md:mb-16 lg:mb-20 select-none">
         <h3 className="text-2xl font-heading font-bold text-foreground-primary mb-6 md:mb-8 text-center">Top Performers by Category</h3>
         <div className="space-y-4 sm:space-y-6">
           {/* Row 1: 3 cards */}
@@ -457,7 +506,7 @@ export function LeaderboardPage() {
       </div>
 
       {/* Leaderboard Table */}
-      <div className="space-y-4">
+      <div className="space-y-4 select-none">
         <h3 className="text-2xl font-heading font-bold text-foreground-primary text-center">Ranking & Incentive Module</h3>
         <Card className="bg-card-glass">
           <CardContent className="p-0">
@@ -482,7 +531,7 @@ export function LeaderboardPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={`border-b border-card-border hover:bg-primary/5 transition-colors cursor-pointer ${
+                    className={`border-b border-card-border hover:bg-primary/5 transition-colors cursor-pointer select-none ${
                       entry.isCurrentUser ? 'bg-primary/10' : ''
                     }`}
                   >
@@ -539,7 +588,7 @@ export function LeaderboardPage() {
       </div>
 
       {/* Squad Performance Report Table */}
-      <div className="space-y-4">
+      <div className="space-y-4 select-none">
         <div className="flex items-center justify-center gap-3">
           <Trophy className="w-6 h-6 text-primary" />
           <h3 className="text-2xl font-heading font-bold text-foreground-primary">Squad Performance Report</h3>

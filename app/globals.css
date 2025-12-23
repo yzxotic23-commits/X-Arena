@@ -50,6 +50,21 @@
     transition: background-color 0.3s ease, color 0.3s ease;
     /* Default background - will be overridden by theme */
     background: hsl(var(--background));
+    /* Prevent text cursor on non-interactive elements */
+    cursor: default;
+    user-select: none;
+  }
+  
+  /* Allow text selection on input, textarea, and contenteditable */
+  input, textarea, [contenteditable] {
+    user-select: text;
+    cursor: text;
+  }
+  
+  /* Allow pointer cursor on clickable elements */
+  button, a, [role="button"], [onclick] {
+    cursor: pointer;
+    user-select: none;
   }
   
   #__next,

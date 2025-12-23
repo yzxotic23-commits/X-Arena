@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut } from 'lucide-react';
+import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
@@ -14,11 +14,23 @@ interface HeaderProps {
 
 export function Header({ hideBorder = false, showGreeting = false, userName = 'Jane Copper' }: HeaderProps) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationDropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
   const router = useRouter();
   const isDark = theme === 'dark';
+
+  // Get current date formatted
+  const getCurrentDate = () => {
+    const now = new Date();
+    return now.toLocaleDateString('en-US', { 
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
 
   const handleLogout = () => {
     logout();
@@ -31,16 +43,19 @@ export function Header({ hideBorder = false, showGreeting = false, userName = 'J
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
         setShowProfileDropdown(false);
       }
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
+        setShowNotificationDropdown(false);
+      }
     }
 
-    if (showProfileDropdown) {
+    if (showProfileDropdown || showNotificationDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showProfileDropdown]);
+  }, [showProfileDropdown, showNotificationDropdown]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -76,10 +91,53 @@ export function Header({ hideBorder = false, showGreeting = false, userName = 'J
             </button>
 
             {/* Notification Bell */}
-            <button className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
-            </button>
+            <div className="relative" ref={notificationDropdownRef}>
+              <button 
+                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+              </button>
+              {showNotificationDropdown && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-black border border-red-500/30 dark:border-red-500/40 rounded-lg shadow-lg z-10 transition-colors overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-4 border-b border-red-500/30 dark:border-red-500/40 bg-gray-50 dark:bg-black">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded flex items-center justify-center">
+                        <Bell className="w-4 h-4 text-red-500" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Database Status</h3>
+                    </div>
+                    <button
+                      onClick={() => setShowNotificationDropdown(false)}
+                      className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
+                    >
+                      <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    </button>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="p-4 bg-white dark:bg-black">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Last Updated:</span>
+                        <span className="font-medium text-gray-900 dark:text-white text-sm">
+                          {getCurrentDate()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">Status:</span>
+                        <span className="flex items-center space-x-1.5">
+                          <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full"></div>
+                          <span className="text-green-600 dark:text-green-400 font-medium text-sm">Online</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Mail/Envelope */}
             <button className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
