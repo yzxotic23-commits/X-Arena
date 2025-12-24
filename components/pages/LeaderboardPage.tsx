@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Trophy, User, Crown, Medal, X, TrendingUp, TrendingDown, DollarSign, RefreshCw, UserPlus, Repeat, Users, Calendar, Award, Eye, Pencil, Trash2, UserCircle2, ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FilterButtons } from '@/components/FilterButtons';
@@ -18,10 +20,28 @@ interface PodiumUser {
   prize: number;
 }
 
+// All available avatars for mix and match
+const allAvatars = [
+  '/pictures/GabrielGamer14_en_youtube__1_-removebg-preview.png',
+  '/pictures/GabrielGamer14_en_youtube-removebg-preview.png',
+  '/pictures/Create_Eye-Catching_Twitch_Emotes__Ideas_and_Inspiration-removebg-preview.png',
+  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyart__1_-removebg-preview.png',
+  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyart-removebg-preview.png',
+  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyartists-removebg-preview.png',
+];
+
+// Squad B avatars (3 gambar terbaru)
+const squadBAvatars = [
+  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyart__1_-removebg-preview.png',
+  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyart-removebg-preview.png',
+  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyartists-removebg-preview.png',
+];
+
+// Mix and match avatars for podium (random selection from all avatars)
 const mockPodiumUsers: PodiumUser[] = [
-  { rank: 2, name: 'Brian Ngo', points: 2000, prize: 50000 }, // Left
-  { rank: 1, name: 'Jolie Joie', points: 2000, prize: 100000 }, // Center (highest)
-  { rank: 3, name: 'David Do', points: 2000, prize: 20000 }, // Right
+  { rank: 2, name: 'Brian Ngo', points: 2000, prize: 50000, avatar: '/pictures/juara 2.png' }, // Left - New image
+  { rank: 1, name: 'Jolie Joie', points: 2000, prize: 100000, avatar: allAvatars[1] }, // Center (highest) - Mix
+  { rank: 3, name: 'David Do', points: 2000, prize: 20000, avatar: allAvatars[4] }, // Right - Mix
 ];
 
 const mockLeaderboard: LeaderboardEntry[] = [
@@ -227,8 +247,8 @@ export function LeaderboardPage() {
   };
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown className="w-5 h-5 text-yellow-400" />;
-    if (rank === 2) return <Medal className="w-5 h-5 text-gray-300" />;
+    if (rank === 1) return <Crown className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />;
+    if (rank === 2) return <Medal className="w-5 h-5 text-gray-600 dark:text-gray-300" />;
     if (rank === 3) return <Medal className="w-5 h-5 text-amber-600" />;
     return <Trophy className="w-4 h-4 text-gray-500" />;
   };
@@ -423,130 +443,98 @@ export function LeaderboardPage() {
             >
               {/* Avatar */}
               <div className="relative mb-4 z-10">
-                <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden border-4 ${user.rank === 1 ? 'border-yellow-400' : user.rank === 2 ? 'border-gray-300' : 'border-amber-600'} shadow-xl`}>
-                  <User className="w-10 h-10 md:w-12 md:h-12 text-white" />
+                <div className={`${user.rank === 1 ? 'w-28 h-28 md:w-32 md:h-32 lg:w-36 lg:h-36' : 'w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28'} rounded-lg overflow-hidden relative bg-transparent ${user.rank === 1 ? 'border-2 border-yellow-400' : user.rank === 2 ? 'border border-gray-300' : 'border border-amber-600'}`}>
+                  {user.avatar ? (
+                    <Image 
+                      src={user.avatar} 
+                      alt={user.name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-transparent flex items-center justify-center">
+                      <User className={`${user.rank === 1 ? 'w-14 h-14 md:w-16 md:h-16 lg:w-18 lg:h-18' : 'w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14'} text-gray-400`} />
+                    </div>
+                  )}
                 </div>
-                {user.rank === 1 && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
-                    <Crown className="w-7 h-7 text-yellow-400 drop-shadow-lg" />
-                  </div>
-                )}
               </div>
 
               {/* Name */}
-              <h3 className="text-base md:text-lg font-heading font-bold text-foreground-primary mb-4 text-center z-10">
+              <h3 className="text-base md:text-lg font-heading font-bold text-foreground-primary mb-2 text-center z-10">
                 {user.name}
-                  </h3>
+              </h3>
 
-              {/* 3D Podium Block */}
-              <div 
-                className={`relative ${config.height} w-full`}
-                style={{
-                  perspective: '1000px',
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                {/* Top Surface - Shiny Metallic */}
+              {/* Score */}
+              <div className="flex items-center justify-center mb-4 z-10">
+                <span className="text-sm md:text-base font-heading font-bold text-foreground-primary">
+                  {formatNumber(user.points)}
+                </span>
+              </div>
+
+              {/* Podium Design - Tapered Shape */}
+              <div className="relative w-full flex flex-col items-center">
+                {/* Top Platform - Wider */}
                 <div 
-                  className="absolute top-0 left-0 right-0 h-8 rounded-t-2xl"
+                  className="w-11/12 rounded-t-lg"
                   style={{
-                    background: config.topColor,
-                    boxShadow: `
-                      inset 0 4px 8px rgba(255, 255, 255, 0.4),
-                      inset 0 -2px 4px rgba(0, 0, 0, 0.2),
-                      0 4px 12px rgba(0, 0, 0, 0.3)
-                    `,
-                    transform: 'rotateX(5deg)',
-                    transformOrigin: 'center bottom',
+                    height: user.rank === 1 ? '24px' : user.rank === 2 ? '20px' : '16px',
+                    backgroundColor: user.rank === 1 ? '#FFD700' : user.rank === 2 ? '#E8E8E8' : '#E6A857',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+                  }}
+                />
+                
+                {/* Middle Section - Medium */}
+                <div 
+                  className="w-10/12"
+                  style={{
+                    height: user.rank === 1 ? '32px' : user.rank === 2 ? '28px' : '24px',
+                    backgroundColor: user.rank === 1 ? '#FFC125' : user.rank === 2 ? '#D3D3D3' : '#D4A574',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
+                  }}
+                />
+                
+                {/* Main Body - Taller with Rank Number */}
+                <div 
+                  className={`relative w-full ${config.height} rounded-b-lg flex items-center justify-center`}
+                  style={{
+                    backgroundColor: user.rank === 1 ? '#FFA500' : user.rank === 2 ? '#C0C0C0' : '#CD7F32',
+                    boxShadow: user.rank === 1 
+                      ? '0 10px 30px rgba(255, 215, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2)' 
+                      : user.rank === 2 
+                      ? '0 8px 20px rgba(192, 192, 192, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.2)' 
+                      : '0 8px 20px rgba(205, 127, 50, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.2)',
                   }}
                 >
-                  {/* Shine Effect */}
+                  {/* Rank Number */}
                   <div 
-                    className="absolute inset-0 rounded-t-2xl"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%)',
-                    }}
-                  />
-                </div>
-
-                {/* Main Body - Cylindrical 3D */}
-                <div 
-                  className="absolute top-8 left-0 right-0 bottom-0 rounded-b-2xl"
-                  style={{
-                    background: config.bodyColor,
-                    boxShadow: `
-                      inset 0 0 30px rgba(0, 0, 0, 0.2),
-                      inset -12px 0 25px rgba(0, 0, 0, 0.15),
-                      inset 12px 0 25px rgba(255, 255, 255, 0.15),
-                      ${config.shadow}
-                    `,
-                    borderRadius: '0 0 16px 16px',
-                  }}
-                >
-                  {/* Left Side - 3D Depth */}
-                  <div 
-                    className="absolute left-0 top-0 bottom-0 w-1/4 rounded-bl-2xl"
-                    style={{
-                      background: 'linear-gradient(90deg, rgba(0, 0, 0, 0.25) 0%, transparent 100%)',
-                    }}
-                  />
-
-                  {/* Right Side - 3D Depth */}
-                  <div 
-                    className="absolute right-0 top-0 bottom-0 w-1/4 rounded-br-2xl"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.25) 100%)',
-                    }}
-                  />
-
-                  {/* Center Highlight */}
-                  <div 
-                    className="absolute left-1/3 top-8 w-1/3 h-1/2 rounded-full"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%)',
-                      filter: 'blur(15px)',
-                    }}
-                  />
-
-                  {/* Rank Number - Large and Prominent */}
-                  <div 
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-8xl md:text-9xl font-heading font-black select-none z-10"
+                    className="text-6xl md:text-7xl lg:text-8xl font-heading font-black select-none"
                     style={{
                       color: '#ffffff',
-                      textShadow: `
-                        0 4px 8px rgba(0, 0, 0, 0.8),
-                        0 8px 16px rgba(0, 0, 0, 0.6),
-                        0 0 30px ${config.glow}
-                      `,
+                      textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
                       lineHeight: '1',
-                      letterSpacing: '-8px',
                     }}
                   >
                     {user.rank}
                   </div>
                 </div>
-
-                {/* Glow Effect */}
-                <div 
-                  className="absolute inset-0 rounded-2xl pointer-events-none"
-                  style={{
-                    boxShadow: `0 0 40px ${config.glow}`,
-                  }}
-                />
-                </div>
+              </div>
               </motion.div>
           );
         })}
       </div>
 
-      {/* Top Performers by Category & Ranking & Incentive Module - Side by Side */}
-      <div className="mb-12 md:mb-16 lg:mb-20 select-none">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Top Performers by Category - Left */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-heading font-bold text-foreground-primary text-center">
-              Top Performers by Category
-            </h3>
+      {/* Top Performers by Category & Ranking & Incentive Module - Stacked */}
+      <div className="select-none pt-8 md:pt-12 lg:pt-16">
+        <div className="space-y-6">
+          {/* Top Performers by Category - Top */}
+          <div className="space-y-4 mb-12 md:mb-16 lg:mb-20">
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <Award className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-heading font-bold text-foreground-primary">
+                Top Performers by Category
+              </h3>
+            </div>
             <motion.div
               key={selectedCategory}
               initial={{ opacity: 0, y: 10 }}
@@ -556,7 +544,12 @@ export function LeaderboardPage() {
               <Card className="bg-card-glass h-full">
                 <CardHeader className="pb-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    {/* Category Slicer Dropdown */}
+                    {/* Category Description - Left */}
+                    <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
+                      {getCategoryIcon(selectedCategory)}
+                      <span className="text-base font-heading font-semibold text-foreground-primary">{selectedCategory}</span>
+                    </div>
+                    {/* Category Slicer Dropdown - Right */}
                     <div className="relative w-full sm:w-auto" ref={categoryDropdownRef}>
                       <button
                         onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
@@ -570,7 +563,7 @@ export function LeaderboardPage() {
                       </button>
                       
                       {isCategoryDropdownOpen && (
-                        <div className="absolute top-full left-0 right-0 sm:right-auto sm:left-auto sm:min-w-[200px] mt-2 bg-card-inner border border-card-border rounded-lg shadow-lg z-50 overflow-hidden">
+                        <div className="absolute top-full right-0 left-0 sm:left-auto sm:min-w-[200px] mt-2 bg-card-inner border border-card-border rounded-lg shadow-lg z-50 overflow-hidden">
                           {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Highest Repeat Customers'] as TopPerformer['category'][]).map((category) => {
                             const Icon = getCategoryIcon(category);
                             return (
@@ -592,39 +585,74 @@ export function LeaderboardPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
-                      {getCategoryIcon(selectedCategory)}
-                      <span className="text-base font-heading font-semibold text-foreground-primary">{selectedCategory}</span>
-                    </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {getTopPerformersByCategory(selectedCategory).map((performer) => (
-                    <div
-                      key={`${selectedCategory}-${performer.rank}`}
-                      className="flex items-center justify-between p-3 bg-card-inner rounded-lg border border-card-border hover:bg-primary/5 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {getRankIcon(performer.rank)}
-                        <span className="text-sm font-semibold text-foreground-primary truncate">{performer.name}</span>
-                      </div>
-                      <span className="text-sm font-bold text-primary flex-shrink-0 ml-2">
-                        {selectedCategory === 'Highest Retention' || selectedCategory === 'Most Activated Customers' || selectedCategory === 'Most Referrals' || selectedCategory === 'Highest Repeat Customers'
-                          ? formatNumber(performer.value)
-                          : `$${formatNumber(performer.value)}`}
-                      </span>
-                    </div>
-                  ))}
+                <CardContent>
+                  <div className="flex gap-3">
+                    {(() => {
+                      const performers = getTopPerformersByCategory(selectedCategory);
+                      // Reorder: Rank 2 (left), Rank 1 (center), Rank 3 (right) - like podium
+                      const reorderedPerformers = [
+                        performers.find(p => p.rank === 2),
+                        performers.find(p => p.rank === 1),
+                        performers.find(p => p.rank === 3),
+                      ].filter(Boolean) as typeof performers;
+                      
+                      return reorderedPerformers.map((performer) => {
+                        const rankColors = [
+                          { bg: 'bg-yellow-500/20', color: 'text-yellow-500 dark:text-yellow-400', border: 'border-yellow-500/30' }, // Rank 1
+                          { bg: 'bg-gray-500/20', color: 'text-gray-600 dark:text-gray-400', border: 'border-gray-500/30' }, // Rank 2
+                          { bg: 'bg-amber-500/20', color: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' }, // Rank 3
+                        ];
+                        const style = rankColors[performer.rank - 1] || rankColors[0];
+                        
+                        return (
+                          <div
+                            key={`${selectedCategory}-${performer.rank}`}
+                            className={`${style.bg} rounded-lg p-3 transition-all hover:scale-[1.02] cursor-pointer flex flex-col items-center justify-center text-center flex-shrink-0`}
+                            style={{ 
+                              width: 'calc((100% - 1.5rem) / 3)',
+                              boxShadow: 'none',
+                              border: '0',
+                              outline: 'none',
+                              borderWidth: '0',
+                              borderStyle: 'none',
+                              borderColor: 'transparent',
+                              borderTopWidth: '0',
+                              borderRightWidth: '0',
+                              borderBottomWidth: '0',
+                              borderLeftWidth: '0'
+                            }}
+                          >
+                            <div className="flex items-center justify-center gap-2 mb-1.5">
+                              {getRankIcon(performer.rank)}
+                              <span className="text-xs text-muted">{performer.name}</span>
+                            </div>
+                            <div className="flex items-center justify-center gap-1">
+                              <p className={`text-base font-heading font-bold ${style.color}`}>
+                                {selectedCategory === 'Highest Retention' || selectedCategory === 'Most Activated Customers' || selectedCategory === 'Most Referrals' || selectedCategory === 'Highest Repeat Customers'
+                                  ? formatNumber(performer.value)
+                                  : `$${formatNumber(performer.value)}`}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
 
-          {/* Ranking & Incentive Module - Right */}
+          {/* Ranking & Incentive Module - Bottom */}
           <div className="space-y-4">
-            <h3 className="text-xl font-heading font-bold text-foreground-primary text-center">
-              Ranking & Incentive Module
-            </h3>
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <Trophy className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-heading font-bold text-foreground-primary">
+                Ranking & Incentive Module
+              </h3>
+            </div>
             <Card className="bg-card-glass h-full">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
@@ -1631,83 +1659,97 @@ export function LeaderboardPage() {
       </div>
 
       {/* Member Contribution Summary Modal */}
-      <AnimatePresence>
-        {showMemberModal && selectedMember && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-            onClick={() => setShowMemberModal(false)}
-          >
+      {typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showMemberModal && selectedMember && (
             <motion.div
-              initial={{ scale: 0.9, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 50 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card-inner rounded-lg p-6 border border-card-border shadow-lg w-full max-w-2xl relative"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
+              onClick={() => setShowMemberModal(false)}
+              style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0,
+                width: '100vw',
+                height: '100vh',
+                margin: 0,
+                padding: 0
+              }}
             >
-              <button
-                onClick={() => setShowMemberModal(false)}
-                className="absolute top-4 right-4 text-muted hover:text-foreground-primary transition-colors"
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card-inner rounded-lg p-6 border border-card-border shadow-lg w-full max-w-2xl relative m-4"
               >
-                <X className="w-5 h-5" />
-              </button>
-              <h3 className="text-2xl font-heading font-bold text-foreground-primary mb-6 flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-primary" />
-                {selectedMember.name} - Contribution Summary
-              </h3>
-              {selectedMember.breakdown && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                      <div className="text-sm text-muted mb-1">Total Score</div>
-                      <div className="text-2xl font-heading font-bold text-primary">
-                        {formatNumber(selectedMember.score)}
+                <button
+                  onClick={() => setShowMemberModal(false)}
+                  className="absolute top-4 right-4 text-muted hover:text-foreground-primary transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <h3 className="text-2xl font-heading font-bold text-foreground-primary mb-6 flex items-center gap-2">
+                  <Trophy className="w-6 h-6 text-primary" />
+                  {selectedMember.name} - Contribution Summary
+                </h3>
+                {selectedMember.breakdown && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <div className="text-sm text-muted mb-1">Total Score</div>
+                        <div className="text-2xl font-heading font-bold text-primary">
+                          {formatNumber(selectedMember.score)}
+                        </div>
+                      </div>
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <div className="text-sm text-muted mb-1">Rank</div>
+                        <div className="text-2xl font-heading font-bold text-foreground-primary">
+                          #{selectedMember.rank}
+                        </div>
                       </div>
                     </div>
-                    <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                      <div className="text-sm text-muted mb-1">Rank</div>
-                      <div className="text-2xl font-heading font-bold text-foreground-primary">
-                        #{selectedMember.rank}
+                    <div className="space-y-3">
+                      <h4 className="text-lg font-heading font-semibold text-foreground-primary">Contribution Breakdown</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">Deposit</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.deposit)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">Retention</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.retention)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">Activation</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.activation)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">Referral</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.referral)}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className="space-y-3">
-                    <h4 className="text-lg font-heading font-semibold text-foreground-primary">Contribution Breakdown</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                        <div className="text-xs text-muted mb-1">Deposit</div>
-                        <div className="text-lg font-heading font-bold text-foreground-primary">
-                          {formatNumber(selectedMember.breakdown.deposit)}
-                        </div>
-                      </div>
-                      <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                        <div className="text-xs text-muted mb-1">Retention</div>
-                        <div className="text-lg font-heading font-bold text-foreground-primary">
-                          {formatNumber(selectedMember.breakdown.retention)}
-                        </div>
-                      </div>
-                      <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                        <div className="text-xs text-muted mb-1">Activation</div>
-                        <div className="text-lg font-heading font-bold text-foreground-primary">
-                          {formatNumber(selectedMember.breakdown.activation)}
-                        </div>
-                      </div>
-                      <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                        <div className="text-xs text-muted mb-1">Referral</div>
-                        <div className="text-lg font-heading font-bold text-foreground-primary">
-                          {formatNumber(selectedMember.breakdown.referral)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
