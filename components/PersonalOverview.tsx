@@ -1,15 +1,18 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Trophy, TrendingUp, TrendingDown, Award, Users } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Award, Users, DollarSign, UserCheck, UserPlus, Share2, Crown, Medal } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Contribution } from '@/types';
+import { Contribution, ContributionMetrics } from '@/types';
 import { formatNumber, formatPercentage } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
 interface PersonalOverviewProps {
   contribution: Contribution;
+  contributionMetrics?: ContributionMetrics;
+  staffName?: string;
+  brand?: string;
 }
 
 const levelColors = {
@@ -26,9 +29,59 @@ const levelIcons = {
   Platinum: '💎',
 };
 
-export function PersonalOverview({ contribution }: PersonalOverviewProps) {
+const metricConfig = [
+  {
+    key: 'activeMemberContribution' as const,
+    label: 'Active Member',
+    icon: Users,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/20',
+  },
+  {
+    key: 'depositAmountContribution' as const,
+    label: 'Deposit Amount',
+    icon: DollarSign,
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/10',
+    borderColor: 'border-green-500/20',
+  },
+  {
+    key: 'retentionContribution' as const,
+    label: 'Retention',
+    icon: UserCheck,
+    color: 'text-yellow-400',
+    bgColor: 'bg-yellow-500/10',
+    borderColor: 'border-yellow-500/20',
+  },
+  {
+    key: 'reactivationContribution' as const,
+    label: 'Reactivation',
+    icon: UserPlus,
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/20',
+  },
+  {
+    key: 'recommendContribution' as const,
+    label: 'Recommend',
+    icon: Share2,
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10',
+    borderColor: 'border-cyan-500/20',
+  },
+];
+
+export function PersonalOverview({ contribution, contributionMetrics, staffName, brand }: PersonalOverviewProps) {
   const [displayScore, setDisplayScore] = useState(0);
   const [displayRanking, setDisplayRanking] = useState(0);
+
+  const getRankIcon = (rank: number) => {
+    if (rank === 1) return <Crown className="w-5 h-5 text-yellow-400" />;
+    if (rank === 2) return <Medal className="w-5 h-5 text-gray-300" />;
+    if (rank === 3) return <Medal className="w-5 h-5 text-amber-600" />;
+    return <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />;
+  };
 
   useEffect(() => {
     // Animate score count-up
@@ -78,77 +131,157 @@ export function PersonalOverview({ contribution }: PersonalOverviewProps) {
       className="w-full"
       style={{ minWidth: 0, maxWidth: '100%' }}
     >
+      {/* Title Outside Card - Centered */}
+      <div className="flex items-center justify-center gap-3 mb-4">
+        <Trophy className="w-6 h-6 text-primary" />
+        <h2 className="text-2xl font-heading font-bold text-foreground-primary">
+          Personal Contribution Overview
+        </h2>
+      </div>
+
       <Card className="relative overflow-hidden group w-full" style={{ maxWidth: '100%' }}>
         <div className="absolute inset-0 card-gradient-overlay personal-overview-gradient transition-opacity" />
         <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur personal-overview-gradient rounded-full blur-3xl" />
         <CardHeader className="relative z-10">
-          <CardTitle className="flex items-center gap-3">
-            <Trophy className="w-6 h-6 text-primary" />
-            Personal Contribution Overview
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            {(staffName || brand) && (
+              <div className="text-2xl font-heading font-bold text-foreground-primary">
+                {staffName}{brand ? ` - ${brand}` : ''}
+              </div>
+            )}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="flex items-center gap-2"
+            >
+              <span className="text-2xl">{levelIcons[contribution.level]}</span>
+              <span className={`text-base font-heading font-bold ${levelColors[contribution.level]}`}>
+                {contribution.level}
+              </span>
+            </motion.div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4 sm:space-y-5 lg:space-y-6 relative z-10">
+        <CardContent className="space-y-4 sm:space-y-5 lg:space-y-6 relative z-10 pt-0">
           {/* Total Score */}
-          <div className="text-center">
+          <div className="text-center -mt-4">
             <motion.div
               key={displayScore}
               initial={{ scale: 1.2, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-6xl font-heading font-bold text-glow-red mb-2"
+              className="text-6xl font-heading font-bold text-glow-red"
             >
               {formatNumber(displayScore)}
             </motion.div>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">Total Contribution Score</p>
           </div>
 
-          {/* Level and Ranking */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Current Level */}
-            <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Current Level</span>
-                <Award className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{levelIcons[contribution.level]}</span>
-                <Badge 
-                  variant="default" 
-                  className={`${levelColors[contribution.level]} bg-primary/30 dark:bg-primary/20 border-primary/60 dark:border-primary/50`}
-                >
-                  {contribution.level}
-                </Badge>
-              </div>
-            </div>
-
+          {/* Level and Ranking - Badge Style */}
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             {/* Current Ranking */}
-            <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Current Ranking</span>
-                <Trophy className="w-5 h-5 text-primary" />
-              </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="flex flex-col items-center gap-2"
+            >
+              {getRankIcon(displayRanking)}
               <motion.div
                 key={displayRanking}
                 initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
-                className="text-2xl font-heading font-bold text-gray-900 dark:text-white"
               >
-                #{displayRanking} / {contribution.totalUsers}
+                <span className="text-base font-heading font-bold text-yellow-600 dark:text-yellow-400">
+                  #{displayRanking} / {contribution.totalUsers}
+                </span>
               </motion.div>
-            </div>
+            </motion.div>
+
+            {/* Separator */}
+            {contribution.rankingWithinSquad && contribution.squadTotalMembers && (
+              <span className="text-2xl text-muted font-light">|</span>
+            )}
 
             {/* Ranking Within Squad */}
             {contribution.rankingWithinSquad && contribution.squadTotalMembers && (
-              <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Ranking in Squad</span>
-                  <Users className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-2xl font-heading font-bold text-gray-900 dark:text-white">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                className="flex flex-col items-center gap-2"
+              >
+                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <span className="text-base font-heading font-bold text-blue-600 dark:text-blue-400">
                   #{contribution.rankingWithinSquad} / {contribution.squadTotalMembers}
-                </div>
-              </div>
+                </span>
+              </motion.div>
             )}
           </div>
+
+          {/* Contribution Metrics - Compact Horizontal Bar */}
+          {contributionMetrics && (
+            <>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <DollarSign className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-heading font-semibold text-foreground-primary">Contribution Metrics</h3>
+              </div>
+              <div className="relative overflow-hidden">
+                {/* Left fade gradient - transparent, matching card background */}
+                <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-[#ffffff] dark:from-background via-[#ffffff]/30 dark:via-background/30 to-transparent z-10 pointer-events-none" />
+                {/* Right fade gradient - transparent, matching card background */}
+                <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#ffffff] dark:from-background via-[#ffffff]/30 dark:via-background/30 to-transparent z-10 pointer-events-none" />
+                <motion.div
+                  className="flex gap-3"
+                  animate={{
+                    x: ['0%', '-44.444%'],
+                  }}
+                  transition={{
+                    x: {
+                      repeat: Infinity,
+                      repeatType: "loop",
+                      duration: 40,
+                      ease: "linear",
+                    },
+                  }}
+                >
+                  {[...metricConfig, ...metricConfig, ...metricConfig].map((config, index) => {
+                    const Icon = config.icon;
+                    const value = contributionMetrics[config.key];
+                    
+                    return (
+                      <div
+                        key={`${config.key}-${index}`}
+                        className={`${config.bgColor} rounded-lg p-3 transition-all hover:scale-[1.02] cursor-pointer flex flex-col items-center justify-center text-center flex-shrink-0`}
+                        style={{ 
+                          width: 'calc((100% - 1.5rem) / 5)',
+                          boxShadow: 'none',
+                          border: '0',
+                          outline: 'none',
+                          borderWidth: '0',
+                          borderStyle: 'none',
+                          borderColor: 'transparent',
+                          borderTopWidth: '0',
+                          borderRightWidth: '0',
+                          borderBottomWidth: '0',
+                          borderLeftWidth: '0'
+                        }}
+                      >
+                        <div className="flex items-center justify-center gap-2 mb-1.5">
+                          <Icon className={`w-3.5 h-3.5 ${config.color} flex-shrink-0`} />
+                          <span className="text-xs text-muted">{config.label}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-1">
+                          <p className={`text-base font-heading font-bold ${config.color}`}>
+                            {formatNumber(value)}
+                          </p>
+                          <span className="text-xs text-muted">pts</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              </div>
+            </>
+          )}
 
           {/* Gap to Next Level */}
           <div className="space-y-2">

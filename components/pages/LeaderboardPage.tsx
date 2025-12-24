@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, User, Crown, Medal, X, TrendingUp, DollarSign, RefreshCw, UserPlus, Repeat, Users, Calendar } from 'lucide-react';
+import { Trophy, User, Crown, Medal, X, TrendingUp, TrendingDown, DollarSign, RefreshCw, UserPlus, Repeat, Users, Calendar, Award, Eye, Pencil, Trash2, UserCircle2, ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FilterButtons } from '@/components/FilterButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LeaderboardEntry, TopPerformer, TimeFilter } from '@/types';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, formatPercentage } from '@/lib/utils';
 
 interface PodiumUser {
   rank: number;
@@ -75,6 +75,95 @@ const mockLeaderboard: LeaderboardEntry[] = [
   },
 ];
 
+interface SquadMember {
+  id: string;
+  name: string;
+  employeeId: string;
+  team: string;
+  role: string;
+  department: string;
+  lines: string[];
+  shift: string;
+  status: string;
+  score: number;
+  rank: number;
+  contribution: number;
+  avatar?: string;
+}
+
+const mockSquadMembers: SquadMember[] = [
+  { 
+    id: '1', 
+    name: 'Alda', 
+    employeeId: 'CSS-018',
+    team: 'CSS → SGD',
+    role: 'E1',
+    department: 'SNR',
+    lines: ['M24SG', 'OK188SG'],
+    shift: 'HQ-C',
+    status: 'Active',
+    score: 26007, 
+    rank: 1, 
+    contribution: 22.4 
+  },
+  { 
+    id: '2', 
+    name: 'Christine', 
+    employeeId: 'SquadA-006',
+    team: 'Squad A',
+    role: 'E1',
+    department: 'Sales Operation',
+    lines: ['ABSG'],
+    shift: 'WFH-B',
+    status: 'Active',
+    score: 24500, 
+    rank: 2, 
+    contribution: 21.1 
+  },
+  { 
+    id: '3', 
+    name: 'Darren', 
+    employeeId: 'SO-11',
+    team: 'Squad A',
+    role: 'E1',
+    department: 'Sales Operation',
+    lines: ['ABSG'],
+    shift: 'SO-11',
+    status: 'Active',
+    score: 23000, 
+    rank: 3, 
+    contribution: 19.8 
+  },
+  { 
+    id: '4', 
+    name: 'Edmund', 
+    employeeId: 'SquadB-014',
+    team: 'Squad B',
+    role: 'E1',
+    department: 'SNR',
+    lines: ['FWSG'],
+    shift: 'WFH-A',
+    status: 'Active',
+    score: 21500, 
+    rank: 4, 
+    contribution: 18.5 
+  },
+  { 
+    id: '5', 
+    name: 'Tom Brown', 
+    employeeId: 'TB-005',
+    team: 'Squad B',
+    role: 'E1',
+    department: 'Sales Operation',
+    lines: ['ABSG', 'FWSG'],
+    shift: 'HQ-C',
+    status: 'Active',
+    score: 20000, 
+    rank: 5, 
+    contribution: 17.2 
+  },
+];
+
 const mockTopPerformers: TopPerformer[] = [
   { rank: 1, name: 'Jolie Joie', value: 500000, category: 'Highest Deposit' },
   { rank: 2, name: 'Brian Ngo', value: 450000, category: 'Highest Deposit' },
@@ -103,7 +192,10 @@ export function LeaderboardPage() {
   const [totalUsers] = useState(23141);
   const [selectedMember, setSelectedMember] = useState<LeaderboardEntry | null>(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<TopPerformer['category']>('Highest Deposit');
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close date picker when clicking outside
   useEffect(() => {
@@ -447,170 +539,513 @@ export function LeaderboardPage() {
         })}
       </div>
 
-      {/* Top Performers by Category */}
+      {/* Top Performers by Category & Ranking & Incentive Module - Side by Side */}
       <div className="mb-12 md:mb-16 lg:mb-20 select-none">
-        <h3 className="text-2xl font-heading font-bold text-foreground-primary mb-6 md:mb-8 text-center">Top Performers by Category</h3>
-        <div className="space-y-4 sm:space-y-6">
-          {/* Row 1: 3 cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers'] as TopPerformer['category'][]).map((category) => {
-              const performers = getTopPerformersByCategory(category);
-              return (
-                <Card key={category} className="bg-card-glass h-full">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base font-heading">
-                      {getCategoryIcon(category)}
-                      {category}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {performers.map((performer, idx) => (
-                      <div
-                        key={`${category}-${performer.rank}`}
-                        className="flex items-center justify-between p-3 bg-card-inner rounded-lg border border-card-border hover:bg-primary/5 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {getRankIcon(performer.rank)}
-                          <span className="text-sm font-semibold text-foreground-primary truncate">{performer.name}</span>
-                        </div>
-                        <span className="text-sm font-bold text-primary flex-shrink-0 ml-2">
-                          {category === 'Highest Retention' || category === 'Most Activated Customers' || category === 'Most Referrals' || category === 'Highest Repeat Customers'
-                            ? formatNumber(performer.value)
-                            : `$${formatNumber(performer.value)}`}
-                        </span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Row 2: 2 cards fit to screen 50:50 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {(['Most Referrals', 'Highest Repeat Customers'] as TopPerformer['category'][]).map((category) => {
-              const performers = getTopPerformersByCategory(category);
-              return (
-                <Card key={category} className="bg-card-glass h-full">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base font-heading">
-                      {getCategoryIcon(category)}
-                      {category}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {performers.map((performer, idx) => (
-                      <div
-                        key={`${category}-${performer.rank}`}
-                        className="flex items-center justify-between p-3 bg-card-inner rounded-lg border border-card-border hover:bg-primary/5 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {getRankIcon(performer.rank)}
-                          <span className="text-sm font-semibold text-foreground-primary truncate">{performer.name}</span>
-                        </div>
-                        <span className="text-sm font-bold text-primary flex-shrink-0 ml-2">
-                          {category === 'Highest Retention' || category === 'Most Activated Customers' || category === 'Most Referrals' || category === 'Highest Repeat Customers'
-                            ? formatNumber(performer.value)
-                            : `$${formatNumber(performer.value)}`}
-                        </span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Leaderboard Table */}
-      <div className="space-y-4 select-none">
-        <h3 className="text-2xl font-heading font-bold text-foreground-primary text-center">Ranking & Incentive Module</h3>
-        <Card className="bg-card-glass">
-          <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-card-border">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Rank</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
-                      Member/Brand
-                    </th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-muted">Score</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
-                      Category Tops
-                    </th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockLeaderboard.map((entry, index) => (
-                  <motion.tr
-                    key={entry.rank}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={`border-b border-card-border hover:bg-primary/5 transition-colors cursor-pointer select-none ${
-                      entry.isCurrentUser ? 'bg-primary/10' : ''
-                    }`}
-                  >
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-2">
-                        {getRankIcon(entry.rank)}
-                        <span className="font-heading font-bold text-foreground-primary">#{entry.rank}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Top Performers by Category - Left */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-heading font-bold text-foreground-primary text-center">
+              Top Performers by Category
+            </h3>
+            <motion.div
+              key={selectedCategory}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="bg-card-glass h-full">
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    {/* Category Slicer Dropdown */}
+                    <div className="relative w-full sm:w-auto" ref={categoryDropdownRef}>
                       <button
-                        onClick={() => handleMemberClick(entry)}
-                        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                        onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                        className="flex items-center gap-2 px-4 py-2 bg-card-inner border border-card-border rounded-lg text-foreground-primary hover:bg-primary/10 transition-colors w-full sm:min-w-[200px] justify-between"
                       >
-                        <span
-                          className={`font-semibold ${
-                            entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'
+                        <div className="flex items-center gap-2">
+                          {getCategoryIcon(selectedCategory)}
+                          <span className="text-sm font-semibold">{selectedCategory}</span>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {isCategoryDropdownOpen && (
+                        <div className="absolute top-full left-0 right-0 sm:right-auto sm:left-auto sm:min-w-[200px] mt-2 bg-card-inner border border-card-border rounded-lg shadow-lg z-50 overflow-hidden">
+                          {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Highest Repeat Customers'] as TopPerformer['category'][]).map((category) => {
+                            const Icon = getCategoryIcon(category);
+                            return (
+                              <button
+                                key={category}
+                                onClick={() => {
+                                  setSelectedCategory(category);
+                                  setIsCategoryDropdownOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-primary/10 transition-colors text-foreground-primary ${
+                                  selectedCategory === category ? 'bg-primary/10' : ''
+                                }`}
+                              >
+                                {Icon}
+                                <span className="text-sm font-medium">{category}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
+                      {getCategoryIcon(selectedCategory)}
+                      <span className="text-base font-heading font-semibold text-foreground-primary">{selectedCategory}</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {getTopPerformersByCategory(selectedCategory).map((performer) => (
+                    <div
+                      key={`${selectedCategory}-${performer.rank}`}
+                      className="flex items-center justify-between p-3 bg-card-inner rounded-lg border border-card-border hover:bg-primary/5 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {getRankIcon(performer.rank)}
+                        <span className="text-sm font-semibold text-foreground-primary truncate">{performer.name}</span>
+                      </div>
+                      <span className="text-sm font-bold text-primary flex-shrink-0 ml-2">
+                        {selectedCategory === 'Highest Retention' || selectedCategory === 'Most Activated Customers' || selectedCategory === 'Most Referrals' || selectedCategory === 'Highest Repeat Customers'
+                          ? formatNumber(performer.value)
+                          : `$${formatNumber(performer.value)}`}
+                      </span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Ranking & Incentive Module - Right */}
+          <div className="space-y-4">
+            <h3 className="text-xl font-heading font-bold text-foreground-primary text-center">
+              Ranking & Incentive Module
+            </h3>
+            <Card className="bg-card-glass h-full">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-card-border">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Rank</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
+                          Member/Brand
+                        </th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-muted">Score</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
+                          Category Tops
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mockLeaderboard.map((entry, index) => (
+                        <motion.tr
+                          key={entry.rank}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          className={`border-b border-card-border hover:bg-primary/5 transition-colors cursor-pointer select-none ${
+                            entry.isCurrentUser ? 'bg-primary/10' : ''
                           }`}
                         >
-                          {entry.name}
-                        </span>
-                        {entry.isCurrentUser && (
-                          <Badge variant="default" className="text-xs">
-                            You
-                          </Badge>
-                        )}
-                      </button>
-                    </td>
-                    <td className="py-4 px-4 text-right">
-                      <span className="font-heading font-bold text-foreground-primary">
-                        {formatNumber(entry.score)}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex flex-wrap gap-2">
-                        {entry.categoryTops.length > 0 ? (
-                          entry.categoryTops.map((category, idx) => (
-                            <Badge key={idx} variant={"outline" as const} className="text-xs">
-                              {category}
-                            </Badge>
-                          ))
-                        ) : (
-                          <span className="text-muted text-sm">-</span>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-2">
+                              {getRankIcon(entry.rank)}
+                              <span className="font-heading font-bold text-foreground-primary">#{entry.rank}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <button
+                              onClick={() => handleMemberClick(entry)}
+                              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                            >
+                              <span
+                                className={`font-semibold ${
+                                  entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'
+                                }`}
+                              >
+                                {entry.name}
+                              </span>
+                              {entry.isCurrentUser && (
+                                <Badge variant="default" className="text-xs">
+                                  You
+                                </Badge>
+                              )}
+                            </button>
+                          </td>
+                          <td className="py-4 px-4 text-right">
+                            <span className="font-heading font-bold text-foreground-primary">
+                              {formatNumber(entry.score)}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex flex-wrap gap-2">
+                              {entry.categoryTops.length > 0 ? (
+                                entry.categoryTops.map((category, idx) => (
+                                  <Badge key={idx} variant={"outline" as const} className="text-xs">
+                                    {category}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span className="text-muted text-sm">-</span>
+                              )}
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        </div>
       </div>
 
       {/* Squad Performance Report Table */}
-      <div className="space-y-4 select-none">
-        <div className="flex items-center justify-center gap-3">
+      <div className="space-y-4 select-none pt-8 md:pt-12 lg:pt-16">
+        <div className="flex items-center justify-center gap-3 mb-6">
           <Trophy className="w-6 h-6 text-primary" />
           <h3 className="text-2xl font-heading font-bold text-foreground-primary">Squad Performance Report</h3>
         </div>
+      </div>
+
+      {/* Squad Comparison Report Section - From Reports Page */}
+      <div className="space-y-6 select-none">
+        {/* Leading Squad Result - Top */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full"
+        >
+          <Card className="relative overflow-hidden group">
+            <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+            <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+            <CardContent className="relative z-10 p-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-dark shadow-lg flex items-center justify-center">
+                    <Trophy className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted mb-1">Current Leader</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      Squad B is Leading
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-sm text-muted mb-1">Lead Amount</div>
+                    <div className="text-3xl font-heading font-bold text-blue-400">
+                      +$133,716.84
+                    </div>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-blue-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Squad Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {/* Squad A Card */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card className="relative overflow-hidden group w-full h-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl font-heading font-bold text-primary">SQUAD A</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">Net Profit</div>
+                    <div className="text-2xl font-heading font-bold text-glow-red">
+                      $103,175.24
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">Total Deposit</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      $1,111,197.01
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">Total Active</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      461
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">Status</div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      Behind
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Squad B Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="relative overflow-hidden group w-full h-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl font-heading font-bold text-blue-400">SQUAD B</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">Net Profit</div>
+                    <div className="text-2xl font-heading font-bold text-blue-400">
+                      $237,452.08
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">Total Deposit</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      $1,096,520.76
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">Total Active</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      453
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">Status</div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      Leading
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Squad Details & Top Contributor Section - Combined Design */}
+      <div className="space-y-6 select-none">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Squad A Details & Top Contributor */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card className="relative overflow-hidden group w-full h-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10 border-b border-card-border pb-4">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-heading font-bold text-primary">SQUAD A</div>
+                    <div className="text-xs text-muted">Squad Details & Top Contributor</div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 pt-6">
+                {/* Metrics Section */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">Total Score</span>
+                      <Crown className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-glow-red">
+                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').reduce((sum, member) => sum + member.score, 0))}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-3 h-3 text-green-400" />
+                      <span className="text-xs text-green-400 font-semibold">+12.5%</span>
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">Avg Score</span>
+                      <TrendingUp className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').reduce((sum, member) => sum + member.score, 0) / mockSquadMembers.filter(m => m.team === 'Squad A').length || 1)}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <ArrowUpRight className="w-3 h-3 text-green-400" />
+                      <span className="text-xs text-green-400 font-semibold">+8.3%</span>
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">Members</span>
+                      <UserPlus className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {mockSquadMembers.filter(m => m.team === 'Squad A').length}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <UserPlus className="w-3 h-3 text-blue-400" />
+                      <span className="text-xs text-blue-400 font-semibold">Active</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Contributor Section */}
+                <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Award className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-semibold text-foreground-primary">Top Contributor</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center gap-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg">
+                      <Crown className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="w-full">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <h3 className="text-xl font-heading font-bold text-foreground-primary">
+                          {mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.name || 'N/A'}
+                        </h3>
+                        <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
+                          #1
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted mb-2">
+                        Contribution: {formatPercentage(mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.contribution || 0)}
+                      </p>
+                      <p className="text-2xl font-heading font-bold text-glow-red">
+                        {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.score || 0)} pts
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Squad B Details & Top Contributor */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="relative overflow-hidden group w-full h-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10 border-b border-card-border pb-4">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-heading font-bold text-blue-400">SQUAD B</div>
+                    <div className="text-xs text-muted">Squad Details & Top Contributor</div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 pt-6">
+                {/* Metrics Section */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">Total Score</span>
+                      <Crown className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-blue-400">
+                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').reduce((sum, member) => sum + member.score, 0))}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-3 h-3 text-green-400" />
+                      <span className="text-xs text-green-400 font-semibold">+15.2%</span>
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">Avg Score</span>
+                      <TrendingUp className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').reduce((sum, member) => sum + member.score, 0) / mockSquadMembers.filter(m => m.team === 'Squad B').length || 1)}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <ArrowUpRight className="w-3 h-3 text-green-400" />
+                      <span className="text-xs text-green-400 font-semibold">+10.7%</span>
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">Members</span>
+                      <UserPlus className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {mockSquadMembers.filter(m => m.team === 'Squad B').length}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <UserPlus className="w-3 h-3 text-blue-400" />
+                      <span className="text-xs text-blue-400 font-semibold">Active</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Contributor Section */}
+                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl p-6 border border-blue-500/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Award className="w-5 h-5 text-blue-400" />
+                    <span className="text-sm font-semibold text-foreground-primary">Top Contributor</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center gap-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                      <Crown className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="w-full">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <h3 className="text-xl font-heading font-bold text-foreground-primary">
+                          {mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.name || 'N/A'}
+                        </h3>
+                        <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
+                          #1
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted mb-2">
+                        Contribution: {formatPercentage(mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.contribution || 0)}
+                      </p>
+                      <p className="text-2xl font-heading font-bold text-blue-400">
+                        {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.score || 0)} pts
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Squad Performance Report Table */}
+      <div className="space-y-4 select-none mt-12 md:mt-16 lg:mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* SQUAD A Table */}
           <Card className="bg-card-glass border border-card-border shadow-lg">
@@ -989,7 +1424,210 @@ export function LeaderboardPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
+
+      {/* Detailed Squad Comparison Tables */}
+      <div className="space-y-4 select-none mt-12 md:mt-16 lg:mt-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Squad A Detailed Table */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-full"
+          >
+            <Card className="relative overflow-hidden group w-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl font-heading font-bold text-primary">SQUAD A - Detailed Metrics</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-blue-200 dark:bg-blue-900/30">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          Metric
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          ABSG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          FWSG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          OXSG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
+                          Total Count
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { metric: 'Total Deposit', values: [361243.39, 443894.57, 306059.05], total: 1111197.01 },
+                        { metric: 'Total Withdraw', values: [324619.97, 391153.62, 291688.18], total: 1007461.77 },
+                        { metric: 'Total Case', values: [4332, 3510, 3337], total: 11179 },
+                        { metric: 'Total Active', values: [202, 124, 135], total: 461 },
+                        { metric: 'Retention', values: [131, 85, 107], total: 323 },
+                        { metric: 'Reactivation', values: [38, 32, 15], total: 85 },
+                        { metric: 'Recommend', values: [12, 3, 1], total: 16 },
+                        { metric: 'Gross Profit', values: [36623.42, 52740.95, 14370.87], total: 103735.24 },
+                        { metric: 'Net Profit', values: [36623.42, 52360.95, 14190.87], total: 103175.24, isNetProfit: true },
+                      ].map((row, rowIndex) => (
+                        <motion.tr
+                          key={rowIndex}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: rowIndex * 0.05 }}
+                          className={`border-b border-card-border ${
+                            row.isNetProfit
+                              ? 'bg-yellow-100 dark:bg-yellow-900/20 font-bold'
+                              : 'hover:bg-primary/5'
+                          } transition-colors`}
+                        >
+                          <td
+                            className={`py-3 px-4 text-sm font-semibold border-r border-card-border ${
+                              row.isNetProfit
+                                ? 'text-gray-900 dark:text-white'
+                                : 'text-foreground-primary'
+                            }`}
+                          >
+                            {row.metric}
+                          </td>
+                          {row.values.map((value, colIndex) => (
+                            <td
+                              key={colIndex}
+                              className={`text-center py-3 px-4 text-sm border-r border-card-border ${
+                                row.isNetProfit
+                                  ? 'text-gray-900 dark:text-white font-bold'
+                                  : 'text-foreground-primary'
+                              }`}
+                            >
+                              {row.metric === 'Net Profit' ? `$${formatNumber(value)}` : formatNumber(value)}
+                            </td>
+                          ))}
+                          <td
+                            className={`text-center py-3 px-4 text-sm font-semibold ${
+                              row.isNetProfit
+                                ? 'text-gray-900 dark:text-white font-bold'
+                                : 'text-foreground-primary'
+                            }`}
+                          >
+                            {row.metric === 'Net Profit' ? `$${formatNumber(row.total)}` : formatNumber(row.total)}
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Squad B Detailed Table */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="w-full"
+          >
+            <Card className="relative overflow-hidden group w-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl font-heading font-bold text-blue-400">SQUAD B - Detailed Metrics</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-blue-200 dark:bg-blue-900/30">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          Metric
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          WBSG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          M24SG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          OK188SG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
+                          Total Count
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { metric: 'Total Deposit', values: [369393.79, 409839.28, 317287.69], total: 1096520.76 },
+                        { metric: 'Total Withdraw', values: [311375.1, 283258.1, 262918.41], total: 857551.61 },
+                        { metric: 'Total Case', values: [3636, 3796, 4105], total: 11537 },
+                        { metric: 'Total Active', values: [125, 176, 152], total: 453 },
+                        { metric: 'Retention', values: [94, 126, 114], total: 334 },
+                        { metric: 'Reactivation', values: [17, 32, 22], total: 71 },
+                        { metric: 'Recommend', values: [2, 9, 6], total: 17 },
+                        { metric: 'Gross Profit', values: [58018.69, 126581.18, 54369.28], total: 238969.15 },
+                        { metric: 'Net Profit', values: [57519.62, 126516.68, 53415.78], total: 237452.08, isNetProfit: true },
+                      ].map((row, rowIndex) => (
+                        <motion.tr
+                          key={rowIndex}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: rowIndex * 0.05 }}
+                          className={`border-b border-card-border ${
+                            row.isNetProfit
+                              ? 'bg-yellow-100 dark:bg-yellow-900/20 font-bold'
+                              : 'hover:bg-primary/5'
+                          } transition-colors`}
+                        >
+                          <td
+                            className={`py-3 px-4 text-sm font-semibold border-r border-card-border ${
+                              row.isNetProfit
+                                ? 'text-gray-900 dark:text-white'
+                                : 'text-foreground-primary'
+                            }`}
+                          >
+                            {row.metric}
+                          </td>
+                          {row.values.map((value, colIndex) => (
+                            <td
+                              key={colIndex}
+                              className={`text-center py-3 px-4 text-sm border-r border-card-border ${
+                                row.isNetProfit
+                                  ? 'text-gray-900 dark:text-white font-bold'
+                                  : 'text-foreground-primary'
+                              }`}
+                            >
+                              {row.metric === 'Net Profit' ? `$${formatNumber(value)}` : formatNumber(value)}
+                            </td>
+                          ))}
+                          <td
+                            className={`text-center py-3 px-4 text-sm font-semibold ${
+                              row.isNetProfit
+                                ? 'text-gray-900 dark:text-white font-bold'
+                                : 'text-foreground-primary'
+                            }`}
+                          >
+                            {row.metric === 'Net Profit' ? `$${formatNumber(row.total)}` : formatNumber(row.total)}
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
       </div>
 
       {/* Member Contribution Summary Modal */}

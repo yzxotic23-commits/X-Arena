@@ -9,8 +9,6 @@ import { Sidebar } from '@/components/Sidebar';
 import { PersonalOverview } from '@/components/PersonalOverview';
 import { BreakdownChart } from '@/components/BreakdownChart';
 import { LeaderboardTable } from '@/components/LeaderboardTable';
-import { BaseMetricsCard } from '@/components/BaseMetricsCard';
-import { ContributionMetricsCard } from '@/components/ContributionMetricsCard';
 import { BehaviorMetricsCard } from '@/components/BehaviorMetricsCard';
 import { SquadInfoCard } from '@/components/SquadInfoCard';
 import { SquadGapChart } from '@/components/SquadGapChart';
@@ -24,14 +22,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { User, ChevronDown, Calendar, X } from 'lucide-react';
 import { TimeFilter } from '@/types';
 import { DashboardData } from '@/types';
-import { SquadPage } from '@/components/pages/SquadPage';
 import { LeaderboardPage } from '@/components/pages/LeaderboardPage';
-import { AnalyticsPage } from '@/components/pages/AnalyticsPage';
 import { TargetsPage } from '@/components/pages/TargetsPage';
-import { ReportsPage } from '@/components/pages/ReportsPage';
 import { SettingsPage } from '@/components/pages/SettingsPage';
 import { ProfilePage } from '@/components/pages/ProfilePage';
 import { CustomerListingPage } from '@/components/pages/CustomerListingPage';
+import { UserManagementPage } from '@/components/pages/UserManagementPage';
+import { NotificationSettingsPage } from '@/components/pages/NotificationSettingsPage';
+import { LanguageSettingsPage } from '@/components/pages/LanguageSettingsPage';
+import { AppearanceSettingsPage } from '@/components/pages/AppearanceSettingsPage';
 import { useAuth } from '@/lib/auth-context';
 import { LandingPage } from '@/components/LandingPage';
 
@@ -45,11 +44,11 @@ const queryClient = new QueryClient({
 });
 
 const mockUsers = [
-  { id: '123', name: 'User 123' },
-  { id: '456', name: 'User 456' },
-  { id: '789', name: 'User 789' },
-  { id: '101', name: 'User 101' },
-  { id: '202', name: 'User 202' },
+  { id: '123', name: 'User 123', staffName: 'Winnie', brand: 'WBSG' },
+  { id: '456', name: 'User 456', staffName: 'Hiew', brand: 'WBSG' },
+  { id: '789', name: 'User 789', staffName: 'Edward', brand: 'M24SG' },
+  { id: '101', name: 'User 101', staffName: 'YongXin', brand: 'M24SG' },
+  { id: '202', name: 'User 202', staffName: 'Zu Er', brand: 'OK188SG' },
 ];
 
 function DashboardContent() {
@@ -351,14 +350,13 @@ function DashboardContent() {
 
               {/* Main Dashboard Grid - DRD Layout */}
               <div className="w-full space-y-4 sm:space-y-6" style={{ maxWidth: '100%' }}>
-                {/* 1. Personal Contribution Overview (Hero card) - Top */}
-                <PersonalOverview contribution={data.personal} />
-
-                {/* 2. KPI Section - Grid Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                  <BaseMetricsCard baseMetrics={data.baseMetrics} />
-                  <ContributionMetricsCard contributionMetrics={data.contributionMetrics} />
-                </div>
+                {/* 1. Personal Contribution Overview (with Contribution Metrics integrated) */}
+                <PersonalOverview 
+                  contribution={data.personal} 
+                  contributionMetrics={data.contributionMetrics}
+                  staffName={mockUsers.find(u => u.id === userId)?.staffName}
+                  brand={mockUsers.find(u => u.id === userId)?.brand}
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-stretch">
                   <SquadInfoCard squad={data.squad} />
@@ -387,13 +385,14 @@ function DashboardContent() {
             </>
           )}
 
-          {!isLimitedAccess && activeMenu === 'squad' && <SquadPage squadName={data?.squad?.squadName} />}
           {activeMenu === 'leaderboard' && <LeaderboardPage />}
-          {!isLimitedAccess && activeMenu === 'analytics' && <AnalyticsPage />}
           {!isLimitedAccess && activeMenu === 'targets' && <TargetsPage />}
-          {!isLimitedAccess && activeMenu === 'reports' && <ReportsPage />}
           {!isLimitedAccess && activeMenu === 'customer-listing' && <CustomerListingPage />}
           {!isLimitedAccess && activeMenu === 'settings' && <SettingsPage />}
+          {!isLimitedAccess && activeMenu === 'user-management' && <UserManagementPage />}
+          {!isLimitedAccess && activeMenu === 'notification-settings' && <NotificationSettingsPage />}
+          {!isLimitedAccess && activeMenu === 'language-settings' && <LanguageSettingsPage />}
+          {!isLimitedAccess && activeMenu === 'appearance-settings' && <AppearanceSettingsPage />}
           {!isLimitedAccess && activeMenu === 'profile' && <ProfilePage />}
         </main>
       </div>
