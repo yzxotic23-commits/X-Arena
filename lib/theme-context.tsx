@@ -32,7 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Apply theme immediately on mount
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
-  }, []);
+  }, [theme]);
 
   useEffect(() => {
     if (mounted) {

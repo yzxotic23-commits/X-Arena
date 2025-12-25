@@ -87,22 +87,35 @@ export function AppearanceSettingsPage() {
   }, [layoutDensity]);
 
   // Handle theme mode change
-  const handleThemeModeChange = (mode: ThemeMode) => {
-    setThemeMode(mode);
-    localStorage.setItem('x-arena-theme-mode', mode);
+  const handleThemeModeChange = (mode: string) => {
+    const themeModeValue = mode as ThemeMode;
+    setThemeMode(themeModeValue);
+    localStorage.setItem('x-arena-theme-mode', themeModeValue);
     
-    if (mode === 'system') {
+    if (themeModeValue === 'system') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark && theme !== 'dark') {
         toggleTheme();
       } else if (!prefersDark && theme !== 'light') {
         toggleTheme();
       }
-    } else if (mode === 'dark' && theme !== 'dark') {
+    } else if (themeModeValue === 'dark' && theme !== 'dark') {
       toggleTheme();
-    } else if (mode === 'light' && theme !== 'light') {
+    } else if (themeModeValue === 'light' && theme !== 'light') {
       toggleTheme();
     }
+  };
+
+  // Handle font size change
+  const handleFontSizeChange = (size: string) => {
+    const fontSizeValue = size as FontSize;
+    setFontSize(fontSizeValue);
+  };
+
+  // Handle layout density change
+  const handleLayoutDensityChange = (density: string) => {
+    const densityValue = density as LayoutDensity;
+    setLayoutDensity(densityValue);
   };
 
   // Listen to system theme changes
@@ -306,21 +319,21 @@ export function AppearanceSettingsPage() {
                 label="Small"
                 description="Compact view"
                 currentValue={fontSize}
-                onChange={setFontSize}
+                onChange={handleFontSizeChange}
               />
               <RadioOption
                 value="medium"
                 label="Medium"
                 description="Default size"
                 currentValue={fontSize}
-                onChange={setFontSize}
+                onChange={handleFontSizeChange}
               />
               <RadioOption
                 value="large"
                 label="Large"
                 description="Easier to read"
                 currentValue={fontSize}
-                onChange={setFontSize}
+                onChange={handleFontSizeChange}
               />
             </div>
           </SettingCard>
@@ -350,21 +363,21 @@ export function AppearanceSettingsPage() {
                 label="Compact"
                 description="More content visible"
                 currentValue={layoutDensity}
-                onChange={setLayoutDensity}
+                onChange={handleLayoutDensityChange}
               />
               <RadioOption
                 value="normal"
                 label="Normal"
                 description="Balanced spacing"
                 currentValue={layoutDensity}
-                onChange={setLayoutDensity}
+                onChange={handleLayoutDensityChange}
               />
               <RadioOption
                 value="comfortable"
                 label="Comfortable"
                 description="More breathing room"
                 currentValue={layoutDensity}
-                onChange={setLayoutDensity}
+                onChange={handleLayoutDensityChange}
               />
             </div>
           </SettingCard>
