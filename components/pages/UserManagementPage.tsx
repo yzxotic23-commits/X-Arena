@@ -112,25 +112,21 @@ export function UserManagementPage() {
 
   return (
     <div className="w-full space-y-6">
+      {/* Add User Button - Outside Card */}
+      <div className="flex items-center justify-end">
+        <Button
+          variant="default"
+          onClick={() => setShowAddUserModal(true)}
+          className="flex items-center gap-2"
+        >
+          <UserPlus className="w-4 h-4" />
+          Add User
+        </Button>
+      </div>
+
       <Card className="relative overflow-hidden group">
         <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
         <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-        <CardHeader className="relative z-10">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-primary" />
-              User Management
-            </CardTitle>
-            <Button
-              variant="default"
-              onClick={() => setShowAddUserModal(true)}
-              className="flex items-center gap-2"
-            >
-              <UserPlus className="w-4 h-4" />
-              Add User
-            </Button>
-          </div>
-        </CardHeader>
         <CardContent className="relative z-10">
           {/* Users List Table */}
           <div className="overflow-x-auto">

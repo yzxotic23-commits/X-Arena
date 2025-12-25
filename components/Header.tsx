@@ -1,18 +1,57 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X } from 'lucide-react';
+import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X, Trophy, TrendingUp, Users, Zap, List, Settings, Database, Shield, Target, UserPlus, Palette, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 interface HeaderProps {
   hideBorder?: boolean; // Hide border bottom for specific pages
   showGreeting?: boolean; // Show greeting message in header
   userName?: string; // User name for greeting
+  showLeaderboardHeader?: boolean; // Show leaderboard gaming header
+  leaderboardData?: {
+    userRank?: number;
+    totalParticipants?: number;
+    userScore?: number;
+  };
+  showCustomerListingHeader?: boolean; // Show customer listing gaming header
+  customerListingData?: {
+    totalCustomers?: number;
+    activeTab?: string;
+  };
+  showSettingsHeader?: boolean; // Show settings gaming header
+  showTargetsHeader?: boolean; // Show targets gaming header
+  targetsData?: {
+    totalTargets?: number;
+    completedTargets?: number;
+    onTrackTargets?: number;
+  };
+  showUserManagementHeader?: boolean; // Show user management gaming header
+  userManagementData?: {
+    totalUsers?: number;
+    activeUsers?: number;
+  };
+  showAppearanceHeader?: boolean; // Show appearance gaming header
 }
 
-export function Header({ hideBorder = false, showGreeting = false, userName = 'Jane Copper' }: HeaderProps) {
+export function Header({ 
+  hideBorder = false, 
+  showGreeting = false, 
+  userName = 'Jane Copper', 
+  showLeaderboardHeader = false, 
+  leaderboardData,
+  showCustomerListingHeader = false,
+  customerListingData,
+  showSettingsHeader = false,
+  showTargetsHeader = false,
+  targetsData,
+  showUserManagementHeader = false,
+  userManagementData,
+  showAppearanceHeader = false
+}: HeaderProps) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -66,13 +105,212 @@ export function Header({ hideBorder = false, showGreeting = false, userName = 'J
 
   return (
     <header className={`w-full sticky top-0 z-50 transition-all ${hideBorder ? 'bg-background' : 'bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 backdrop-blur-md border-b-2 border-primary/40 shadow-md dark:shadow-glow-red/20'}`}>
-      <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
+      <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
         <div className="w-full flex flex-col md:flex-row items-start md:items-center gap-4">
           {/* Greeting Message - Left side */}
           {showGreeting && (
             <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground-primary flex-1">
               {getGreeting()}, <span className="text-primary">{userName}</span>!
             </h2>
+          )}
+
+          {/* Leaderboard Header - Left side */}
+          {showLeaderboardHeader && (
+            <div className="flex-1 flex items-center gap-3 sm:gap-4">
+              {/* Trophy Icon with Glow Animation */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
+                <Trophy className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+              </motion.div>
+
+              {/* Title Only */}
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
+                Leaderboard
+              </h2>
+            </div>
+          )}
+
+          {/* Customer Listing Gaming Header - Left side */}
+          {showCustomerListingHeader && (
+            <div className="flex-1 flex items-center gap-3 sm:gap-4">
+              {/* Database Icon with Glow Animation */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotateY: [0, 15, -15, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
+                <Database className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+              </motion.div>
+
+              {/* Title Only */}
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
+                Customer Listing
+              </h2>
+            </div>
+          )}
+
+          {/* Settings Gaming Header - Left side */}
+          {showSettingsHeader && (
+            <div className="flex-1 flex items-center gap-4 sm:gap-6">
+              {/* Settings Icon with Glow Animation */}
+              <motion.div
+                animate={{
+                  rotate: [0, 90, 180, 270, 360],
+                }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
+                <Settings className="relative w-8 h-8 sm:w-10 sm:h-10 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+              </motion.div>
+
+              {/* Title and Stats */}
+              <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                {/* Title */}
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-black text-transparent bg-clip-text bg-gradient-to-r from-primary via-red-500 to-primary animate-gradient-text bg-[length:200%_auto]">
+                    SETTINGS
+                  </h2>
+                  <motion.div
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="hidden sm:block"
+                  >
+                    <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  </motion.div>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                  {/* Configuration Message */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 backdrop-blur-sm"
+                  >
+                    <span className="text-xs sm:text-sm font-semibold text-foreground-primary">
+                      <span className="text-primary font-black">Configure</span> System
+                    </span>
+                  </motion.div>
+
+                  {/* Control Message */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary/20 to-red-500/20 border border-primary/30 backdrop-blur-sm"
+                  >
+                    <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                      Full Control
+                    </span>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Targets Header - Left side */}
+          {showTargetsHeader && (
+            <div className="flex-1 flex items-center gap-3 sm:gap-4">
+              {/* Target Icon with Glow Animation */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  y: [0, -5, 0],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
+                <Target className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+              </motion.div>
+
+              {/* Title Only */}
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
+                Targets
+              </h2>
+            </div>
+          )}
+
+          {/* User Management Header - Left side */}
+          {showUserManagementHeader && (
+            <div className="flex-1 flex items-center gap-3 sm:gap-4">
+              {/* UserPlus Icon with Glow Animation */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 10, -10, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="relative flex-shrink-0"
+              >
+                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
+                <UserPlus className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+              </motion.div>
+
+              {/* Title Only */}
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary whitespace-nowrap">
+                User Management
+              </h2>
+            </div>
+          )}
+
+          {/* Appearance Header - Left side */}
+          {showAppearanceHeader && (
+            <div className="flex-1 flex items-center gap-3 sm:gap-4">
+              {/* Palette Icon with Glow Animation */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  rotate: [0, -15, 15, 0],
+                }}
+                transition={{
+                  duration: 3.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
+                <Palette className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+              </motion.div>
+
+              {/* Title Only */}
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
+                Appearance
+              </h2>
+            </div>
           )}
           
           {/* Account Information Section - Right side */}

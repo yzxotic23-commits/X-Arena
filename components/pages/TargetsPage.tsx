@@ -191,10 +191,6 @@ export function TargetsPage() {
         <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
         <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
         <CardHeader className="relative z-10">
-          <CardTitle className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            Overall Target Progress
-          </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10">
           <div className="flex flex-col md:flex-row items-center justify-center gap-8">

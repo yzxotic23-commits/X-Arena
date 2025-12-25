@@ -28,8 +28,6 @@ import { SettingsPage } from '@/components/pages/SettingsPage';
 import { ProfilePage } from '@/components/pages/ProfilePage';
 import { CustomerListingPage } from '@/components/pages/CustomerListingPage';
 import { UserManagementPage } from '@/components/pages/UserManagementPage';
-import { NotificationSettingsPage } from '@/components/pages/NotificationSettingsPage';
-import { LanguageSettingsPage } from '@/components/pages/LanguageSettingsPage';
 import { AppearanceSettingsPage } from '@/components/pages/AppearanceSettingsPage';
 import { useAuth } from '@/lib/auth-context';
 import { LandingPage } from '@/components/LandingPage';
@@ -187,7 +185,35 @@ function DashboardContent() {
       />
       
       <div className={isSidebarCollapsed ? "flex-1 lg:ml-20" : "flex-1 lg:ml-64"} style={{ minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <Header hideBorder={activeMenu === 'dashboard'} showGreeting={activeMenu === 'dashboard'} userName="Jane Copper" />
+        <Header 
+          hideBorder={activeMenu === 'dashboard'} 
+          showGreeting={activeMenu === 'dashboard'} 
+          userName="Jane Copper"
+          showLeaderboardHeader={activeMenu === 'leaderboard'}
+          leaderboardData={activeMenu === 'leaderboard' ? {
+            userRank: 61,
+            totalParticipants: 23141,
+            userScore: 26007
+          } : undefined}
+          showCustomerListingHeader={activeMenu === 'customer-listing'}
+          customerListingData={activeMenu === 'customer-listing' ? {
+            totalCustomers: 1250,
+            activeTab: 'reactivation'
+          } : undefined}
+          showSettingsHeader={activeMenu === 'settings'}
+          showTargetsHeader={activeMenu === 'targets'}
+          targetsData={activeMenu === 'targets' ? {
+            totalTargets: 5,
+            completedTargets: 2,
+            onTrackTargets: 2
+          } : undefined}
+          showUserManagementHeader={activeMenu === 'user-management'}
+          userManagementData={activeMenu === 'user-management' ? {
+            totalUsers: 15,
+            activeUsers: 12
+          } : undefined}
+          showAppearanceHeader={activeMenu === 'appearance-settings'}
+        />
 
         <main className="flex-1 w-full mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 overflow-y-auto" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
           {/* Conditional Rendering based on activeMenu */}
@@ -390,8 +416,6 @@ function DashboardContent() {
           {!isLimitedAccess && activeMenu === 'customer-listing' && <CustomerListingPage />}
           {!isLimitedAccess && activeMenu === 'settings' && <SettingsPage />}
           {!isLimitedAccess && activeMenu === 'user-management' && <UserManagementPage />}
-          {!isLimitedAccess && activeMenu === 'notification-settings' && <NotificationSettingsPage />}
-          {!isLimitedAccess && activeMenu === 'language-settings' && <LanguageSettingsPage />}
           {!isLimitedAccess && activeMenu === 'appearance-settings' && <AppearanceSettingsPage />}
           {!isLimitedAccess && activeMenu === 'profile' && <ProfilePage />}
         </main>

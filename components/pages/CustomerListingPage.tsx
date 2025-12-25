@@ -175,40 +175,43 @@ export function CustomerListingPage() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-heading font-bold text-foreground-primary">Customer Listing</h2>
-          <p className="text-muted mt-1">Manage and view all customer information</p>
+      {/* Tabs - Center with Frameless Style (like Date Slicer) */}
+      <div className="flex flex-col items-center mb-6 select-none">
+        <div className="inline-flex items-center gap-1">
+          <button
+            onClick={() => setActiveTab('reactivation')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
+              activeTab === 'reactivation'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-foreground-primary hover:bg-primary/10'
+            }`}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Reactivation
+          </button>
+          <button
+            onClick={() => setActiveTab('retention')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
+              activeTab === 'retention'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-foreground-primary hover:bg-primary/10'
+            }`}
+          >
+            <Repeat className="w-3.5 h-3.5" />
+            Retention
+          </button>
+          <button
+            onClick={() => setActiveTab('recommend')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
+              activeTab === 'recommend'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-foreground-primary hover:bg-primary/10'
+            }`}
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            Recommend
+          </button>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          variant={activeTab === 'reactivation' ? 'default' : 'outline'}
-          onClick={() => setActiveTab('reactivation')}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Reactivation
-        </Button>
-        <Button
-          variant={activeTab === 'retention' ? 'default' : 'outline'}
-          onClick={() => setActiveTab('retention')}
-          className="flex items-center gap-2"
-        >
-          <Repeat className="w-4 h-4" />
-          Retention
-        </Button>
-        <Button
-          variant={activeTab === 'recommend' ? 'default' : 'outline'}
-          onClick={() => setActiveTab('recommend')}
-          className="flex items-center gap-2"
-        >
-          <UserPlus className="w-4 h-4" />
-          Recommend
-        </Button>
       </div>
 
       {/* Customer Table */}
