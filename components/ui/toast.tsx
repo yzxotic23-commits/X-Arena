@@ -29,20 +29,20 @@ const toastIcons = {
 const getToastStyles = (isDark: boolean) => ({
   success: {
     bg: isDark 
-      ? 'bg-gradient-to-r from-primary/30 to-primary/20 dark:from-primary/40 dark:to-primary/30'
-      : 'bg-gradient-to-r from-primary/20 to-primary/10',
+      ? 'bg-gradient-to-r from-green-600/25 to-green-500/15 dark:from-green-600/30 dark:to-green-500/20'
+      : 'bg-gradient-to-r from-green-500/15 to-green-400/10',
     border: isDark
-      ? 'border-primary/60 dark:border-primary/70'
-      : 'border-primary/50',
+      ? 'border-green-500/50 dark:border-green-500/60'
+      : 'border-green-500/40',
     icon: isDark
-      ? 'text-primary dark:text-primary'
-      : 'text-primary',
+      ? 'text-green-400 dark:text-green-300'
+      : 'text-green-600',
     text: isDark
       ? 'text-white dark:text-white'
-      : 'text-gray-900',
+      : 'text-gray-800',
     glow: isDark
-      ? 'shadow-[0_0_20px_rgba(220,38,38,0.4)] dark:shadow-[0_0_20px_rgba(220,38,38,0.5)]'
-      : 'shadow-[0_0_20px_rgba(220,38,38,0.3)]',
+      ? 'shadow-[0_0_20px_rgba(34,197,94,0.3)] dark:shadow-[0_0_20px_rgba(34,197,94,0.4)]'
+      : 'shadow-[0_0_15px_rgba(34,197,94,0.2)]',
   },
   error: {
     bg: isDark
@@ -161,7 +161,13 @@ export function ToastItem({ toast, onClose }: ToastProps) {
           initial={{ width: '100%' }}
           animate={{ width: '0%' }}
           transition={{ duration: duration / 1000, ease: 'linear' }}
-          className={`h-full ${style.bg.replace('/20', '/60').replace('/30', '/70').replace('/40', '/80')}`}
+          className={`h-full ${
+            toast.type === 'success'
+              ? isDark
+                ? 'bg-green-500/60'
+                : 'bg-green-500/50'
+              : style.bg.replace('/20', '/60').replace('/30', '/70').replace('/40', '/80').replace('/25', '/60').replace('/15', '/50')
+          }`}
         />
       </div>
     </motion.div>
