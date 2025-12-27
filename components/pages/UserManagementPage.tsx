@@ -73,7 +73,7 @@ export function UserManagementPage() {
       alert('Passwords do not match!');
       return;
     }
-    // Add new user to list
+    // Add new user to list using functional update to ensure state is updated correctly
     const newUser: User = {
       id: Date.now().toString(),
       fullName: newAccount.fullName,
@@ -83,7 +83,7 @@ export function UserManagementPage() {
       status: 'active',
       createdAt: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
     };
-    setUsers([...users, newUser]);
+    setUsers((prevUsers) => [...prevUsers, newUser]);
     // Reset form
     setNewAccount({
       username: '',

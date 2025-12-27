@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ export function BrandPage() {
     createdAt: row?.created_at,
   });
 
-  const fetchBrands = async (withLoading = false) => {
+  const fetchBrands = useCallback(async (withLoading = false) => {
     setError(null);
     if (withLoading) setLoading(true); else setRefreshing(true);
 
@@ -61,11 +61,11 @@ export function BrandPage() {
     }
 
     if (withLoading) setLoading(false); else setRefreshing(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchBrands(true);
-  }, []);
+  }, [fetchBrands]);
 
   const handleAddBrand = async (e: React.FormEvent) => {
     e.preventDefault();
