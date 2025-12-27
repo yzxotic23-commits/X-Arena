@@ -1,10 +1,11 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, X, Edit, Trash2 } from 'lucide-react';
+import { UserPlus, X, Edit, Trash2, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase-client';
 
 interface User {
   id: string;
@@ -18,37 +19,11 @@ interface User {
 
 export function UserManagementPage() {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
-  
-  // Mock users data
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      fullName: 'Jane Copper',
-      username: 'jane.copper',
-      email: 'jane.copper@example.com',
-      role: 'Administrator',
-      status: 'active',
-      createdAt: 'Oct 2025',
-    },
-    {
-      id: '2',
-      fullName: 'John Doe',
-      username: 'john.doe',
-      email: 'john.doe@example.com',
-      role: 'Viewer',
-      status: 'active',
-      createdAt: 'Nov 2025',
-    },
-    {
-      id: '3',
-      fullName: 'Alice Smith',
-      username: 'alice.smith',
-      email: 'alice.smith@example.com',
-      role: 'Manager',
-      status: 'active',
-      createdAt: 'Dec 2025',
-    },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   
   // Form state for Add Account
   const [newAccount, setNewAccount] = useState({
@@ -60,6 +35,42 @@ export function UserManagementPage() {
     fullName: '',
   });
 
+  const mapRow = (row: any): User => ({
+    id: row?.id?.toString() ?? crypto.randomUUID(),
+    fullName: row?.full_name ?? row?.fullName ?? 'Unknown',
+    username: row?.username ?? 'Unknown',
+    email: row?.email ?? '',
+    role: row?.role ?? 'Viewer',
+    status: row?.status === 'inactive' ? 'inactive' : 'active',
+    createdAt: row?.created_at 
+      ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      : 'Unknown',
+  });
+
+  const fetchUsers = useCallback(async (withLoading = false) => {
+    setError(null);
+    if (withLoading) setLoading(true); else setRefreshing(true);
+
+    const { data, error } = await supabase
+      .from('users_management')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch users', error);
+      setError(error.message);
+      setUsers([]);
+    } else {
+      setUsers((data ?? []).map(mapRow));
+    }
+
+    if (withLoading) setLoading(false); else setRefreshing(false);
+  }, []);
+
+  useEffect(() => {
+    fetchUsers(true);
+  }, [fetchUsers]);
+
   const handleAccountInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setNewAccount({
       ...newAccount,
@@ -67,34 +78,50 @@ export function UserManagementPage() {
     });
   };
 
-  const handleAddAccount = (e: React.FormEvent) => {
+  const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newAccount.password !== newAccount.confirmPassword) {
       alert('Passwords do not match!');
       return;
     }
-    // Add new user to list using functional update to ensure state is updated correctly
-    const newUser: User = {
-      id: Date.now().toString(),
-      fullName: newAccount.fullName,
+
+    setSaving(true);
+    setError(null);
+
+    const payload = {
+      full_name: newAccount.fullName,
       username: newAccount.username,
       email: newAccount.email,
-      role: newAccount.role.charAt(0).toUpperCase() + newAccount.role.slice(1),
+      password_hash: newAccount.password, // Note: In production, hash this password before storing
+      role: newAccount.role,
       status: 'active',
-      createdAt: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
     };
-    setUsers((prevUsers) => [...prevUsers, newUser]);
-    // Reset form
-    setNewAccount({
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      role: 'viewer',
-      fullName: '',
-    });
-    setShowAddUserModal(false);
-    alert('Account created successfully!');
+
+    const { data, error } = await supabase
+      .from('users_management')
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to create user', error);
+      setError(error.message);
+      alert('Failed to add user: ' + error.message);
+    } else if (data) {
+      setUsers((prev) => [mapRow(data), ...prev]);
+      setShowAddUserModal(false);
+      setNewAccount({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'viewer',
+        fullName: '',
+      });
+      alert('Account created successfully!');
+    }
+
+    setSaving(false);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -113,7 +140,16 @@ export function UserManagementPage() {
   return (
     <div className="w-full space-y-6">
       {/* Add User Button - Outside Card */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => fetchUsers()}
+          disabled={loading || refreshing}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
         <Button
           variant="default"
           onClick={() => setShowAddUserModal(true)}
@@ -123,6 +159,12 @@ export function UserManagementPage() {
           Add User
         </Button>
       </div>
+
+      {error && (
+        <div className="rounded-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {error}
+        </div>
+      )}
 
       <Card className="relative overflow-hidden group">
         <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
@@ -143,7 +185,16 @@ export function UserManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="py-4 px-4 text-center text-muted">Loading...</td>
+                  </tr>
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-4 px-4 text-center text-muted">No users found.</td>
+                  </tr>
+                ) : (
+                  users.map((user) => (
                   <tr
                     key={user.id}
                     className="border-b border-card-border hover:bg-card-inner/50 transition-colors"
@@ -177,7 +228,8 @@ export function UserManagementPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -358,9 +410,9 @@ export function UserManagementPage() {
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                      <Button type="submit" variant="default" className="flex-1">
+                      <Button type="submit" variant="default" className="flex-1" disabled={saving}>
                         <UserPlus className="w-4 h-4 mr-2" />
-                        Create Account
+                        {saving ? 'Creating...' : 'Create Account'}
                       </Button>
                       <Button
                         type="button"
