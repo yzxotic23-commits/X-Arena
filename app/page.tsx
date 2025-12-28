@@ -29,6 +29,7 @@ import { ProfilePage } from '@/components/pages/ProfilePage';
 import { CustomerListingPage } from '@/components/pages/CustomerListingPage';
 import { UserManagementPage } from '@/components/pages/UserManagementPage';
 import { AppearanceSettingsPage } from '@/components/pages/AppearanceSettingsPage';
+import { TargetSettingsPage } from '@/components/pages/TargetSettingsPage';
 import { useAuth } from '@/lib/auth-context';
 import { LandingPage } from '@/components/LandingPage';
 
@@ -213,6 +214,7 @@ function DashboardContent() {
             activeUsers: 12
           } : undefined}
           showAppearanceHeader={activeMenu === 'appearance-settings'}
+          showTargetSettingsHeader={activeMenu === 'target-settings'}
         />
 
         <main className="flex-1 w-full mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 overflow-y-auto" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
@@ -413,6 +415,7 @@ function DashboardContent() {
 
           {activeMenu === 'leaderboard' && <LeaderboardPage />}
           {!isLimitedAccess && activeMenu === 'targets' && <TargetsPage />}
+          {!isLimitedAccess && activeMenu === 'target-settings' && <TargetSettingsPage />}
           {!isLimitedAccess && activeMenu === 'customer-listing' && <CustomerListingPage />}
           {!isLimitedAccess && activeMenu === 'settings' && <SettingsPage />}
           {!isLimitedAccess && activeMenu === 'user-management' && <UserManagementPage />}

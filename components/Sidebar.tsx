@@ -14,6 +14,7 @@ import {
       UserPlus,
       Palette,
       ChevronDown,
+      BarChart3,
     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme-context';
@@ -30,12 +31,13 @@ const menuItems: MenuItem[] = [
       { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
       { id: 'leaderboard', label: 'Leaderboard', icon: Award },
       { id: 'customer-listing', label: 'Customer Listing', icon: List },
+      { id: 'targets', label: 'Target Summary', icon: BarChart3 },
       { 
         id: 'settings', 
         label: 'Settings', 
         icon: Settings,
         submenu: [
-          { id: 'targets', label: 'Targets', icon: Target },
+          { id: 'target-settings', label: 'Target Settings', icon: Target },
           { id: 'user-management', label: 'User Management', icon: UserPlus },
           { id: 'appearance-settings', label: 'Appearance', icon: Palette },
         ]

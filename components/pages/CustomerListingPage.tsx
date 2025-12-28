@@ -193,8 +193,8 @@ export function CustomerListingPage() {
             onClick={() => setActiveTab('retention')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
               activeTab === 'retention'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-foreground-primary hover:bg-primary/10'
+                ? 'bg-blue-500 text-white shadow-sm dark:bg-blue-600'
+                : 'text-foreground-primary hover:bg-blue-500/10 dark:hover:bg-blue-500/20'
             }`}
           >
             <Repeat className="w-3.5 h-3.5" />
@@ -204,8 +204,8 @@ export function CustomerListingPage() {
             onClick={() => setActiveTab('recommend')}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
               activeTab === 'recommend'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-foreground-primary hover:bg-primary/10'
+                ? 'bg-green-500 text-white shadow-sm dark:bg-green-600'
+                : 'text-foreground-primary hover:bg-green-500/10 dark:hover:bg-green-500/20'
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
@@ -250,13 +250,19 @@ export function CustomerListingPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-card-border bg-card-inner">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Unique Code</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Username</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Brand</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Handler</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Label</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-muted">Action</th>
+                <tr className={`border-b-2 ${
+                  activeTab === 'reactivation'
+                    ? 'border-primary/50 bg-gradient-to-r from-primary/10 to-primary/5 dark:bg-card-inner dark:border-primary/60'
+                    : activeTab === 'retention'
+                    ? 'border-blue-500/50 bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:bg-card-inner dark:border-blue-500/60'
+                    : 'border-green-500/50 bg-gradient-to-r from-green-500/10 to-green-500/5 dark:bg-card-inner dark:border-green-500/60'
+                }`}>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Unique Code</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Username</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Brand</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Handler</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Label</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary">Action</th>
                 </tr>
               </thead>
               <tbody>

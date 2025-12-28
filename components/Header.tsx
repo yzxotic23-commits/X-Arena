@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X, Trophy, TrendingUp, Users, Zap, List, Settings, Database, Shield, Target, UserPlus, Palette, CheckCircle2 } from 'lucide-react';
+import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X, Trophy, TrendingUp, Users, Zap, List, Settings, Database, Shield, Target, UserPlus, Palette, CheckCircle2, BarChart3 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
@@ -35,6 +35,7 @@ interface HeaderProps {
     activeUsers?: number;
   };
   showAppearanceHeader?: boolean; // Show appearance gaming header
+  showTargetSettingsHeader?: boolean; // Show target settings gaming header
 }
 
 export function Header({ 
@@ -50,7 +51,8 @@ export function Header({
   targetsData,
   showUserManagementHeader = false,
   userManagementData,
-  showAppearanceHeader = false
+  showAppearanceHeader = false,
+  showTargetSettingsHeader = false
 }: HeaderProps) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
@@ -105,7 +107,7 @@ export function Header({
 
   return (
     <header className={`w-full sticky top-0 z-50 transition-all ${hideBorder ? 'bg-background' : 'bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 backdrop-blur-md border-b-2 border-primary/40 shadow-md dark:shadow-glow-red/20'}`}>
-      <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
+      <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader || showTargetSettingsHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
         <div className="w-full flex flex-col md:flex-row items-start md:items-center gap-4">
           {/* Greeting Message - Left side */}
           {showGreeting && (
@@ -235,7 +237,7 @@ export function Header({
           {/* Targets Header - Left side */}
           {showTargetsHeader && (
             <div className="flex-1 flex items-center gap-3 sm:gap-4">
-              {/* Target Icon with Glow Animation */}
+              {/* BarChart Icon with Glow Animation */}
               <motion.div
                 animate={{
                   scale: [1, 1.1, 1],
@@ -249,12 +251,12 @@ export function Header({
                 className="relative"
               >
                 <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
-                <Target className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+                <BarChart3 className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
               </motion.div>
 
               {/* Title Only */}
               <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
-                Targets
+                Target Summary
               </h2>
             </div>
           )}
@@ -283,6 +285,21 @@ export function Header({
               <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary whitespace-nowrap">
                 User Management
               </h2>
+            </div>
+          )}
+
+          {/* Target Settings Header - Left side */}
+          {showTargetSettingsHeader && (
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
+              >
+                <Target className="w-6 h-6 text-primary" />
+              </motion.div>
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent whitespace-nowrap">
+                Target Settings
+              </h1>
             </div>
           )}
 

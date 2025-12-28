@@ -244,19 +244,17 @@ export function AppearanceSettingsPage() {
   );
 
   return (
-    <div className="w-full space-y-6">
-
-      {/* Theme Mode */}
-      <Card className="relative overflow-hidden group">
-        <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-        <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-        <CardHeader className="relative z-10">
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="w-5 h-5 text-primary" />
-            Theme
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10">
+    <div className="w-full space-y-8">
+      {/* Top Row - Theme and Typography Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Theme Mode */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Palette className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground-primary">Theme</h2>
+          </div>
           <SettingCard
             title="Color Mode"
             description="Choose your preferred color scheme"
@@ -294,20 +292,16 @@ export function AppearanceSettingsPage() {
               </p>
             </div>
           </SettingCard>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Font Size */}
-      <Card className="relative overflow-hidden group">
-        <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-        <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-        <CardHeader className="relative z-10">
-          <CardTitle className="flex items-center gap-2">
-            <Type className="w-5 h-5 text-primary" />
-            Typography
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10">
+        {/* Font Size */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Type className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground-primary">Typography</h2>
+          </div>
           <SettingCard
             title="Font Size"
             description="Adjust the text size for better readability"
@@ -337,20 +331,18 @@ export function AppearanceSettingsPage() {
               />
             </div>
           </SettingCard>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Layout & Behavior */}
-      <Card className="relative overflow-hidden group">
-        <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-        <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-        <CardHeader className="relative z-10">
-          <CardTitle className="flex items-center gap-2">
+      {/* Middle Row - Layout & Behavior Full Width */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
             <Layout className="w-5 h-5 text-primary" />
-            Layout & Behavior
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10 space-y-4">
+          </div>
+          <h2 className="text-xl font-bold text-foreground-primary">Layout & Behavior</h2>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Layout Density */}
           <SettingCard
             title="Layout Density"
@@ -397,36 +389,32 @@ export function AppearanceSettingsPage() {
               />
             </div>
           </SettingCard>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Accessibility */}
-      <Card className="relative overflow-hidden group">
-        <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-        <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-        <CardHeader className="relative z-10">
-          <CardTitle className="flex items-center gap-2">
+      {/* Bottom Row - Accessibility */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
             <Zap className="w-5 h-5 text-primary" />
-            Accessibility
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative z-10">
-          <SettingCard
-            title="Motion"
-            description="Reduce animations for better performance and accessibility"
-            icon={Zap}
-          >
-            <div className="space-y-3">
-              <ToggleOption
-                label="Reduce motion"
-                description="Minimize animations and transitions"
-                value={reduceMotion}
-                onChange={setReduceMotion}
-              />
-            </div>
-          </SettingCard>
-        </CardContent>
-      </Card>
+          </div>
+          <h2 className="text-xl font-bold text-foreground-primary">Accessibility</h2>
+        </div>
+        <SettingCard
+          title="Motion"
+          description="Reduce animations for better performance and accessibility"
+          icon={Zap}
+        >
+          <div className="space-y-3">
+            <ToggleOption
+              label="Reduce motion"
+              description="Minimize animations and transitions"
+              value={reduceMotion}
+              onChange={setReduceMotion}
+            />
+          </div>
+        </SettingCard>
+      </div>
     </div>
   );
 }
