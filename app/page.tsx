@@ -30,8 +30,11 @@ import { CustomerListingPage } from '@/components/pages/CustomerListingPage';
 import { UserManagementPage } from '@/components/pages/UserManagementPage';
 import { AppearanceSettingsPage } from '@/components/pages/AppearanceSettingsPage';
 import { TargetSettingsPage } from '@/components/pages/TargetSettingsPage';
+import { ReportsPage } from '@/components/pages/ReportsPage';
 import { useAuth } from '@/lib/auth-context';
 import { LandingPage } from '@/components/LandingPage';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +54,8 @@ const mockUsers = [
 ];
 
 function DashboardContent() {
+  const { language } = useLanguage();
+  const translations = t(language);
   const { isAuthenticated, isLoading: authLoading, isLimitedAccess, rankUsername } = useAuth();
   const router = useRouter();
   const [userId, setUserId] = useState('123');
@@ -137,7 +142,7 @@ function DashboardContent() {
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted">Loading...</p>
+          <p className="text-muted">{translations.common.loading}</p>
         </div>
       </div>
     );
@@ -152,7 +157,7 @@ function DashboardContent() {
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted">Loading dashboard...</p>
+          <p className="text-muted">{translations.overview.loadingDashboard}</p>
         </div>
       </div>
     );
@@ -162,12 +167,12 @@ function DashboardContent() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
         <div className="text-center">
-          <p className="text-red-400 text-xl mb-4">Failed to load data</p>
+          <p className="text-red-400 text-xl mb-4">{translations.overview.failedToLoadData}</p>
           <button
             onClick={() => refetch()}
             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
           >
-            Retry
+            {translations.overview.retry}
           </button>
         </div>
       </div>
@@ -215,6 +220,7 @@ function DashboardContent() {
           } : undefined}
           showAppearanceHeader={activeMenu === 'appearance-settings'}
           showTargetSettingsHeader={activeMenu === 'target-settings'}
+          showReportsHeader={activeMenu === 'reports'}
         />
 
         <main className="flex-1 w-full mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 overflow-y-auto" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
@@ -236,7 +242,7 @@ function DashboardContent() {
                     className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none"
                   >
                     <User className="w-4 h-4" />
-                    <span className="text-sm font-medium">User: {userId}</span>
+                    <span className="text-sm font-medium">{translations.overview.user}: {userId}</span>
                     <ChevronDown className="w-3.5 h-3.5" />
                   </Button>
                   {showUserDropdown && (
@@ -264,22 +270,26 @@ function DashboardContent() {
                 {/* Date Slicer - Center Below (Frameless) */}
                 <div className="relative" ref={datePickerRef}>
                   <div className="inline-flex items-center gap-1">
-                    {['Daily', 'Weekly', 'Monthly'].map((filter) => (
+                    {[
+                      { key: 'Daily', label: translations.leaderboardTable.daily },
+                      { key: 'Weekly', label: translations.leaderboardTable.weekly },
+                      { key: 'Monthly', label: translations.leaderboardTable.monthly },
+                    ].map((filter) => (
                       <button
-                        key={filter}
+                        key={filter.key}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setTimeFilter(filter as TimeFilter);
+                          setTimeFilter(filter.key as TimeFilter);
                           setShowDateRangePicker(false);
                         }}
                         className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none ${
-                          timeFilter === filter
+                          timeFilter === filter.key
                             ? 'bg-primary text-white shadow-sm'
                             : 'text-foreground-primary hover:bg-primary/10'
                         }`}
                       >
-                        {filter}
+                        {filter.label}
                       </button>
                     ))}
                     <button
@@ -300,14 +310,14 @@ function DashboardContent() {
                       }`}
                     >
                       <Calendar className="w-3.5 h-3.5" />
-                      Custom
+                      {translations.leaderboardTable.custom}
                     </button>
                   </div>
                   {showDateRangePicker && timeFilter === 'Custom' && (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-card-inner border border-card-border rounded-lg p-4 shadow-lg z-50 min-w-[300px]">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-semibold text-foreground-primary">Select Date Range</h4>
+                          <h4 className="text-sm font-semibold text-foreground-primary">{translations.overview.selectDateRange}</h4>
                           <button
                             onClick={(e) => {
                               e.preventDefault();
@@ -321,7 +331,7 @@ function DashboardContent() {
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-foreground-primary mb-1">
-                            Start Date
+                            {translations.overview.startDate}
                           </label>
                           <input
                             type="date"
@@ -332,7 +342,7 @@ function DashboardContent() {
                         </div>
                         <div>
                           <label className="block text-sm font-semibold text-foreground-primary mb-1">
-                            End Date
+                            {translations.overview.endDate}
                           </label>
                           <input
                             type="date"
@@ -353,7 +363,7 @@ function DashboardContent() {
                             }}
                             className="flex-1"
                           >
-                            Cancel
+                            {translations.common.cancel}
                           </Button>
                           <Button
                             variant="default"
@@ -367,7 +377,7 @@ function DashboardContent() {
                             }}
                             className="flex-1"
                           >
-                            Apply
+                            {translations.overview.apply}
                           </Button>
                         </div>
                       </div>
@@ -417,6 +427,7 @@ function DashboardContent() {
           {!isLimitedAccess && activeMenu === 'targets' && <TargetsPage />}
           {!isLimitedAccess && activeMenu === 'target-settings' && <TargetSettingsPage />}
           {!isLimitedAccess && activeMenu === 'customer-listing' && <CustomerListingPage />}
+          {!isLimitedAccess && activeMenu === 'reports' && <ReportsPage />}
           {!isLimitedAccess && activeMenu === 'settings' && <SettingsPage />}
           {!isLimitedAccess && activeMenu === 'user-management' && <UserManagementPage />}
           {!isLimitedAccess && activeMenu === 'appearance-settings' && <AppearanceSettingsPage />}

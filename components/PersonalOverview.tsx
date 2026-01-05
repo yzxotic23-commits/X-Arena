@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Contribution, ContributionMetrics } from '@/types';
 import { formatNumber, formatPercentage } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface PersonalOverviewProps {
   contribution: Contribution;
@@ -29,50 +31,11 @@ const levelIcons = {
   Platinum: '💎',
 };
 
-const metricConfig = [
-  {
-    key: 'activeMemberContribution' as const,
-    label: 'Active Member',
-    icon: Users,
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/20',
-  },
-  {
-    key: 'depositAmountContribution' as const,
-    label: 'Deposit Amount',
-    icon: DollarSign,
-    color: 'text-green-400',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/20',
-  },
-  {
-    key: 'retentionContribution' as const,
-    label: 'Retention',
-    icon: UserCheck,
-    color: 'text-yellow-400',
-    bgColor: 'bg-yellow-500/10',
-    borderColor: 'border-yellow-500/20',
-  },
-  {
-    key: 'reactivationContribution' as const,
-    label: 'Reactivation',
-    icon: UserPlus,
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/20',
-  },
-  {
-    key: 'recommendContribution' as const,
-    label: 'Recommend',
-    icon: Share2,
-    color: 'text-cyan-400',
-    bgColor: 'bg-cyan-500/10',
-    borderColor: 'border-cyan-500/20',
-  },
-];
+// metricConfig will be created inside component to use translation
 
 export function PersonalOverview({ contribution, contributionMetrics, staffName, brand }: PersonalOverviewProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   const [displayScore, setDisplayScore] = useState(0);
   const [displayRanking, setDisplayRanking] = useState(0);
 
@@ -123,6 +86,49 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
     100
   );
 
+  const metricConfig = [
+    {
+      key: 'activeMemberContribution' as const,
+      label: translations.overview.activeMember,
+      icon: Users,
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
+      borderColor: 'border-blue-500/20',
+    },
+    {
+      key: 'depositAmountContribution' as const,
+      label: translations.overview.depositAmount,
+      icon: DollarSign,
+      color: 'text-green-400',
+      bgColor: 'bg-green-500/10',
+      borderColor: 'border-green-500/20',
+    },
+    {
+      key: 'retentionContribution' as const,
+      label: 'Retention',
+      icon: UserCheck,
+      color: 'text-yellow-400',
+      bgColor: 'bg-yellow-500/10',
+      borderColor: 'border-yellow-500/20',
+    },
+    {
+      key: 'reactivationContribution' as const,
+      label: 'Reactivation',
+      icon: UserPlus,
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-500/10',
+      borderColor: 'border-purple-500/20',
+    },
+    {
+      key: 'recommendContribution' as const,
+      label: 'Recommend',
+      icon: Share2,
+      color: 'text-cyan-400',
+      bgColor: 'bg-cyan-500/10',
+      borderColor: 'border-cyan-500/20',
+    },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -135,7 +141,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
       <div className="flex items-center justify-center gap-3 mb-4">
         <Trophy className="w-6 h-6 text-primary" />
         <h2 className="text-2xl font-heading font-bold text-foreground-primary">
-          Personal Contribution Overview
+          {translations.overview.personalContributionOverview}
         </h2>
       </div>
 
@@ -222,7 +228,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
             <>
               <div className="flex items-center justify-center gap-2 mb-3">
                 <DollarSign className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-heading font-semibold text-foreground-primary">Contribution Metrics</h3>
+                <h3 className="text-sm font-heading font-semibold text-foreground-primary">{translations.overview.contributionMetrics}</h3>
               </div>
               <div className="relative overflow-hidden">
                 {/* Left fade gradient - transparent, matching card background */}
@@ -286,8 +292,8 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
           {/* Gap to Next Level */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Gap to Next Level</span>
-              <span className="text-gray-900 dark:text-white font-semibold">{formatNumber(contribution.gapToNext)} points</span>
+              <span className="text-gray-600 dark:text-gray-400">{translations.overview.gapToNextLevel}</span>
+              <span className="text-gray-900 dark:text-white font-semibold">{formatNumber(contribution.gapToNext)} {translations.overview.points}</span>
             </div>
             <div className="w-full bg-progress-track rounded-full h-3 overflow-hidden">
               <motion.div
@@ -313,7 +319,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
             >
               {formatPercentage(contribution.change)}
             </span>
-            <span className="text-gray-600 dark:text-gray-400 text-sm">vs Last Period</span>
+            <span className="text-gray-600 dark:text-gray-400 text-sm">{translations.overview.vsLastPeriod}</span>
           </div>
         </CardContent>
       </Card>

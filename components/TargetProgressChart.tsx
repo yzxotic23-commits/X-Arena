@@ -9,12 +9,16 @@ import { formatNumber } from '@/lib/utils';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { useTheme } from '@/lib/theme-context';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface TargetProgressChartProps {
   target: TargetType;
 }
 
 export function TargetProgressChart({ target }: TargetProgressChartProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   const { theme } = useTheme();
   const progressColor = target.completion >= 80 ? '#00ff00' : target.completion >= 50 ? '#ffaa00' : '#ff0000';
   const textColor = theme === 'light' ? '#1a1a1a' : '#ffffff';
@@ -34,7 +38,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2">
             <Target className="w-5 h-5 text-primary" />
-            Target & Progress
+            {translations.overview.targetProgress}
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10 flex-1 flex flex-col">
@@ -54,7 +58,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                 />
               </div>
               <div className="text-center">
-                <p className="text-sm text-muted mb-1">Target Value</p>
+                <p className="text-sm text-muted mb-1">{translations.overview.targetValue}</p>
                 <p className="text-2xl font-heading font-bold text-foreground-primary">
                   {formatNumber(target.value)}
                 </p>
@@ -65,7 +69,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
             <div className="space-y-4">
               <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted">Completion Rate</span>
+                  <span className="text-sm text-muted">{translations.overview.completionRate}</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
                 <p className="text-3xl font-heading font-bold text-glow-red">
@@ -75,7 +79,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
 
               <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted">Remaining Gap</span>
+                  <span className="text-sm text-muted">{translations.overview.remainingGap}</span>
                   <Target className="w-5 h-5 text-primary" />
                 </div>
                 <p className="text-2xl font-heading font-bold text-foreground-primary">
@@ -86,7 +90,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
               {/* Execution Pace Assessment */}
               <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted">Execution Pace</span>
+                  <span className="text-sm text-muted">{translations.overview.executionPace}</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex items-center gap-2">
@@ -100,7 +104,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                         : 'bg-red-500/20 text-red-400 border-red-500/50'
                     }`}
                   >
-                    {target.pace === 'Fast' ? 'On Track' : target.pace === 'Medium' ? 'At Risk' : 'Behind Schedule'}
+                    {target.pace === 'Fast' ? translations.overview.onTrack : target.pace === 'Medium' ? translations.overview.atRisk : translations.overview.behindSchedule}
                   </Badge>
                 </div>
               </div>

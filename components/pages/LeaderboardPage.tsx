@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LeaderboardEntry, TopPerformer, TimeFilter } from '@/types';
 import { formatNumber, formatPercentage } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface PodiumUser {
   rank: number;
@@ -51,6 +53,7 @@ const mockLeaderboard: LeaderboardEntry[] = [
     score: 2114424, 
     categoryTops: ['Deposit'], 
     isCurrentUser: false,
+    avatar: allAvatars[0],
     breakdown: { deposit: 800000, retention: 500000, activation: 500000, referral: 314424 }
   },
   { 
@@ -59,6 +62,7 @@ const mockLeaderboard: LeaderboardEntry[] = [
     score: 2114424, 
     categoryTops: ['Retention'], 
     isCurrentUser: false,
+    avatar: allAvatars[1],
     breakdown: { deposit: 600000, retention: 800000, activation: 500000, referral: 214424 }
   },
   { 
@@ -67,6 +71,7 @@ const mockLeaderboard: LeaderboardEntry[] = [
     score: 2050000, 
     categoryTops: ['Activation'], 
     isCurrentUser: false,
+    avatar: allAvatars[2],
     breakdown: { deposit: 500000, retention: 500000, activation: 800000, referral: 250000 }
   },
   { 
@@ -75,6 +80,7 @@ const mockLeaderboard: LeaderboardEntry[] = [
     score: 1980000, 
     categoryTops: ['Referral'], 
     isCurrentUser: false,
+    avatar: allAvatars[3],
     breakdown: { deposit: 400000, retention: 400000, activation: 400000, referral: 780000 }
   },
   { 
@@ -83,6 +89,7 @@ const mockLeaderboard: LeaderboardEntry[] = [
     score: 1920000, 
     categoryTops: [], 
     isCurrentUser: false,
+    avatar: allAvatars[4],
     breakdown: { deposit: 500000, retention: 500000, activation: 500000, referral: 420000 }
   },
   { 
@@ -91,6 +98,7 @@ const mockLeaderboard: LeaderboardEntry[] = [
     score: 26007, 
     categoryTops: [], 
     isCurrentUser: true,
+    avatar: allAvatars[5],
     breakdown: { deposit: 10000, retention: 8000, activation: 5000, referral: 3007 }
   },
 ];
@@ -203,6 +211,8 @@ const mockTopPerformers: TopPerformer[] = [
 ];
 
 export function LeaderboardPage() {
+  const { language } = useLanguage();
+  const translations = t(language);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('Daily');
   const [showDateRangePicker, setShowDateRangePicker] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -212,10 +222,7 @@ export function LeaderboardPage() {
   const [totalUsers] = useState(23141);
   const [selectedMember, setSelectedMember] = useState<LeaderboardEntry | null>(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<TopPerformer['category']>('Highest Deposit');
-  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
-  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close date picker when clicking outside
   useEffect(() => {
@@ -258,6 +265,24 @@ export function LeaderboardPage() {
     setShowMemberModal(true);
   };
 
+  const handlePodiumClick = (user: PodiumUser) => {
+    // Convert PodiumUser to LeaderboardEntry format
+    const entry: LeaderboardEntry = {
+      rank: user.rank,
+      name: user.name,
+      score: user.points,
+      categoryTops: user.rank === 1 ? ['Top Performer'] : user.rank === 2 ? ['Silver Medal'] : ['Bronze Medal'],
+      isCurrentUser: false,
+      breakdown: {
+        deposit: Math.floor(user.points * 0.4),
+        retention: Math.floor(user.points * 0.3),
+        activation: Math.floor(user.points * 0.2),
+        referral: Math.floor(user.points * 0.1),
+      },
+    };
+    handleMemberClick(entry);
+  };
+
   const getTopPerformersByCategory = (category: TopPerformer['category']) => {
     return mockTopPerformers.filter(p => p.category === category).slice(0, 3);
   };
@@ -292,22 +317,26 @@ export function LeaderboardPage() {
         {/* Time Filter Buttons - Right (Frameless) */}
         <div className="relative" ref={datePickerRef}>
           <div className="inline-flex items-center gap-1">
-            {['Daily', 'Weekly', 'Monthly'].map((filter) => (
+            {[
+              { key: 'Daily', label: translations.leaderboardTable.daily },
+              { key: 'Weekly', label: translations.leaderboardTable.weekly },
+              { key: 'Monthly', label: translations.leaderboardTable.monthly },
+            ].map((filter) => (
               <button
-                key={filter}
+                key={filter.key}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setTimeFilter(filter as TimeFilter);
+                  setTimeFilter(filter.key as TimeFilter);
                   setShowDateRangePicker(false);
                 }}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none ${
-                  timeFilter === filter
+                  timeFilter === filter.key
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-foreground-primary hover:bg-primary/10'
                 }`}
               >
-                {filter}
+                {filter.label}
               </button>
             ))}
             <button
@@ -439,7 +468,8 @@ export function LeaderboardPage() {
               initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`${getPodiumOrder(user.rank)} flex flex-col items-center w-full`}
+              onClick={() => handlePodiumClick(user)}
+              className={`${getPodiumOrder(user.rank)} flex flex-col items-center w-full cursor-pointer hover:opacity-90 transition-opacity`}
             >
               {/* Avatar */}
               <div className="relative mb-4 z-10">
@@ -524,133 +554,15 @@ export function LeaderboardPage() {
         })}
       </div>
 
-      {/* Top Performers by Category & Ranking & Incentive Module - Stacked */}
+      {/* Ranking & Incentive Module & Top Performers by Category - Stacked */}
       <div className="select-none pt-8 md:pt-12 lg:pt-16">
         <div className="space-y-6">
-          {/* Top Performers by Category - Top */}
-          <div className="space-y-4 mb-12 md:mb-16 lg:mb-20">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Award className="w-6 h-6 text-primary" />
-              <h3 className="text-2xl font-heading font-bold text-foreground-primary">
-                Top Performers by Category
-              </h3>
-            </div>
-            <motion.div
-              key={selectedCategory}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="bg-card-glass h-full">
-                <CardHeader className="pb-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    {/* Category Description - Left */}
-                    <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
-                      {getCategoryIcon(selectedCategory)}
-                      <span className="text-base font-heading font-semibold text-foreground-primary">{selectedCategory}</span>
-                    </div>
-                    {/* Category Slicer Dropdown - Right */}
-                    <div className="relative w-full sm:w-auto" ref={categoryDropdownRef}>
-                      <button
-                        onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                        className="flex items-center gap-2 px-4 py-2 bg-card-inner border border-card-border rounded-lg text-foreground-primary hover:bg-primary/10 transition-colors w-full sm:min-w-[200px] justify-between"
-                      >
-                        <div className="flex items-center gap-2">
-                          {getCategoryIcon(selectedCategory)}
-                          <span className="text-sm font-semibold">{selectedCategory}</span>
-                        </div>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      
-                      {isCategoryDropdownOpen && (
-                        <div className="absolute top-full right-0 left-0 sm:left-auto sm:min-w-[200px] mt-2 bg-card-inner border border-card-border rounded-lg shadow-lg z-50 overflow-hidden">
-                          {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Highest Repeat Customers'] as TopPerformer['category'][]).map((category) => {
-                            const Icon = getCategoryIcon(category);
-                            return (
-                              <button
-                                key={category}
-                                onClick={() => {
-                                  setSelectedCategory(category);
-                                  setIsCategoryDropdownOpen(false);
-                                }}
-                                className={`w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-primary/10 transition-colors text-foreground-primary ${
-                                  selectedCategory === category ? 'bg-primary/10' : ''
-                                }`}
-                              >
-                                {Icon}
-                                <span className="text-sm font-medium">{category}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-3">
-                    {(() => {
-                      const performers = getTopPerformersByCategory(selectedCategory);
-                      // Reorder: Rank 2 (left), Rank 1 (center), Rank 3 (right) - like podium
-                      const reorderedPerformers = [
-                        performers.find(p => p.rank === 2),
-                        performers.find(p => p.rank === 1),
-                        performers.find(p => p.rank === 3),
-                      ].filter(Boolean) as typeof performers;
-                      
-                      return reorderedPerformers.map((performer) => {
-                        const rankColors = [
-                          { bg: 'bg-yellow-500/20', color: 'text-yellow-500 dark:text-yellow-400', border: 'border-yellow-500/30' }, // Rank 1
-                          { bg: 'bg-gray-500/20', color: 'text-gray-600 dark:text-gray-400', border: 'border-gray-500/30' }, // Rank 2
-                          { bg: 'bg-amber-500/20', color: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' }, // Rank 3
-                        ];
-                        const style = rankColors[performer.rank - 1] || rankColors[0];
-                        
-                        return (
-                          <div
-                            key={`${selectedCategory}-${performer.rank}`}
-                            className={`${style.bg} rounded-lg p-3 transition-all hover:scale-[1.02] cursor-pointer flex flex-col items-center justify-center text-center flex-shrink-0`}
-                            style={{ 
-                              width: 'calc((100% - 1.5rem) / 3)',
-                              boxShadow: 'none',
-                              border: '0',
-                              outline: 'none',
-                              borderWidth: '0',
-                              borderStyle: 'none',
-                              borderColor: 'transparent',
-                              borderTopWidth: '0',
-                              borderRightWidth: '0',
-                              borderBottomWidth: '0',
-                              borderLeftWidth: '0'
-                            }}
-                          >
-                            <div className="flex items-center justify-center gap-2 mb-1.5">
-                              {getRankIcon(performer.rank)}
-                              <span className="text-xs text-muted">{performer.name}</span>
-                            </div>
-                            <div className="flex items-center justify-center gap-1">
-                              <p className={`text-base font-heading font-bold ${style.color}`}>
-                                {selectedCategory === 'Highest Retention' || selectedCategory === 'Most Activated Customers' || selectedCategory === 'Most Referrals' || selectedCategory === 'Highest Repeat Customers'
-                                  ? formatNumber(performer.value)
-                                  : `$${formatNumber(performer.value)}`}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
-
-          {/* Ranking & Incentive Module - Bottom */}
+          {/* Ranking & Incentive Module - Top */}
           <div className="space-y-4">
             <div className="flex items-center justify-center gap-3 mb-6">
               <Trophy className="w-6 h-6 text-primary" />
               <h3 className="text-2xl font-heading font-bold text-foreground-primary">
-                Ranking & Incentive Module
+                {translations.leaderboard.rankingIncentiveModule}
               </h3>
             </div>
             <Card className="bg-card-glass h-full">
@@ -659,11 +571,11 @@ export function LeaderboardPage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-card-border">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Rank</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted">{translations.leaderboardTable.rank}</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
-                          Member/Brand
+                          {translations.leaderboardTable.memberBrand}
                         </th>
-                        <th className="text-right py-3 px-4 text-sm font-semibold text-muted">Score</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-muted">{translations.leaderboardTable.score}</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
                           Category Tops
                         </th>
@@ -689,8 +601,24 @@ export function LeaderboardPage() {
                           <td className="py-4 px-4">
                             <button
                               onClick={() => handleMemberClick(entry)}
-                              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                             >
+                              {/* Avatar */}
+                              <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-card-inner border border-card-border flex-shrink-0">
+                                {entry.avatar ? (
+                                  <Image 
+                                    src={entry.avatar} 
+                                    alt={entry.name}
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <User className="w-5 h-5 text-muted" />
+                                  </div>
+                                )}
+                              </div>
                               <span
                                 className={`font-semibold ${
                                   entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'
@@ -706,7 +634,7 @@ export function LeaderboardPage() {
                             </button>
                           </td>
                           <td className="py-4 px-4 text-right">
-                            <span className="font-heading font-bold text-foreground-primary">
+                            <span className="font-body font-bold text-foreground-primary" style={{ fontFamily: 'Poppins, sans-serif' }}>
                               {formatNumber(entry.score)}
                             </span>
                           </td>
@@ -731,930 +659,92 @@ export function LeaderboardPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
-      </div>
 
-      {/* Squad Performance Report Table */}
-      <div className="space-y-4 select-none pt-8 md:pt-12 lg:pt-16">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <Trophy className="w-6 h-6 text-primary" />
-          <h3 className="text-2xl font-heading font-bold text-foreground-primary">Squad Performance Report</h3>
-        </div>
-      </div>
-
-      {/* Squad Comparison Report Section - From Reports Page */}
-      <div className="space-y-6 select-none">
-        {/* Leading Squad Result - Top */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full"
-        >
-          <Card className="relative overflow-hidden group">
-            <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-            <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-            <CardContent className="relative z-10 p-6">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-dark shadow-lg flex items-center justify-center">
-                    <Trophy className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted mb-1">Current Leader</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      Squad B is Leading
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-sm text-muted mb-1">Lead Amount</div>
-                    <div className="text-3xl font-heading font-bold text-blue-400">
-                      +$133,716.84
-                    </div>
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-blue-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Squad Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {/* Squad A Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="relative overflow-hidden group w-full h-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl font-heading font-bold text-primary">SQUAD A</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">Net Profit</div>
-                    <div className="text-2xl font-heading font-bold text-glow-red">
-                      $103,175.24
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">Total Deposit</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      $1,111,197.01
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">Total Active</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      461
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">Status</div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      Behind
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Squad B Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="relative overflow-hidden group w-full h-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl font-heading font-bold text-blue-400">SQUAD B</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">Net Profit</div>
-                    <div className="text-2xl font-heading font-bold text-blue-400">
-                      $237,452.08
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">Total Deposit</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      $1,096,520.76
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">Total Active</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      453
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">Status</div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      Leading
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Squad Details & Top Contributor Section - Combined Design */}
-      <div className="space-y-6 select-none">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Squad A Details & Top Contributor */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="relative overflow-hidden group w-full h-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10 border-b border-card-border pb-4">
-                <CardTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-heading font-bold text-primary">SQUAD A</div>
-                    <div className="text-xs text-muted">Squad Details & Top Contributor</div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 pt-6">
-                {/* Metrics Section */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">Total Score</span>
-                      <Crown className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-glow-red">
-                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').reduce((sum, member) => sum + member.score, 0))}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400 font-semibold">+12.5%</span>
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">Avg Score</span>
-                      <TrendingUp className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').reduce((sum, member) => sum + member.score, 0) / mockSquadMembers.filter(m => m.team === 'Squad A').length || 1)}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <ArrowUpRight className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400 font-semibold">+8.3%</span>
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">Members</span>
-                      <UserPlus className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {mockSquadMembers.filter(m => m.team === 'Squad A').length}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <UserPlus className="w-3 h-3 text-blue-400" />
-                      <span className="text-xs text-blue-400 font-semibold">Active</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Top Contributor Section */}
-                <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 border border-primary/20">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Award className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-semibold text-foreground-primary">Top Contributor</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg">
-                      <Crown className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="w-full">
-                      <div className="flex items-center justify-center gap-2 mb-1">
-                        <h3 className="text-xl font-heading font-bold text-foreground-primary">
-                          {mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.name || 'N/A'}
-                        </h3>
-                        <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
-                          #1
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted mb-2">
-                        Contribution: {formatPercentage(mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.contribution || 0)}
-                      </p>
-                      <p className="text-2xl font-heading font-bold text-glow-red">
-                        {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.score || 0)} pts
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Squad B Details & Top Contributor */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="relative overflow-hidden group w-full h-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10 border-b border-card-border pb-4">
-                <CardTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-heading font-bold text-blue-400">SQUAD B</div>
-                    <div className="text-xs text-muted">Squad Details & Top Contributor</div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 pt-6">
-                {/* Metrics Section */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">Total Score</span>
-                      <Crown className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-blue-400">
-                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').reduce((sum, member) => sum + member.score, 0))}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400 font-semibold">+15.2%</span>
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">Avg Score</span>
-                      <TrendingUp className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').reduce((sum, member) => sum + member.score, 0) / mockSquadMembers.filter(m => m.team === 'Squad B').length || 1)}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <ArrowUpRight className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400 font-semibold">+10.7%</span>
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">Members</span>
-                      <UserPlus className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {mockSquadMembers.filter(m => m.team === 'Squad B').length}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <UserPlus className="w-3 h-3 text-blue-400" />
-                      <span className="text-xs text-blue-400 font-semibold">Active</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Top Contributor Section */}
-                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl p-6 border border-blue-500/20">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Award className="w-5 h-5 text-blue-400" />
-                    <span className="text-sm font-semibold text-foreground-primary">Top Contributor</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                      <Crown className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="w-full">
-                      <div className="flex items-center justify-center gap-2 mb-1">
-                        <h3 className="text-xl font-heading font-bold text-foreground-primary">
-                          {mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.name || 'N/A'}
-                        </h3>
-                        <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
-                          #1
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted mb-2">
-                        Contribution: {formatPercentage(mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.contribution || 0)}
-                      </p>
-                      <p className="text-2xl font-heading font-bold text-blue-400">
-                        {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.score || 0)} pts
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Squad Performance Report Table */}
-      <div className="space-y-4 select-none mt-12 md:mt-16 lg:mt-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* SQUAD A Table */}
-          <Card className="bg-card-glass border border-card-border shadow-lg">
-            <CardContent className="p-0">
-              {/* SQUAD A Header - Top */}
-              <div className="border-b border-card-border py-3 px-4">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" />
-                  <span className="text-lg font-heading font-bold text-gray-900 dark:text-white">SQUAD A</span>
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <TrendingUp className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Avg: <span className="text-primary font-bold">1,026.27</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-red-200 dark:bg-red-900/30">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        Name
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        Score
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        Deposits
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        Retention
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        Dormant
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        Referrals
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        4-7
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        8-11
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        12-15
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
-                        16-19
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
-                        20+
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* ABSG Group */}
-                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
-                      <td colSpan={11} className="py-2 px-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Users className="w-3.5 h-3.5 text-primary" />
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">ABSG</span>
+          {/* Top Performers by Category - Bottom */}
+          <div className="space-y-4 mb-12 md:mb-16 lg:mb-20 mt-8 md:mt-12 lg:mt-16">
+            <div className="flex items-center justify-center gap-3 mb-6 pt-4 md:pt-6 lg:pt-8">
+              <Award className="w-6 h-6 text-primary" />
+              <h3 className="text-2xl font-heading font-bold text-foreground-primary">
+                {translations.leaderboard.topPerformersByCategory}
+              </h3>
+            </div>
+            
+            {/* Single Card with All Categories */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="bg-card-glass">
+                <CardContent className="p-6">
+                  <div className="space-y-8">
+                    {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Highest Repeat Customers'] as TopPerformer['category'][]).map((category, categoryIndex) => {
+                      const performers = getTopPerformersByCategory(category);
+                      const reorderedPerformers = [
+                        performers.find(p => p.rank === 2),
+                        performers.find(p => p.rank === 1),
+                        performers.find(p => p.rank === 3),
+                      ].filter(Boolean) as typeof performers;
+                      
+                      return (
+                        <div key={category} className={categoryIndex > 0 ? 'border-t border-card-border pt-8' : ''}>
+                          {/* Category Title */}
+                          <div className="flex items-center justify-center gap-2 mb-4">
+                            {getCategoryIcon(category)}
+                            <span className="text-base font-heading font-semibold text-foreground-primary">{category}</span>
+                          </div>
+                          
+                          {/* Performers */}
+                          <div className="flex gap-3">
+                            {reorderedPerformers.map((performer) => {
+                              const rankColors = [
+                                { bg: 'bg-yellow-500/20', color: 'text-yellow-500 dark:text-yellow-400', border: 'border-yellow-500/30' }, // Rank 1
+                                { bg: 'bg-gray-500/20', color: 'text-gray-600 dark:text-gray-400', border: 'border-gray-500/30' }, // Rank 2
+                                { bg: 'bg-amber-500/20', color: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' }, // Rank 3
+                              ];
+                              const style = rankColors[performer.rank - 1] || rankColors[0];
+                              
+                              return (
+                                <div
+                                  key={`${category}-${performer.rank}`}
+                                  className={`${style.bg} rounded-lg p-3 transition-all hover:scale-[1.02] cursor-pointer flex flex-col items-center justify-center text-center flex-shrink-0`}
+                                  style={{ 
+                                    width: 'calc((100% - 1.5rem) / 3)',
+                                    boxShadow: 'none',
+                                    border: '0',
+                                    outline: 'none',
+                                    borderWidth: '0',
+                                    borderStyle: 'none',
+                                    borderColor: 'transparent',
+                                    borderTopWidth: '0',
+                                    borderRightWidth: '0',
+                                    borderBottomWidth: '0',
+                                    borderLeftWidth: '0'
+                                  }}
+                                >
+                                  <div className="flex items-center justify-center gap-2 mb-1.5">
+                                    {getRankIcon(performer.rank)}
+                                    <span className="text-xs text-muted">{performer.name}</span>
+                                  </div>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <p className={`text-base font-heading font-bold ${style.color}`}>
+                                      {category === 'Highest Retention' || category === 'Most Activated Customers' || category === 'Most Referrals' || category === 'Highest Repeat Customers'
+                                        ? formatNumber(performer.value)
+                                        : `$${formatNumber(performer.value)}`}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Yunlai
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-primary">1,310.67</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$193,666</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">64</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">15</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">20</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">11</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">6</td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Christine
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-primary">1,098.53</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$163,535</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">67</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">24</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">13</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">11</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">3</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">3</td>
-                    </tr>
-                    {/* FWSG Group */}
-                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
-                      <td colSpan={11} className="py-2 px-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Users className="w-3.5 h-3.5 text-primary" />
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">FWSG</span>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Edmund
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-primary">997.34</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$177,338</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">40</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">20</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">2</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">6</td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Poi Chee
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-primary">964.44</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$269,436</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">45</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">9</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">1</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">14</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">5</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">5</td>
-                    </tr>
-                    {/* OXSG Group */}
-                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
-                      <td colSpan={11} className="py-2 px-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Users className="w-3.5 h-3.5 text-primary" />
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">OXSG</span>
-            </div>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Cath
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-primary">750.18</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$99,181</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">42</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">9</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">0</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">16</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">14</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">4</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">5</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">2</td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Vinz
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-primary">1,036.49</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$206,485</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">65</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">1</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">24</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">14</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">3</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">9</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">2</td>
-                    </tr>
-                  </tbody>
-                </table>
-            </div>
-          </CardContent>
-        </Card>
-
-          {/* SQUAD B Table */}
-          <Card className="bg-card-glass border border-card-border shadow-lg">
-            <CardContent className="p-0">
-              {/* SQUAD B Header - Top */}
-              <div className="border-b border-card-border py-3 px-4">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-blue-400" />
-                  <span className="text-lg font-heading font-bold text-gray-900 dark:text-white">SQUAD B</span>
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <TrendingUp className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Avg: <span className="text-blue-400 font-bold">1,006.44</span></span>
+                      );
+                    })}
                   </div>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-blue-200 dark:bg-blue-900/30">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        Name
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        Score
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        Deposits
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        Retention
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        Dormant
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        Referrals
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        4-7
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        8-11
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        12-15
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                        16-19
-                      </th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
-                        20+
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* WBSG Group */}
-                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
-                      <td colSpan={11} className="py-2 px-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Users className="w-3.5 h-3.5 text-blue-400" />
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">WBSG</span>
-            </div>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Winnie
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-blue-400">1,147.80</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$238,805</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">52</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">10</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">2</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">17</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">7</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">11</td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Hiew
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-blue-400">718.51</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$129,509</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">43</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">2</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">0</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">7</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">4</td>
-                    </tr>
-                    {/* M24SG Group */}
-                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
-                      <td colSpan={11} className="py-2 px-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Users className="w-3.5 h-3.5 text-blue-400" />
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">M24SG</span>
-            </div>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Edward
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-blue-400">1,229.70</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$212,701</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">63</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">19</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">3</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">15</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">13</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">3</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">7</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">9</td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        YongXin
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-blue-400">957.82</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$186,821</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">64</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">19</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">5</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">5</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">1</td>
-                    </tr>
-                    {/* OK188SG Group */}
-                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
-                      <td colSpan={11} className="py-2 px-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Users className="w-3.5 h-3.5 text-blue-400" />
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">OK188SG</span>
-            </div>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        Zu Er
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-blue-400">952.88</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$150,876</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">58</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">7</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">0</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">13</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">11</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">9</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">2</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">8</td>
-                    </tr>
-                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
-                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        KX ProMax
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
-                        <span className="font-bold text-blue-400">1,031.91</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$159,906</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">56</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">13</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">17</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">11</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
-                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">2</td>
-                    </tr>
-                  </tbody>
-                </table>
-            </div>
-          </CardContent>
-        </Card>
-        </div>
-      </div>
-
-      {/* Detailed Squad Comparison Tables */}
-      <div className="space-y-4 select-none mt-12 md:mt-16 lg:mt-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Squad A Detailed Table */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-full"
-          >
-            <Card className="relative overflow-hidden group w-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl font-heading font-bold text-primary">SQUAD A - Detailed Metrics</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-blue-200 dark:bg-blue-900/30">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                          Metric
-                        </th>
-                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                          ABSG
-                        </th>
-                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                          FWSG
-                        </th>
-                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                          OXSG
-                        </th>
-                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
-                          Total Count
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { metric: 'Total Deposit', values: [361243.39, 443894.57, 306059.05], total: 1111197.01 },
-                        { metric: 'Total Withdraw', values: [324619.97, 391153.62, 291688.18], total: 1007461.77 },
-                        { metric: 'Total Case', values: [4332, 3510, 3337], total: 11179 },
-                        { metric: 'Total Active', values: [202, 124, 135], total: 461 },
-                        { metric: 'Retention', values: [131, 85, 107], total: 323 },
-                        { metric: 'Reactivation', values: [38, 32, 15], total: 85 },
-                        { metric: 'Recommend', values: [12, 3, 1], total: 16 },
-                        { metric: 'Gross Profit', values: [36623.42, 52740.95, 14370.87], total: 103735.24 },
-                        { metric: 'Net Profit', values: [36623.42, 52360.95, 14190.87], total: 103175.24, isNetProfit: true },
-                      ].map((row, rowIndex) => (
-                        <motion.tr
-                          key={rowIndex}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: rowIndex * 0.05 }}
-                          className={`border-b border-card-border ${
-                            row.isNetProfit
-                              ? 'bg-yellow-100 dark:bg-yellow-900/20 font-bold'
-                              : 'hover:bg-primary/5'
-                          } transition-colors`}
-                        >
-                          <td
-                            className={`py-3 px-4 text-sm font-semibold border-r border-card-border ${
-                              row.isNetProfit
-                                ? 'text-gray-900 dark:text-white'
-                                : 'text-foreground-primary'
-                            }`}
-                          >
-                            {row.metric}
-                          </td>
-                          {row.values.map((value, colIndex) => (
-                            <td
-                              key={colIndex}
-                              className={`text-center py-3 px-4 text-sm border-r border-card-border ${
-                                row.isNetProfit
-                                  ? 'text-gray-900 dark:text-white font-bold'
-                                  : 'text-foreground-primary'
-                              }`}
-                            >
-                              {row.metric === 'Net Profit' ? `$${formatNumber(value)}` : formatNumber(value)}
-                            </td>
-                          ))}
-                          <td
-                            className={`text-center py-3 px-4 text-sm font-semibold ${
-                              row.isNetProfit
-                                ? 'text-gray-900 dark:text-white font-bold'
-                                : 'text-foreground-primary'
-                            }`}
-                          >
-                            {row.metric === 'Net Profit' ? `$${formatNumber(row.total)}` : formatNumber(row.total)}
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Squad B Detailed Table */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="w-full"
-          >
-            <Card className="relative overflow-hidden group w-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl font-heading font-bold text-blue-400">SQUAD B - Detailed Metrics</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-blue-200 dark:bg-blue-900/30">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                          Metric
-                        </th>
-                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                          WBSG
-                        </th>
-                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                          M24SG
-                        </th>
-                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
-                          OK188SG
-                        </th>
-                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
-                          Total Count
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { metric: 'Total Deposit', values: [369393.79, 409839.28, 317287.69], total: 1096520.76 },
-                        { metric: 'Total Withdraw', values: [311375.1, 283258.1, 262918.41], total: 857551.61 },
-                        { metric: 'Total Case', values: [3636, 3796, 4105], total: 11537 },
-                        { metric: 'Total Active', values: [125, 176, 152], total: 453 },
-                        { metric: 'Retention', values: [94, 126, 114], total: 334 },
-                        { metric: 'Reactivation', values: [17, 32, 22], total: 71 },
-                        { metric: 'Recommend', values: [2, 9, 6], total: 17 },
-                        { metric: 'Gross Profit', values: [58018.69, 126581.18, 54369.28], total: 238969.15 },
-                        { metric: 'Net Profit', values: [57519.62, 126516.68, 53415.78], total: 237452.08, isNetProfit: true },
-                      ].map((row, rowIndex) => (
-                        <motion.tr
-                          key={rowIndex}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: rowIndex * 0.05 }}
-                          className={`border-b border-card-border ${
-                            row.isNetProfit
-                              ? 'bg-yellow-100 dark:bg-yellow-900/20 font-bold'
-                              : 'hover:bg-primary/5'
-                          } transition-colors`}
-                        >
-                          <td
-                            className={`py-3 px-4 text-sm font-semibold border-r border-card-border ${
-                              row.isNetProfit
-                                ? 'text-gray-900 dark:text-white'
-                                : 'text-foreground-primary'
-                            }`}
-                          >
-                            {row.metric}
-                          </td>
-                          {row.values.map((value, colIndex) => (
-                            <td
-                              key={colIndex}
-                              className={`text-center py-3 px-4 text-sm border-r border-card-border ${
-                                row.isNetProfit
-                                  ? 'text-gray-900 dark:text-white font-bold'
-                                  : 'text-foreground-primary'
-                              }`}
-                            >
-                              {row.metric === 'Net Profit' ? `$${formatNumber(value)}` : formatNumber(value)}
-                            </td>
-                          ))}
-                          <td
-                            className={`text-center py-3 px-4 text-sm font-semibold ${
-                              row.isNetProfit
-                                ? 'text-gray-900 dark:text-white font-bold'
-                                : 'text-foreground-primary'
-                            }`}
-                          >
-                            {row.metric === 'Net Profit' ? `$${formatNumber(row.total)}` : formatNumber(row.total)}
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
         </div>
       </div>
 

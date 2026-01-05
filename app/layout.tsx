@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme-context";
 import { AuthProvider } from "@/lib/auth-context";
+import { LanguageProvider } from "@/lib/language-context";
 import { ToastProvider } from "@/lib/toast-context";
 import { ToastContainerWrapper } from "@/components/ToastContainerWrapper";
 
@@ -36,10 +37,12 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthProvider>
-            <ToastProvider>
-              {children}
-              <ToastContainerWrapper />
-            </ToastProvider>
+            <LanguageProvider>
+              <ToastProvider>
+                {children}
+                <ToastContainerWrapper />
+              </ToastProvider>
+            </LanguageProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

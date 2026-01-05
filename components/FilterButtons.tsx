@@ -2,6 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Users, User, Building2 } from 'lucide-react';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 type FilterType = 'Squad vs Squad' | 'Squad → Brand' | 'Brand → Personal';
 
@@ -11,7 +13,22 @@ interface FilterButtonsProps {
 }
 
 export function FilterButtons({ activeFilter, onFilterChange }: FilterButtonsProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   const filters: FilterType[] = ['Squad vs Squad', 'Squad → Brand', 'Brand → Personal'];
+  
+  const getFilterLabel = (filter: FilterType) => {
+    switch (filter) {
+      case 'Squad vs Squad':
+        return translations.leaderboardTable.squadVsSquad;
+      case 'Squad → Brand':
+        return translations.leaderboardTable.squadToBrand;
+      case 'Brand → Personal':
+        return translations.leaderboardTable.brandToPersonal;
+      default:
+        return filter;
+    }
+  };
 
   const getIcon = (filter: FilterType) => {
     switch (filter) {
@@ -26,7 +43,7 @@ export function FilterButtons({ activeFilter, onFilterChange }: FilterButtonsPro
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="text-sm text-muted font-semibold">View:</span>
+      <span className="text-sm text-muted font-semibold">{translations.overview.view}:</span>
       <div className="inline-flex items-center gap-1">
         {filters.map((filter) => (
           <button
@@ -39,8 +56,8 @@ export function FilterButtons({ activeFilter, onFilterChange }: FilterButtonsPro
             }`}
           >
             {getIcon(filter)}
-            <span className="hidden sm:inline">{filter}</span>
-            <span className="sm:hidden">{filter.split(' ')[0]}</span>
+            <span className="hidden sm:inline">{getFilterLabel(filter)}</span>
+            <span className="sm:hidden">{getFilterLabel(filter).split(' ')[0]}</span>
           </button>
         ))}
       </div>

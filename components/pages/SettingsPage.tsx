@@ -1,12 +1,19 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function SettingsPage() {
   return (
     <div className="w-full space-y-6">
-      <Card className="relative overflow-hidden group">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full"
+      >
+        <Card className="relative overflow-hidden group">
         <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
         <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
         <CardHeader className="relative z-10">
@@ -21,6 +28,7 @@ export function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+      </motion.div>
     </div>
   );
 }

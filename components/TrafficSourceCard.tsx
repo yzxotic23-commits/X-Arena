@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrafficSource } from '@/types';
 import { formatNumber, formatPercentage } from '@/lib/utils';
 import { TrendingUp, Users, RefreshCw, UserPlus, Repeat } from 'lucide-react';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 interface TrafficSourceCardProps {
@@ -14,6 +16,8 @@ interface TrafficSourceCardProps {
 const COLORS = ['#DC2626', '#EF4444', '#F87171', '#991B1B'];
 
 export function TrafficSourceCard({ trafficSource }: TrafficSourceCardProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   const total = trafficSource.referral + trafficSource.recommend + trafficSource.reactivation + trafficSource.retention;
   
   const data = [
@@ -86,7 +90,7 @@ export function TrafficSourceCard({ trafficSource }: TrafficSourceCardProps) {
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            Data Source - Traffic Source
+            {translations.overview.dataSourceTrafficSource}
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10">

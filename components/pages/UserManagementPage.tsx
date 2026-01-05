@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-client';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface User {
   id: string;
@@ -18,6 +20,8 @@ interface User {
 }
 
 export function UserManagementPage() {
+  const { language } = useLanguage();
+  const translations = t(language);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,7 +160,7 @@ export function UserManagementPage() {
           className="flex items-center gap-2"
         >
           <UserPlus className="w-4 h-4" />
-          Add User
+          {translations.userManagement.addUser}
         </Button>
       </div>
 
@@ -175,28 +179,31 @@ export function UserManagementPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-card-border">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Full Name</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Username</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Email</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Role</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Status</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Created</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Actions</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{language === 'zh-CN' ? '全名' : 'Full Name'}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.userManagement.username}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.userManagement.email}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.userManagement.role}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.userManagement.status}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{language === 'zh-CN' ? '创建时间' : 'Created'}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.userManagement.actions}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-4 px-4 text-center text-muted">Loading...</td>
+                    <td colSpan={7} className="py-4 px-4 text-center text-muted">{translations.common.loading}</td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-4 px-4 text-center text-muted">No users found.</td>
+                    <td colSpan={7} className="py-4 px-4 text-center text-muted">{language === 'zh-CN' ? '未找到用户。' : 'No users found.'}</td>
                   </tr>
                 ) : (
-                  users.map((user) => (
-                  <tr
+                  users.map((user, index) => (
+                  <motion.tr
                     key={user.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
                     className="border-b border-card-border hover:bg-card-inner/50 transition-colors"
                   >
                     <td className="py-3 px-4 text-sm text-foreground-primary">{user.fullName}</td>
@@ -227,7 +234,7 @@ export function UserManagementPage() {
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                   ))
                 )}
               </tbody>

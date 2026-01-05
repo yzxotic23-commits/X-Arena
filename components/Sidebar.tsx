@@ -15,9 +15,12 @@ import {
       Palette,
       ChevronDown,
       BarChart3,
+      FileText,
     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme-context';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface MenuItem {
   id: string;
@@ -26,23 +29,6 @@ interface MenuItem {
   badge?: number;
   submenu?: { id: string; label: string; icon: React.ComponentType<{ className?: string }> }[];
 }
-
-const menuItems: MenuItem[] = [
-      { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-      { id: 'leaderboard', label: 'Leaderboard', icon: Award },
-      { id: 'customer-listing', label: 'Customer Listing', icon: List },
-      { id: 'targets', label: 'Target Summary', icon: BarChart3 },
-      { 
-        id: 'settings', 
-        label: 'Settings', 
-        icon: Settings,
-        submenu: [
-          { id: 'target-settings', label: 'Target Settings', icon: Target },
-          { id: 'user-management', label: 'User Management', icon: UserPlus },
-          { id: 'appearance-settings', label: 'Appearance', icon: Palette },
-        ]
-      },
-    ];
 
 interface SidebarProps {
   activeMenu?: string;
@@ -53,6 +39,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = false, onToggleCollapse, isLimitedAccess = false }: SidebarProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [clickedMenu, setClickedMenu] = useState<string | null>(null);
@@ -65,9 +53,27 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
+  const menuItems: MenuItem[] = [
+    { id: 'leaderboard', label: translations.nav.leaderboard, icon: Award },
+    { id: 'dashboard', label: translations.nav.overview, icon: LayoutDashboard },
+    { id: 'customer-listing', label: translations.nav.customerListing, icon: List },
+    { id: 'targets', label: translations.nav.targetSummary, icon: BarChart3 },
+    { id: 'reports', label: translations.nav.reports, icon: FileText },
+    { 
+      id: 'settings', 
+      label: translations.nav.settings, 
+      icon: Settings,
+      submenu: [
+        { id: 'target-settings', label: translations.nav.targetSettings, icon: Target },
+        { id: 'user-management', label: translations.nav.userManagement, icon: UserPlus },
+        { id: 'appearance-settings', label: translations.nav.appearance, icon: Palette },
+      ]
+    },
+  ];
+
   // Filter menu items based on limited access
   const filteredMenuItems = isLimitedAccess
-    ? menuItems.filter(item => item.id === 'dashboard' || item.id === 'leaderboard')
+    ? menuItems.filter((item: MenuItem) => item.id === 'dashboard' || item.id === 'leaderboard')
     : menuItems;
 
   // Close dropdown when sidebar is collapsed
@@ -156,12 +162,32 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     };
   }, [hoveredMenu, isCollapsed]);
 
-  // Close dropdown when clicking outside sidebar
+  // Close dropdown only when clicking outside both sidebar and main content area
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
+      const target = event.target as Node;
+      
+      // Don't close if clicking inside sidebar
+      if (sidebarRef.current && sidebarRef.current.contains(target)) {
+        return;
       }
+      
+      // Don't close if clicking in main content area (main element or its children)
+      const mainContent = document.querySelector('main');
+      if (mainContent && mainContent.contains(target)) {
+        return;
+      }
+      
+      // Don't close if clicking in header area
+      const header = document.querySelector('header');
+      if (header && header.contains(target)) {
+        return;
+      }
+      
+      // Only close if clicking truly outside (e.g., backdrop, empty space, etc.)
+      // But actually, we want to keep it open - so we don't close it here
+      // Dropdown will only close when user explicitly toggles it or clicks another menu item
+      // setOpenDropdown(null); // Removed - keep dropdown open
     }
 
     if (openDropdown) {

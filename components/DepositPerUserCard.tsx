@@ -5,12 +5,16 @@ import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target as TargetType } from '@/types';
 import { formatNumber, formatPercentage } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface DepositPerUserCardProps {
   target: TargetType;
 }
 
 export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   // Mock trend data - bisa diganti dengan data real
   const trendChange = 12.5; // percentage change
   const previousValue = target.depositPerUser / (1 + trendChange / 100);
@@ -30,7 +34,7 @@ export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-primary" />
-            Deposit Amount per User
+            {translations.overview.depositAmountPerUser}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4 relative z-10">
@@ -39,14 +43,14 @@ export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
             <p className="text-4xl font-heading font-bold text-glow-red mb-2">
               ${formatNumber(target.depositPerUser)}
             </p>
-            <p className="text-sm text-muted">Average deposit per user</p>
+            <p className="text-sm text-muted">{translations.overview.averageDepositPerUser}</p>
           </div>
 
           {/* Trend Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted">Trend Change</span>
+                <span className="text-sm text-muted">{translations.overview.trendChange}</span>
                 {isPositive ? (
                   <TrendingUp className="w-5 h-5 text-green-400" />
                 ) : (
@@ -56,18 +60,18 @@ export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
               <p className={`text-2xl font-heading font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                 {formatPercentage(trendChange)}
               </p>
-              <p className="text-xs text-muted mt-1">vs Last Period</p>
+              <p className="text-xs text-muted mt-1">{translations.overview.vsLastPeriod}</p>
             </div>
 
             <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted">Previous Period</span>
+                <span className="text-sm text-muted">{translations.overview.previousPeriod}</span>
                 <DollarSign className="w-5 h-5 text-primary" />
               </div>
               <p className="text-2xl font-heading font-bold text-foreground-primary">
                 ${formatNumber(Math.round(previousValue))}
               </p>
-              <p className="text-xs text-muted mt-1">Last period average</p>
+              <p className="text-xs text-muted mt-1">{translations.overview.lastPeriodAverage}</p>
             </div>
           </div>
         </CardContent>

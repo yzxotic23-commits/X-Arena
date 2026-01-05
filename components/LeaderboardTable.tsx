@@ -6,12 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LeaderboardEntry } from '@/types';
 import { formatNumber } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface LeaderboardTableProps {
   leaderboard: LeaderboardEntry[];
 }
 
 export function LeaderboardTable({ leaderboard }: LeaderboardTableProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="w-5 h-5 text-yellow-400" />;
     if (rank === 2) return <Medal className="w-5 h-5 text-gray-300" />;
@@ -40,7 +44,7 @@ export function LeaderboardTable({ leaderboard }: LeaderboardTableProps) {
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-primary" />
-            Ranking & Incentive Module
+            {translations.leaderboard.rankingIncentiveModule}
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10">
@@ -48,13 +52,13 @@ export function LeaderboardTable({ leaderboard }: LeaderboardTableProps) {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-card-border">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Rank</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">{translations.leaderboardTable.rank}</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
-                    Member/Brand
+                    {translations.leaderboardTable.memberBrand}
                   </th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-muted">Score</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-muted">{translations.leaderboardTable.score}</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
-                    Category Tops
+                    {translations.overview.categoryTops}
                   </th>
                 </tr>
               </thead>
@@ -86,13 +90,13 @@ export function LeaderboardTable({ leaderboard }: LeaderboardTableProps) {
                         </span>
                         {entry.isCurrentUser && (
                           <Badge variant="default" className="text-xs">
-                            You
+                            {translations.overview.you}
                           </Badge>
                         )}
                       </div>
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <span className="font-heading font-bold text-foreground-primary">
+                      <span className="font-body font-bold text-foreground-primary" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {formatNumber(entry.score)}
                       </span>
                     </td>

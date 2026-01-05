@@ -5,46 +5,50 @@ import { UserPlus, UserCheck, Users, DollarSign, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BehaviorResultMetrics } from '@/types';
 import { formatNumber } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface BehaviorMetricsCardProps {
   behaviorMetrics: BehaviorResultMetrics;
 }
 
-const metricConfig = [
-  {
-    key: 'numberOfReferredCustomers' as const,
-    label: 'Referred Customers',
-    icon: UserPlus,
-    color: 'text-cyan-400',
-  },
-  {
-    key: 'numberOfReactivatedDormantCustomers' as const,
-    label: 'Reactivated Dormant',
-    icon: UserCheck,
-    color: 'text-purple-400',
-  },
-  {
-    key: 'numberOfRetentionCustomers' as const,
-    label: 'Retention Customers',
-    icon: Users,
-    color: 'text-green-400',
-  },
-  {
-    key: 'depositAmountPerUser' as const,
-    label: 'Deposit per User',
-    icon: DollarSign,
-    color: 'text-yellow-400',
-  },
-  {
-    key: 'targetGapActiveMemberGrossProfit' as const,
-    label: 'Target Gap (AM/GP)',
-    icon: Target,
-    color: 'text-primary',
-    format: (value: number) => value.toFixed(4),
-  },
-];
-
 export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
+  
+  const metricConfig = [
+    {
+      key: 'numberOfReferredCustomers' as const,
+      label: translations.overview.referredCustomers,
+      icon: UserPlus,
+      color: 'text-cyan-400',
+    },
+    {
+      key: 'numberOfReactivatedDormantCustomers' as const,
+      label: translations.overview.reactivatedDormant,
+      icon: UserCheck,
+      color: 'text-purple-400',
+    },
+    {
+      key: 'numberOfRetentionCustomers' as const,
+      label: 'Retention Customers',
+      icon: Users,
+      color: 'text-green-400',
+    },
+    {
+      key: 'depositAmountPerUser' as const,
+      label: translations.overview.depositPerUser,
+      icon: DollarSign,
+      color: 'text-yellow-400',
+    },
+    {
+      key: 'targetGapActiveMemberGrossProfit' as const,
+      label: translations.overview.targetGapAMGP,
+      icon: Target,
+      color: 'text-primary',
+      format: (value: number) => value.toFixed(4),
+    },
+  ];
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -59,7 +63,7 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2">
             <Target className="w-5 h-5 text-primary" />
-            Behavior & Result Metrics
+            {translations.overview.behaviorResultMetrics}
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10">

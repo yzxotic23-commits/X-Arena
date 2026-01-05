@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X, Trophy, TrendingUp, Users, Zap, List, Settings, Database, Shield, Target, UserPlus, Palette, CheckCircle2, BarChart3 } from 'lucide-react';
+import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X, Trophy, TrendingUp, Users, Zap, List, Settings, Database, Shield, Target, UserPlus, Palette, CheckCircle2, BarChart3, FileText, Languages } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 
@@ -36,6 +38,7 @@ interface HeaderProps {
   };
   showAppearanceHeader?: boolean; // Show appearance gaming header
   showTargetSettingsHeader?: boolean; // Show target settings gaming header
+  showReportsHeader?: boolean; // Show reports gaming header
 }
 
 export function Header({ 
@@ -52,14 +55,21 @@ export function Header({
   showUserManagementHeader = false,
   userManagementData,
   showAppearanceHeader = false,
-  showTargetSettingsHeader = false
+  showTargetSettingsHeader = false,
+  showReportsHeader = false
 }: HeaderProps) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showThemeTooltip, setShowThemeTooltip] = useState(false);
+  const [showNotificationTooltip, setShowNotificationTooltip] = useState(false);
+  const [showLanguageTooltip, setShowLanguageTooltip] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
+  const languageDropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
+  const { language, setLanguage } = useLanguage();
   const router = useRouter();
   const isDark = theme === 'dark';
 
@@ -87,27 +97,30 @@ export function Header({
       if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
         setShowNotificationDropdown(false);
       }
+      if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target as Node)) {
+        setShowLanguageDropdown(false);
+      }
     }
 
-    if (showProfileDropdown || showNotificationDropdown) {
+    if (showProfileDropdown || showNotificationDropdown || showLanguageDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showProfileDropdown, showNotificationDropdown]);
+  }, [showProfileDropdown, showNotificationDropdown, showLanguageDropdown]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return t(language).overview.goodMorning;
+    if (hour < 18) return t(language).overview.goodAfternoon;
+    return t(language).overview.goodEvening;
   };
 
   return (
     <header className={`w-full sticky top-0 z-50 transition-all ${hideBorder ? 'bg-background' : 'bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 backdrop-blur-md border-b-2 border-primary/40 shadow-md dark:shadow-glow-red/20'}`}>
-      <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader || showTargetSettingsHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
+      <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader || showTargetSettingsHeader || showReportsHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
         <div className="w-full flex flex-col md:flex-row items-start md:items-center gap-4">
           {/* Greeting Message - Left side */}
           {showGreeting && (
@@ -165,7 +178,7 @@ export function Header({
 
               {/* Title Only */}
               <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
-                Customer Listing
+                {t(language).nav.customerListing}
               </h2>
             </div>
           )}
@@ -214,7 +227,7 @@ export function Header({
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 backdrop-blur-sm"
                   >
                     <span className="text-xs sm:text-sm font-semibold text-foreground-primary">
-                      <span className="text-primary font-black">Configure</span> System
+                      <span className="text-primary font-black">{t(language).overview.configureSystem.split(' ')[0]}</span> {t(language).overview.configureSystem.split(' ').slice(1).join(' ')}
                     </span>
                   </motion.div>
 
@@ -226,7 +239,7 @@ export function Header({
                     className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary/20 to-red-500/20 border border-primary/30 backdrop-blur-sm"
                   >
                     <span className="text-xs font-bold text-primary uppercase tracking-wider">
-                      Full Control
+                      {t(language).overview.fullControl}
                     </span>
                   </motion.div>
                 </div>
@@ -256,7 +269,7 @@ export function Header({
 
               {/* Title Only */}
               <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
-                Target Summary
+                {t(language).nav.targetSummary}
               </h2>
             </div>
           )}
@@ -283,7 +296,7 @@ export function Header({
 
               {/* Title Only */}
               <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary whitespace-nowrap">
-                User Management
+                {t(language).nav.userManagement}
               </h2>
             </div>
           )}
@@ -298,7 +311,7 @@ export function Header({
                 <Target className="w-6 h-6 text-primary" />
               </motion.div>
               <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent whitespace-nowrap">
-                Target Settings
+                {t(language).nav.targetSettings}
               </h1>
             </div>
           )}
@@ -329,31 +342,76 @@ export function Header({
               </h2>
             </div>
           )}
+
+          {/* Reports Header - Left side */}
+          {showReportsHeader && (
+            <div className="flex-1 flex items-center gap-3 sm:gap-4">
+              {/* FileText Icon with Glow Animation */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  y: [0, -5, 0],
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
+                <FileText className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+              </motion.div>
+
+              {/* Title Only */}
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
+                Reports
+              </h2>
+            </div>
+          )}
           
           {/* Account Information Section - Right side */}
           <div className="flex items-center gap-4 ml-auto">
             {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
-              className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
-              aria-label="Toggle theme"
-            >
-              {isDark ? (
-                <Moon className="w-5 h-5" />
-              ) : (
-                <Sun className="w-5 h-5" />
+            <div className="relative">
+              <button
+                onClick={toggleTheme}
+                onMouseEnter={() => setShowThemeTooltip(true)}
+                onMouseLeave={() => setShowThemeTooltip(false)}
+                className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                aria-label="Toggle theme"
+              >
+                {isDark ? (
+                  <Moon className="w-5 h-5" />
+                ) : (
+                  <Sun className="w-5 h-5" />
+                )}
+              </button>
+              {showThemeTooltip && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-card-inner dark:bg-gray-900 border border-card-border text-foreground-primary text-xs rounded whitespace-nowrap pointer-events-none z-[60] shadow-lg">
+                  {isDark ? t(language).header.switchToLightMode : t(language).header.switchToDarkMode}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-card-inner dark:border-b-gray-900"></div>
+                </div>
               )}
-            </button>
+            </div>
 
             {/* Notification Bell */}
             <div className="relative" ref={notificationDropdownRef}>
               <button 
                 onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                onMouseEnter={() => setShowNotificationTooltip(true)}
+                onMouseLeave={() => setShowNotificationTooltip(false)}
                 className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
               >
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
               </button>
+              {showNotificationTooltip && !showNotificationDropdown && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-card-inner dark:bg-gray-900 border border-card-border text-foreground-primary text-xs rounded whitespace-nowrap pointer-events-none z-[60] shadow-lg">
+                  {t(language).header.notifications}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-card-inner dark:border-b-gray-900"></div>
+                </div>
+              )}
               {showNotificationDropdown && (
                 <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-black border border-red-500/30 dark:border-red-500/40 rounded-lg shadow-lg z-10 transition-colors overflow-hidden">
                   {/* Header */}
@@ -362,7 +420,7 @@ export function Header({
                       <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded flex items-center justify-center">
                         <Bell className="w-4 h-4 text-red-500" />
                       </div>
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Database Status</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t(language).overview.databaseStatus}</h3>
                     </div>
                     <button
                       onClick={() => setShowNotificationDropdown(false)}
@@ -376,16 +434,16 @@ export function Header({
                   <div className="p-4 bg-white dark:bg-black">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Last Updated:</span>
+                          <span className="text-gray-600 dark:text-gray-400 text-sm">{t(language).overview.lastUpdated}:</span>
                         <span className="font-medium text-gray-900 dark:text-white text-sm">
                           {getCurrentDate()}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm">Status:</span>
+                        <span className="text-gray-600 dark:text-gray-400 text-sm">{t(language).common.status}:</span>
                         <span className="flex items-center space-x-1.5">
                           <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full"></div>
-                          <span className="text-green-600 dark:text-green-400 font-medium text-sm">Online</span>
+                          <span className="text-green-600 dark:text-green-400 font-medium text-sm">{t(language).common.online}</span>
                         </span>
                       </div>
                     </div>
@@ -394,10 +452,52 @@ export function Header({
               )}
             </div>
 
-            {/* Mail/Envelope */}
-            <button className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
-              <Mail className="w-5 h-5" />
-            </button>
+            {/* Language Translation */}
+            <div className="relative" ref={languageDropdownRef}>
+              <button
+                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                onMouseEnter={() => setShowLanguageTooltip(true)}
+                onMouseLeave={() => setShowLanguageTooltip(false)}
+                className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+              >
+                <Languages className="w-5 h-5" />
+              </button>
+              {showLanguageTooltip && !showLanguageDropdown && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-card-inner dark:bg-gray-900 border border-card-border text-foreground-primary text-xs rounded whitespace-nowrap pointer-events-none z-[60] shadow-lg">
+                  {t(language).header.changeLanguage}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-0 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-card-inner dark:border-b-gray-900"></div>
+                </div>
+              )}
+              
+              {showLanguageDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-900 border border-card-border rounded-lg shadow-lg z-50 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setLanguage('en');
+                      setShowLanguageDropdown(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-primary/10 transition-colors ${
+                      language === 'en' ? 'bg-primary/10 text-primary' : 'text-foreground-primary'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{language === 'en' ? 'English' : '英语'}</span>
+                    {language === 'en' && <CheckCircle2 className="w-4 h-4 ml-auto" />}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setLanguage('zh-CN');
+                      setShowLanguageDropdown(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-primary/10 transition-colors ${
+                      language === 'zh-CN' ? 'bg-primary/10 text-primary' : 'text-foreground-primary'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{language === 'zh-CN' ? '简体中文' : 'Simplified Chinese'}</span>
+                    {language === 'zh-CN' && <CheckCircle2 className="w-4 h-4 ml-auto" />}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Profile Section */}
             <div className="relative" ref={profileDropdownRef}>
@@ -410,7 +510,7 @@ export function Header({
                 </div>
                 <div className="hidden md:block">
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">Jane Copper</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Medicine Specialist</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t(language).overview.medicineSpecialist}</p>
                 </div>
                 <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </button>

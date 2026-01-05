@@ -14,10 +14,16 @@ const config: Config = {
         foreground: "hsl(var(--foreground))",
         border: "hsl(var(--border))",
         primary: {
-          DEFAULT: "#DC2626", // Money Heist red - lebih bold
-          dark: "#991B1B",
-          light: "#EF4444",
-          accent: "#FEE2E2",
+          DEFAULT: "#E60012", // Nintendo Red - Super Mario theme
+          dark: "#CC0000",
+          light: "#FF1A2E",
+          accent: "#FFE5E8",
+        },
+        mario: {
+          red: "#E60012",
+          blue: "#0066CC",
+          yellow: "#FFD700",
+          green: "#00A859",
         },
         card: {
           DEFAULT: "rgba(0, 0, 0, 0.9)",
@@ -35,8 +41,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ["Orbitron", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        heading: ["Poppins", "sans-serif"],
+        body: ["Poppins", "sans-serif"],
       },
       boxShadow: {
         "glow-red": "0 0 20px rgba(220, 38, 38, 0.6), 0 0 40px rgba(220, 38, 38, 0.3)",

@@ -6,6 +6,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { Contribution } from '@/types';
 import { formatNumber } from '@/lib/utils';
 import { TrendingUp } from 'lucide-react';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface BreakdownChartProps {
   contribution: Contribution;
@@ -27,6 +29,8 @@ const COLORS = ['#FF0000', '#DC2626', '#EF4444', '#F87171']; // Bright Red, Prim
 // const COLORS = ['#FF0000', '#CC0000', '#FF3333', '#FF6666']; // Bright Red, Dark Red, Medium Red, Light Red
 
 export function BreakdownChart({ contribution }: BreakdownChartProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   const data = [
     { name: 'Deposit', value: contribution.breakdown.deposit },
     { name: 'Retention', value: contribution.breakdown.retention },
@@ -43,7 +47,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
       return (
         <div className="bg-white dark:bg-black border border-card-border rounded-lg p-3 shadow-lg transition-colors">
           <p className="text-gray-900 dark:text-white font-semibold">{data.name}</p>
-          <p className="text-primary">{formatNumber(data.value)} points</p>
+          <p className="text-primary">{formatNumber(data.value)} {translations.overview.points}</p>
           <p className="text-muted text-sm">{percentage}%</p>
         </div>
       );
@@ -85,7 +89,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
-            Contribution Breakdown
+            {translations.overview.contributionBreakdown}
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10">

@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Edit, Trash2, Eye, RefreshCw, Repeat, UserPlus, Upload, X, FileText, Download, CheckCircle } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 type TabType = 'reactivation' | 'retention' | 'recommend';
 
@@ -36,6 +38,8 @@ const mockRecommendCustomers: Customer[] = [
 ];
 
 export function CustomerListingPage() {
+  const { language } = useLanguage();
+  const translations = t(language);
   const [activeTab, setActiveTab] = useState<TabType>('reactivation');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showImportSidebar, setShowImportSidebar] = useState(false);
@@ -187,7 +191,7 @@ export function CustomerListingPage() {
             }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Reactivation
+            {translations.customerListing.reactivation}
           </button>
           <button
             onClick={() => setActiveTab('retention')}
@@ -198,7 +202,7 @@ export function CustomerListingPage() {
             }`}
           >
             <Repeat className="w-3.5 h-3.5" />
-            Retention
+            {translations.customerListing.retention}
           </button>
           <button
             onClick={() => setActiveTab('recommend')}
@@ -209,7 +213,7 @@ export function CustomerListingPage() {
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
-            Recommend
+            {translations.customerListing.recommend}
           </button>
         </div>
       </div>
@@ -219,9 +223,9 @@ export function CustomerListingPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            {activeTab === 'reactivation' && 'Reactivation'} 
-            {activeTab === 'retention' && 'Retention'} 
-            {activeTab === 'recommend' && 'Recommend'} Customer List
+            {activeTab === 'reactivation' && translations.customerListing.reactivation} 
+            {activeTab === 'retention' && translations.customerListing.retention} 
+            {activeTab === 'recommend' && translations.customerListing.recommend} {translations.customerListing.customerList}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button
@@ -231,7 +235,7 @@ export function CustomerListingPage() {
               className="flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />
-              Import Listing
+              {translations.customerListing.importCustomers}
             </Button>
             {activeTab === 'recommend' && (
               <Button
@@ -257,12 +261,12 @@ export function CustomerListingPage() {
                     ? 'border-blue-500/50 bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:bg-card-inner dark:border-blue-500/60'
                     : 'border-green-500/50 bg-gradient-to-r from-green-500/10 to-green-500/5 dark:bg-card-inner dark:border-green-500/60'
                 }`}>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Unique Code</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Username</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Brand</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Handler</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Label</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary">Action</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.uniqueCode}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.username}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.brand}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.handler}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.label}</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.common.actions}</th>
                 </tr>
               </thead>
               <tbody>

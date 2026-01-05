@@ -6,12 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Squad } from '@/types';
 import { formatNumber } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 
 interface SquadInfoCardProps {
   squad: Squad;
 }
 
 export function SquadInfoCard({ squad }: SquadInfoCardProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -26,7 +30,7 @@ export function SquadInfoCard({ squad }: SquadInfoCardProps) {
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
-            Squad Contribution - {squad.squadName}
+            {translations.overview.squadContribution} - {squad.squadName}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4 relative z-10">
@@ -34,7 +38,7 @@ export function SquadInfoCard({ squad }: SquadInfoCardProps) {
             {/* Total Score */}
             <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted">Total Squad Score</span>
+                <span className="text-sm text-muted">{translations.overview.totalSquadScore}</span>
                 <Crown className="w-5 h-5 text-primary" />
               </div>
               <div className="text-3xl font-heading font-bold text-glow-red">
@@ -45,7 +49,7 @@ export function SquadInfoCard({ squad }: SquadInfoCardProps) {
             {/* Status */}
             <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted">Status</span>
+                <span className="text-sm text-muted">{translations.common.status}</span>
                 {squad.status === 'Leading' ? (
                   <TrendingUp className="w-5 h-5 text-green-400" />
                 ) : (
@@ -56,7 +60,7 @@ export function SquadInfoCard({ squad }: SquadInfoCardProps) {
                 variant={squad.status === 'Leading' ? 'success' : 'danger'}
                 className="text-lg px-4 py-2"
               >
-                {squad.status}
+                {squad.status === 'Leading' ? translations.overview.leading : translations.overview.behind}
               </Badge>
             </div>
           </div>
@@ -64,7 +68,7 @@ export function SquadInfoCard({ squad }: SquadInfoCardProps) {
           {/* Squad Ranking */}
           <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted">Squad Ranking</span>
+              <span className="text-sm text-muted">{translations.overview.squadRanking}</span>
               <span className="text-2xl font-heading font-bold text-foreground-primary">
                 #{squad.squadRanking} / 10
               </span>

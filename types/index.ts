@@ -43,6 +43,7 @@ export interface LeaderboardEntry {
   score: number;
   categoryTops: string[];
   isCurrentUser?: boolean;
+  avatar?: string;
   breakdown?: {
     deposit: number;
     retention: number;

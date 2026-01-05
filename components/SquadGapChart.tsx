@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Squad } from '@/types';
 import { formatNumber } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 
 interface SquadGapChartProps {
@@ -11,8 +13,10 @@ interface SquadGapChartProps {
 }
 
 export function SquadGapChart({ squad }: SquadGapChartProps) {
+  const { language } = useLanguage();
+  const translations = t(language);
   const gapData = squad.gapToOthers.map((gap, index) => ({
-    name: `Squad ${index + 1}`,
+    name: `${translations.reports.squadA.split(' ')[0]} ${index + 1}`,
     gap: gap,
   }));
 
@@ -28,7 +32,7 @@ export function SquadGapChart({ squad }: SquadGapChartProps) {
         <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
         <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
         <CardHeader className="relative z-10">
-          <CardTitle>Gap Between Squads</CardTitle>
+          <CardTitle>{translations.overview.gapBetweenSquads}</CardTitle>
         </CardHeader>
         <CardContent className="relative z-10">
           <div className="h-80">
@@ -73,7 +77,7 @@ export function SquadGapChart({ squad }: SquadGapChartProps) {
                   {formatNumber(entry.gap)}
                 </p>
                 <p className="text-xs text-muted">
-                  {entry.gap >= 0 ? 'Leading' : 'Lagging'}
+                  {entry.gap >= 0 ? translations.overview.leading : translations.overview.lagging}
                 </p>
               </div>
             ))}
