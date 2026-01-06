@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X, Trophy, TrendingUp, Users, Zap, List, Settings, Database, Shield, Target, UserPlus, Palette, CheckCircle2, BarChart3, FileText, Languages } from 'lucide-react';
+import { Bell, Mail, ChevronDown, User, Sun, Moon, LogOut, X, Trophy, TrendingUp, Users, Zap, List, Settings, Database, Shield, Target, UserPlus, Palette, CheckCircle2, BarChart3, FileText, Languages, Clock, Cloud, CloudSun, CloudRain, CloudSnow } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/language-context';
@@ -72,6 +72,69 @@ export function Header({
   const { language, setLanguage } = useLanguage();
   const router = useRouter();
   const isDark = theme === 'dark';
+  
+  // Live Clock State
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [weather, setWeather] = useState<{ temp: number; condition: string; icon: string } | null>(null);
+  
+  // Update clock every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+  
+  // Fetch weather (using mock data for now, can be replaced with real API)
+  useEffect(() => {
+    // Mock weather data - can be replaced with real API call
+    // In production, you can use OpenWeatherMap API or similar
+    if (showLeaderboardHeader) {
+      setWeather({
+        temp: 28,
+        condition: 'Sunny',
+        icon: 'sunny'
+      });
+    } else {
+      setWeather(null);
+    }
+  }, [showLeaderboardHeader]);
+  
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      hour12: true 
+    });
+  };
+  
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+  
+  const getWeatherIcon = (icon: string) => {
+    switch(icon) {
+      case 'sunny':
+        return <Sun className="w-5 h-5 text-yellow-500" />;
+      case 'cloudy':
+        return <Cloud className="w-5 h-5 text-gray-500" />;
+      case 'partly-cloudy':
+        return <CloudSun className="w-5 h-5 text-gray-400" />;
+      case 'rainy':
+        return <CloudRain className="w-5 h-5 text-blue-500" />;
+      case 'snowy':
+        return <CloudSnow className="w-5 h-5 text-blue-300" />;
+      default:
+        return <Sun className="w-5 h-5 text-yellow-500" />;
+    }
+  };
 
   // Get current date formatted
   const getCurrentDate = () => {
@@ -119,7 +182,7 @@ export function Header({
   };
 
   return (
-    <header className={`w-full sticky top-0 z-50 transition-all ${hideBorder ? 'bg-background header-no-shadow' : 'bg-white dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 backdrop-blur-md border-b border-gray-200 dark:border-primary/40 shadow-sm dark:shadow-glow-red/20'}`}>
+    <header className={`w-full sticky top-0 z-50 transition-all ${hideBorder ? 'bg-background header-no-shadow' : 'bg-[#F7F6F3] dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 backdrop-blur-md border-b border-gray-200 dark:border-primary/40 shadow-sm dark:shadow-glow-red/20'}`}>
       <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader || showTargetSettingsHeader || showReportsHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
         <div className="w-full flex flex-col md:flex-row items-start md:items-center gap-4">
           {/* Greeting Message - Left side */}
@@ -131,28 +194,34 @@ export function Header({
 
           {/* Leaderboard Header - Left side */}
           {showLeaderboardHeader && (
-            <div className="flex-1 flex items-center gap-3 sm:gap-4">
-              {/* Trophy Icon with Glow Animation */}
-              <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="relative"
-              >
-                <div className="absolute inset-0 bg-primary/30 blur-xl rounded-full animate-pulse" />
-                <Trophy className="relative w-6 h-6 sm:w-7 sm:h-7 text-primary drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
-              </motion.div>
+            <div className="flex-1 flex items-center gap-4 sm:gap-6">
+              {/* Live Clock */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <div className="flex flex-col">
+                  <div className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground-primary tabular-nums">
+                    {formatTime(currentTime)}
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted">
+                    {formatDate(currentTime)}
+                  </div>
+                </div>
+              </div>
 
-              {/* Title Only */}
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-heading font-bold text-foreground-primary">
-                Leaderboard
-              </h2>
+              {/* Weather */}
+              {weather && (
+                <div className="flex items-center gap-2 sm:gap-3 pl-4 sm:pl-6 border-l border-gray-600 dark:border-gray-700">
+                  {getWeatherIcon(weather.icon)}
+                  <div className="flex flex-col">
+                    <div className="text-base sm:text-lg font-heading font-semibold text-foreground-primary">
+                      {weather.temp}°C
+                    </div>
+                    <div className="text-xs sm:text-sm text-muted">
+                      {weather.condition}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -413,9 +482,9 @@ export function Header({
                 </div>
               )}
               {showNotificationDropdown && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-black border border-red-500/30 dark:border-red-500/40 rounded-lg shadow-lg z-10 transition-colors overflow-hidden">
+                <div className="absolute right-0 mt-2 w-80 bg-[#F7F6F3] dark:bg-black border border-red-500/30 dark:border-red-500/40 rounded-lg shadow-lg z-10 transition-colors overflow-hidden">
                   {/* Header */}
-                  <div className="flex items-center justify-between p-4 border-b border-red-500/30 dark:border-red-500/40 bg-gray-50 dark:bg-black">
+                  <div className="flex items-center justify-between p-4 border-b border-red-500/30 dark:border-red-500/40 bg-[#F7F6F3] dark:bg-black">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded flex items-center justify-center">
                         <Bell className="w-4 h-4 text-red-500" />
@@ -431,7 +500,7 @@ export function Header({
                   </div>
                   
                   {/* Content */}
-                  <div className="p-4 bg-white dark:bg-black">
+                  <div className="p-4 bg-[#F7F6F3] dark:bg-black">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                           <span className="text-gray-600 dark:text-gray-400 text-sm">{t(language).overview.lastUpdated}:</span>
@@ -470,7 +539,7 @@ export function Header({
               )}
               
               {showLanguageDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-900 border border-card-border rounded-lg shadow-lg z-50 overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[#F7F6F3] dark:bg-gray-900 border border-card-border rounded-lg shadow-lg z-50 overflow-hidden">
                   <button
                     onClick={() => {
                       setLanguage('en');
@@ -480,7 +549,7 @@ export function Header({
                       language === 'en' ? 'bg-primary/10 text-primary' : 'text-foreground-primary'
                     }`}
                   >
-                    <span className="text-sm font-medium">{language === 'en' ? 'English' : '英语'}</span>
+                    <span className="text-sm font-medium">English</span>
                     {language === 'en' && <CheckCircle2 className="w-4 h-4 ml-auto" />}
                   </button>
                   <button
@@ -492,7 +561,7 @@ export function Header({
                       language === 'zh-CN' ? 'bg-primary/10 text-primary' : 'text-foreground-primary'
                     }`}
                   >
-                    <span className="text-sm font-medium">{language === 'zh-CN' ? '简体中文' : 'Simplified Chinese'}</span>
+                    <span className="text-sm font-medium">简体中文</span>
                     {language === 'zh-CN' && <CheckCircle2 className="w-4 h-4 ml-auto" />}
                   </button>
                 </div>
@@ -503,7 +572,7 @@ export function Header({
             <div className="relative" ref={profileDropdownRef}>
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-primary/20 hover:opacity-80 transition-opacity"
+                className="flex items-center gap-3 pl-4 border-l border-gray-600 dark:border-primary/20 hover:opacity-80 transition-opacity"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
                   <User className="w-6 h-6 text-white" />
@@ -515,7 +584,7 @@ export function Header({
                 <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </button>
               {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-card-border rounded-md shadow-lg z-10 transition-colors">
+                <div className="absolute right-0 mt-2 w-48 bg-[#F7F6F3] dark:bg-gray-900 border border-gray-200 dark:border-card-border rounded-md shadow-lg z-10 transition-colors">
                   <button
                     onClick={() => {
                       setShowProfileDropdown(false);

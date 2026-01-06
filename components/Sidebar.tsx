@@ -257,7 +257,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     <aside 
       ref={sidebarRef}
       className={cn(
-        "fixed left-0 top-0 h-screen bg-white dark:bg-gradient-to-b dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-gray-200 dark:border-primary/40 z-40 flex flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
+        "fixed left-0 top-0 h-screen bg-[#F7F6F3] dark:bg-gradient-to-b dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-gray-200 dark:border-primary/40 z-40 flex flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
@@ -463,7 +463,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ duration: 0.2 }}
                     data-popover="settings-submenu"
-                    className="fixed bg-white dark:bg-gray-900 border border-gray-200 dark:border-primary/30 rounded-lg shadow-lg py-2 min-w-[200px] z-[99999]"
+                    className="fixed bg-[#F7F6F3] dark:bg-gray-900 border border-gray-200 dark:border-primary/30 rounded-lg shadow-lg py-2 min-w-[200px] z-[99999]"
                     style={{
                       top: `${popoverPosition.top}px`,
                       left: `${popoverPosition.left}px`,

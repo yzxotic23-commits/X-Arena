@@ -74,15 +74,19 @@
     overflow-x: hidden;
   }
   
-  /* Dark mode background - dark sky with stars */
+  /* Dark mode background - custom image */
   .dark body {
-    background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%);
+    background-image: url('/background-layout/dark.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     background-attachment: fixed;
     position: relative;
   }
   
-  /* Stars effect for dark mode */
+  /* Stars effect for dark mode - hidden when using custom background */
   .dark body::before {
+    display: none;
     content: '';
     position: fixed;
     top: 0;
@@ -158,8 +162,9 @@
     }
   }
   
-  /* Additional smaller stars layer */
+  /* Additional smaller stars layer - hidden when using custom background */
   .dark body::after {
+    display: none;
     content: '';
     position: fixed;
     top: 0;
@@ -225,22 +230,31 @@
     }
   }
   
-  /* Light mode background - Notion style warm beige */
+  /* Light mode background - custom image */
   .light body {
-    background: #F7F6F3;
+    background-image: url('/background-layout/light.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     background-attachment: fixed;
   }
 
-  /* Ensure bg-background class uses warm beige in light mode (Notion theme) */
+  /* Ensure bg-background class uses custom image in light mode */
   .light .bg-background {
-    background: #F7F6F3 !important;
-    background-attachment: fixed;
+    background-image: url('/background-layout/light.jpg') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
   }
   
-  /* Ensure bg-background class uses dark sky in dark mode */
+  /* Ensure bg-background class uses custom image in dark mode */
   .dark .bg-background {
-    background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 50%, #0f1419 100%) !important;
-    background-attachment: fixed;
+    background-image: url('/background-layout/dark.jpg') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
     position: relative;
   }
   
@@ -317,7 +331,7 @@
   }
   
   .light .bg-card-glass {
-    background: #ffffff;
+    background: #F7F6F3;
     border: 1px solid rgba(35, 20% 85%, 0.4);
     box-shadow: 
       0 1px 3px rgba(0, 0, 0, 0.05),
@@ -419,7 +433,7 @@
   }
   
   .light .bg-card-inner {
-    background: #ffffff !important;
+    background: #F7F6F3 !important;
     border: 1px solid rgba(35, 20% 85%, 0.4) !important;
     box-shadow: 
       0 1px 3px rgba(0, 0, 0, 0.05),

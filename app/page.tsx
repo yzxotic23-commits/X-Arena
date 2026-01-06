@@ -187,7 +187,7 @@ function DashboardContent() {
       
       <div className={isSidebarCollapsed ? "flex-1 lg:ml-20" : "flex-1 lg:ml-64"} style={{ minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <Header 
-          hideBorder={activeMenu === 'dashboard'} 
+          hideBorder={activeMenu === 'dashboard' || activeMenu === 'leaderboard'} 
           showGreeting={activeMenu === 'dashboard'} 
           userName="Jane Copper"
           showLeaderboardHeader={activeMenu === 'leaderboard'}
