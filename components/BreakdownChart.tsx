@@ -47,7 +47,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
       return (
         <div className="bg-white dark:bg-black border border-card-border rounded-lg p-3 shadow-lg transition-colors">
           <p className="text-gray-900 dark:text-white font-semibold">{data.name}</p>
-          <p className="text-primary">{formatNumber(data.value)} {translations.overview.points}</p>
+          <p className="text-gray-900 dark:text-white">{formatNumber(data.value)} {translations.overview.points}</p>
           <p className="text-muted text-sm">{percentage}%</p>
         </div>
       );

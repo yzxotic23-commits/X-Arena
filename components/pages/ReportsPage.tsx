@@ -176,7 +176,7 @@ export function ReportsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                     <div className="text-xs text-muted mb-1">{translations.reports.netProfit}</div>
-                    <div className="text-2xl font-heading font-bold text-glow-red">
+                    <div className="text-2xl font-heading font-bold text-gray-900 dark:text-white">
                       $103,175.24
                     </div>
                   </div>
@@ -281,7 +281,7 @@ export function ReportsPage() {
                       <span className="text-xs text-muted">{translations.overview.totalSquadScore}</span>
                       <Crown className="w-4 h-4 text-primary" />
                     </div>
-                    <div className="text-lg font-heading font-bold text-glow-red">
+                    <div className="text-lg font-heading font-bold text-gray-900 dark:text-white">
                       {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').reduce((sum, member) => sum + member.score, 0))}
                     </div>
                     <div className="flex items-center gap-1 mt-1">
@@ -339,7 +339,7 @@ export function ReportsPage() {
                       <p className="text-sm text-muted mb-2">
                         {translations.overview.contribution}: {formatPercentage(mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.contribution || 0)}
                       </p>
-                      <p className="text-2xl font-heading font-bold text-glow-red">
+                      <p className="text-2xl font-heading font-bold text-gray-900 dark:text-white">
                         {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.score || 0)} {translations.overview.points}
                       </p>
                     </div>

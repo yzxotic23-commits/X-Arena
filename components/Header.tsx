@@ -119,13 +119,13 @@ export function Header({
   };
 
   return (
-    <header className={`w-full sticky top-0 z-50 transition-all ${hideBorder ? 'bg-background' : 'bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 backdrop-blur-md border-b-2 border-primary/40 shadow-md dark:shadow-glow-red/20'}`}>
+    <header className={`w-full sticky top-0 z-50 transition-all ${hideBorder ? 'bg-background header-no-shadow' : 'bg-white dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 backdrop-blur-md border-b border-gray-200 dark:border-primary/40 shadow-sm dark:shadow-glow-red/20'}`}>
       <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader || showTargetSettingsHeader || showReportsHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
         <div className="w-full flex flex-col md:flex-row items-start md:items-center gap-4">
           {/* Greeting Message - Left side */}
           {showGreeting && (
             <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground-primary flex-1">
-              {getGreeting()}, <span className="text-primary">{userName}</span>!
+              {getGreeting()}, <span className="text-gray-900 dark:text-primary">{userName}</span>!
             </h2>
           )}
 
@@ -503,7 +503,7 @@ export function Header({
             <div className="relative" ref={profileDropdownRef}>
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-3 pl-4 border-l border-primary/20 hover:opacity-80 transition-opacity"
+                className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-primary/20 hover:opacity-80 transition-opacity"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
                   <User className="w-6 h-6 text-white" />
@@ -515,7 +515,7 @@ export function Header({
                 <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </button>
               {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-black border border-card-border rounded-md shadow-lg z-10 transition-colors">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-card-border rounded-md shadow-lg z-10 transition-colors">
                   <button
                     onClick={() => {
                       setShowProfileDropdown(false);
@@ -523,15 +523,15 @@ export function Header({
                       const event = new CustomEvent('navigate', { detail: 'profile' });
                       window.dispatchEvent(event);
                     }}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-900 dark:text-white hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+                    className="w-full text-left px-4 py-3 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-primary/10 hover:text-gray-900 dark:hover:text-primary transition-colors flex items-center gap-2"
                   >
                     <User className="w-4 h-4" />
                     <span>Profile</span>
                   </button>
-                  <div className="border-t border-card-border" />
+                  <div className="border-t border-gray-200 dark:border-card-border" />
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-3 text-sm text-gray-900 dark:text-white hover:bg-red-500/10 hover:text-red-500 transition-colors flex items-center gap-2"
+                    className="w-full text-left px-4 py-3 text-sm text-gray-900 dark:text-white hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-500 transition-colors flex items-center gap-2"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>

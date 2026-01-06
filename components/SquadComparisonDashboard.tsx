@@ -322,7 +322,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
             </div>
             <div className="flex items-center justify-center gap-4">
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
-                <span className="text-lg font-semibold text-primary">+{Math.abs(scoreDifference).toFixed(2)}</span>
+                <span className="text-lg font-semibold text-gray-900 dark:text-white">+{Math.abs(scoreDifference).toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-border">
                 <span className="text-lg font-semibold text-muted">-{Math.abs(scoreDifference).toFixed(2)}</span>
@@ -555,7 +555,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
                         </div>
                         <span className="text-xs font-semibold opacity-70">#{index + 1}</span>
                       </div>
-                      <div className="text-base font-bold text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }}>
+                      <div className="text-base font-bold text-gray-900 dark:text-white" style={{ color: theme === 'green' ? primaryColor : undefined }}>
                         {item.unit}${formatNumber(item.value)}
                       </div>
                     </div>
@@ -738,7 +738,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                  <span className="text-xl font-bold text-white">A</span>
+                  <span className="text-xl font-bold text-white dark:text-white">A</span>
                 </div>
                 <div>
                   <h4 className="text-xl font-bold" style={{ color: textColor || 'inherit' }}>SQUAD A</h4>
@@ -766,7 +766,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
                       <div key={member.name} className="p-2.5 rounded-lg bg-muted/10 hover:bg-primary/5 transition-colors cursor-pointer">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-bold" style={{ color: textColor || 'inherit' }}>{member.name}</span>
-                          <span className="text-xl font-bold text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }}>{member.score.toFixed(2)}</span>
+                          <span className="text-xl font-bold text-gray-900 dark:text-white" style={{ color: theme === 'green' ? primaryColor : undefined }}>{member.score.toFixed(2)}</span>
                         </div>
                         
                         {/* Member Metrics */}
@@ -813,7 +813,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-xl font-bold text-white">B</span>
+                  <span className="text-xl font-bold text-white dark:text-white">B</span>
                 </div>
                 <div>
                   <h4 className="text-xl font-bold" style={{ color: textColor || 'inherit' }}>SQUAD B</h4>
@@ -841,7 +841,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
                       <div key={member.name} className="p-2.5 rounded-lg bg-muted/10 hover:bg-primary/5 transition-colors cursor-pointer">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-bold" style={{ color: textColor || 'inherit' }}>{member.name}</span>
-                          <span className="text-xl font-bold text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }}>{member.score.toFixed(2)}</span>
+                          <span className="text-xl font-bold text-gray-900 dark:text-white" style={{ color: theme === 'green' ? primaryColor : undefined }}>{member.score.toFixed(2)}</span>
                         </div>
                         
                         {/* Member Metrics */}

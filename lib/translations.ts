@@ -404,8 +404,7 @@ export const translations: Record<Language, Translations> = {
       actions: 'Actions',
       active: 'Active',
       inactive: 'Inactive',
-    },
-    appearance: {
+    },    appearance: {
       theme: 'Theme',
       colorMode: 'Color Mode',
       chooseColorScheme: 'Choose your preferred color scheme',

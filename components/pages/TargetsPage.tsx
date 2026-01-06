@@ -213,9 +213,7 @@ export function TargetsPage() {
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
-                className={`text-4xl md:text-5xl font-bold ${
-                  activeSquad === 'squad-a' ? 'text-primary' : 'text-blue-500'
-                }`}
+                className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white"
               >
                 {formatCurrency(totalSquadGgr)}
               </motion.div>

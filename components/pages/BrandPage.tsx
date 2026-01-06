@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Building2, Plus, X, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
+import { Loading } from '@/components/Loading';
 
 interface Brand {
   id: string;
@@ -171,7 +172,11 @@ export function BrandPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="py-4 px-4 text-center text-muted">Loading...</td>
+                    <td colSpan={5} className="py-8 px-4">
+                      <div className="flex justify-center">
+                        <Loading size="md" text="Loading..." variant="gaming" />
+                      </div>
+                    </td>
                   </tr>
                 ) : brands.length === 0 ? (
                   <tr>

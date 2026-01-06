@@ -175,7 +175,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
               key={displayScore}
               initial={{ scale: 1.2, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-6xl font-heading font-bold text-glow-red"
+              className="text-6xl font-heading font-bold text-gray-900 dark:text-white"
             >
               {formatNumber(displayScore)}
             </motion.div>

@@ -72,7 +72,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                   <span className="text-sm text-muted">{translations.overview.completionRate}</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-heading font-bold text-glow-red">
+                <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
                   {target.completion.toFixed(1)}%
                 </p>
               </div>

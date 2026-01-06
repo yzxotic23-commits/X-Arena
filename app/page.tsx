@@ -34,6 +34,7 @@ import { ReportsPage } from '@/components/pages/ReportsPage';
 import { useAuth } from '@/lib/auth-context';
 import { LandingPage } from '@/components/LandingPage';
 import { useLanguage } from '@/lib/language-context';
+import { Loading } from '@/components/Loading';
 import { t } from '@/lib/translations';
 
 const queryClient = new QueryClient({
@@ -140,10 +141,7 @@ function DashboardContent() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted">{translations.common.loading}</p>
-        </div>
+        <Loading size="lg" text={translations.common.loading} variant="gaming" />
       </div>
     );
   }
@@ -155,10 +153,7 @@ function DashboardContent() {
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted">{translations.overview.loadingDashboard}</p>
-        </div>
+        <Loading size="lg" text={translations.overview.loadingDashboard} variant="gaming" />
       </div>
     );
   }
@@ -181,7 +176,7 @@ function DashboardContent() {
 
 
   return (
-    <div className="min-h-screen bg-background transition-colors flex" style={{ width: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
+    <div className="min-h-screen bg-background transition-colors flex relative z-10" style={{ width: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
       <Sidebar 
         activeMenu={activeMenu} 
         onMenuChange={setActiveMenu}
@@ -424,10 +419,10 @@ function DashboardContent() {
           )}
 
           {activeMenu === 'leaderboard' && <LeaderboardPage />}
-          {!isLimitedAccess && activeMenu === 'targets' && <TargetsPage />}
+          {activeMenu === 'targets' && <TargetsPage />}
           {!isLimitedAccess && activeMenu === 'target-settings' && <TargetSettingsPage />}
           {!isLimitedAccess && activeMenu === 'customer-listing' && <CustomerListingPage />}
-          {!isLimitedAccess && activeMenu === 'reports' && <ReportsPage />}
+          {activeMenu === 'reports' && <ReportsPage />}
           {!isLimitedAccess && activeMenu === 'settings' && <SettingsPage />}
           {!isLimitedAccess && activeMenu === 'user-management' && <UserManagementPage />}
           {!isLimitedAccess && activeMenu === 'appearance-settings' && <AppearanceSettingsPage />}

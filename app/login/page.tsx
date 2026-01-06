@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
+import { Loading } from '@/components/Loading';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -142,7 +143,7 @@ export default function LoginPage() {
                 >
                   {isLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                      <Loading size="sm" variant="minimal" />
                       <span>Signing in...</span>
                     </>
                   ) : (

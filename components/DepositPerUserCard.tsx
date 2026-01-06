@@ -40,7 +40,7 @@ export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
         <CardContent className="space-y-3 sm:space-y-4 relative z-10">
           {/* Main Value */}
           <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors text-center">
-            <p className="text-4xl font-heading font-bold text-glow-red mb-2">
+            <p className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2">
               ${formatNumber(target.depositPerUser)}
             </p>
             <p className="text-sm text-muted">{translations.overview.averageDepositPerUser}</p>

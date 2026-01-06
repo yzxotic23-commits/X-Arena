@@ -81,7 +81,7 @@ export function Targets({ target }: TargetsProps) {
                   <span className="text-sm text-muted">Completion Rate</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-heading font-bold text-glow-red">
+                <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
                   {target.completion.toFixed(1)}%
                 </p>
               </div>
@@ -122,7 +122,7 @@ export function Targets({ target }: TargetsProps) {
         </CardHeader>
         <CardContent className="relative z-10">
           <div className="bg-card-inner rounded-lg p-6 border border-card-border text-center transition-colors">
-            <p className="text-4xl font-heading font-bold text-glow-red mb-2">
+            <p className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2">
               {formatNumber(target.depositPerUser)}
             </p>
             <p className="text-sm text-muted">Average deposit per user</p>

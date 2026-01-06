@@ -80,7 +80,7 @@ export function SquadShareChart({ squad }: SquadShareChartProps) {
                   <span className="text-sm text-muted">{translations.overview.yourContribution}</span>
                   <div className="w-4 h-4 rounded-full bg-primary" />
                 </div>
-                <p className="text-3xl font-heading font-bold text-glow-red">
+                <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
                   {formatPercentage(squad.personalShare)}
                 </p>
               </div>

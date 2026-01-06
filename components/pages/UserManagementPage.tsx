@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
+import { Loading } from '@/components/Loading';
 
 interface User {
   id: string;
@@ -191,7 +192,11 @@ export function UserManagementPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-4 px-4 text-center text-muted">{translations.common.loading}</td>
+                    <td colSpan={7} className="py-8 px-4">
+                      <div className="flex justify-center">
+                        <Loading size="md" text={translations.common.loading} variant="gaming" />
+                      </div>
+                    </td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>

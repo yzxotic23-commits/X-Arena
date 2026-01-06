@@ -72,8 +72,14 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   ];
 
   // Filter menu items based on limited access
+  // Limited access users can see: dashboard, leaderboard, targets (Target Summary), and reports
   const filteredMenuItems = isLimitedAccess
-    ? menuItems.filter((item: MenuItem) => item.id === 'dashboard' || item.id === 'leaderboard')
+    ? menuItems.filter((item: MenuItem) => 
+        item.id === 'dashboard' || 
+        item.id === 'leaderboard' || 
+        item.id === 'targets' || 
+        item.id === 'reports'
+      )
     : menuItems;
 
   // Close dropdown when sidebar is collapsed
@@ -251,12 +257,12 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     <aside 
       ref={sidebarRef}
       className={cn(
-        "fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-primary/40 z-40 flex flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
+        "fixed left-0 top-0 h-screen bg-white dark:bg-gradient-to-b dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-gray-200 dark:border-primary/40 z-40 flex flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
       {/* Logo Section */}
-      <div className="px-4 py-4 border-b-2 border-primary/40 flex items-center justify-between min-h-[88px]">
+      <div className="px-4 py-4 border-b-2 border-gray-200 dark:border-primary/40 flex items-center justify-between min-h-[88px]">
         {!isCollapsed && (
           <div className="flex flex-col gap-1 flex-1">
             <h1 className="text-3xl font-heading font-bold text-glow-red">
@@ -401,7 +407,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
 
                   {/* Badge */}
                   {item.badge !== undefined && !isCollapsed && (
-                    <span className="ml-auto bg-primary/20 text-primary text-xs font-semibold px-2 py-1 rounded-full border border-primary/30">
+                    <span className="ml-auto bg-gray-100 dark:bg-primary/20 text-gray-700 dark:text-primary text-xs font-semibold px-2 py-1 rounded-full border border-gray-300 dark:border-primary/30">
                       {item.badge}
                     </span>
                   )}
@@ -416,7 +422,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="mt-1 ml-4 space-y-1 border-l-2 border-primary/30 pl-2 overflow-hidden"
+                    className="mt-1 ml-4 space-y-1 border-l-2 border-gray-300 dark:border-primary/30 pl-2 overflow-hidden"
                   >
                     {item.submenu.map((subItem) => {
                       const SubIcon = subItem.icon;
@@ -457,7 +463,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ duration: 0.2 }}
                     data-popover="settings-submenu"
-                    className="fixed bg-white dark:bg-gray-900 border border-primary/30 rounded-lg shadow-lg py-2 min-w-[200px] z-[99999]"
+                    className="fixed bg-white dark:bg-gray-900 border border-gray-200 dark:border-primary/30 rounded-lg shadow-lg py-2 min-w-[200px] z-[99999]"
                     style={{
                       top: `${popoverPosition.top}px`,
                       left: `${popoverPosition.left}px`,
@@ -532,7 +538,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
 
       {/* Collapse Button (when collapsed) */}
       {isCollapsed && onToggleCollapse && (
-        <div className="border-t-2 border-primary/40 px-4 py-4">
+        <div className="border-t-2 border-gray-200 dark:border-primary/40 px-4 py-4">
           <button
             onClick={onToggleCollapse}
             className="w-full p-2 rounded-lg hover:bg-primary/10 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors flex items-center justify-center"
