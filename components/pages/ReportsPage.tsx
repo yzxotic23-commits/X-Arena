@@ -1549,7 +1549,10 @@ export function ReportsPage() {
                           });
                         });
                         
-                        const topMemberScore = topMember !== null ? topMember.score : 0;
+                        let topMemberScore = 0;
+                        if (topMember !== null) {
+                          topMemberScore = topMember.score;
+                        }
                         const contribution = totalSquadScore > 0
                           ? (topMemberScore / totalSquadScore) * 100 
                           : 0;
