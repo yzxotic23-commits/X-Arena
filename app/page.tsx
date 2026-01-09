@@ -138,9 +138,7 @@ function DashboardContent() {
       }));
       setSquadUsers(users);
       // Set first user as default if no userId is set and not limited access
-      if (users.length > 0 && (!userId || userId === '123') && !isLimitedAccess) {
-        setUserId(users[0].id);
-      }
+      // Note: userId setting is now handled in separate useEffect to avoid race conditions
     }
     setLoadingSquadUsers(false);
   }, [userId, isLimitedAccess]);
@@ -179,12 +177,15 @@ function DashboardContent() {
     };
   }, [showUserDropdown, showMonthDropdown, showCycleDropdown, showDateRangePicker]);
 
-  // Set userId from rankUsername if limited access
+  // Set userId from rankUsername if limited access, or from first squad user if not limited access
   useEffect(() => {
     if (isLimitedAccess && rankUsername) {
       setUserId(rankUsername);
+    } else if (!isLimitedAccess && !userId && squadUsers.length > 0 && !loadingSquadUsers) {
+      // Set first user as default if not limited access and no userId set
+      setUserId(squadUsers[0].id);
     }
-  }, [isLimitedAccess, rankUsername]);
+  }, [isLimitedAccess, rankUsername, squadUsers, userId, loadingSquadUsers]);
 
   // Get users list - use squad users if available
   const users = squadUsers.length > 0 ? squadUsers : [];
@@ -193,10 +194,10 @@ function DashboardContent() {
   const { data, isLoading: dataLoading, refetch, isFetching } = useQuery<DashboardData>({
     queryKey: ['dashboard', userId, timeFilter, selectedMonth, selectedCycle, refreshKey],
     queryFn: async () => {
-      // Don't fetch if userId is empty
-      if (!userId) {
+      // Don't fetch if userId is empty - this should not happen due to enabled check
+      if (!userId || userId.trim() === '') {
         console.warn('[Frontend] userId is empty, skipping fetch');
-        throw new Error('User ID is required');
+        return null; // Return null instead of throwing to avoid error state
       }
       
       // Encode cycle parameter to handle spaces properly
@@ -261,7 +262,7 @@ function DashboardContent() {
     );
   }
 
-  if (!data) {
+  if (!data && !dataLoading && userId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
         <div className="text-center">
