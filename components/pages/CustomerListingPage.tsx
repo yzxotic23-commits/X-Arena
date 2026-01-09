@@ -416,8 +416,6 @@ export function CustomerListingPage() {
           if (uniqueCode && brand) {
             const key = `${uniqueCode.toLowerCase()}|${brand.toLowerCase()}`;
             activeMap.set(key, true);
-            // Also store original case for debugging
-            activeMap.set(`${key}|original`, `${uniqueCode}|${brand}`);
           }
         }
       });
