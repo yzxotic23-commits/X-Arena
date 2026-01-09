@@ -400,10 +400,6 @@ export function TargetsPage() {
     }
   }, [fetchCycleData]);
 
-  useEffect(() => {
-    fetchSquadGgrTargets();
-  }, [fetchSquadGgrTargets]);
-
   const formatCurrency = (num: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -464,6 +460,11 @@ export function TargetsPage() {
       setLoadingSquadTargets(false);
     }
   }, [selectedMonth, activeSquad]);
+
+  // Fetch squad GGR targets on mount and when dependencies change
+  useEffect(() => {
+    fetchSquadGgrTargets();
+  }, [fetchSquadGgrTargets]);
 
   // Get cycle data - prioritize database data, fallback to mock data
   const getCycleDataWithBrands = useCallback(() => {
