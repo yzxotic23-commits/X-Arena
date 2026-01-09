@@ -61,7 +61,7 @@ export function SquadGapChart({ squad }: SquadGapChartProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10 pt-0">
-          <div className="h-80">
+          <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <XAxis 
@@ -86,29 +86,29 @@ export function SquadGapChart({ squad }: SquadGapChartProps) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-2 gap-2 mt-4">
             {chartData.map((entry) => {
               const isHigher = entry.score > (entry.name === 'Squad A' ? squadBScore : squadAScore);
               return (
                 <div
                   key={entry.name}
-                  className="bg-card-inner rounded-lg p-3 border border-card-border transition-colors h-full flex flex-col min-h-[100px]"
+                  className="bg-card-inner rounded-lg p-2 border border-card-border transition-colors h-full flex flex-col min-h-[70px]"
                 >
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-1.5 mb-0.5">
                     <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ 
                         backgroundColor: entry.color
                       }}
                     />
-                    <span className="text-xs text-muted">{entry.name}</span>
+                    <span className="text-[10px] text-muted">{entry.name}</span>
                   </div>
-                  <p className={`text-lg font-bold ${
+                  <p className={`text-sm font-bold ${
                     entry.name === 'Squad A' ? 'text-red-400' : 'text-green-400'
                   }`}>
                     {formatNumber(entry.score)}
                   </p>
-                  <p className="text-xs text-muted mt-1">
+                  <p className="text-[10px] text-muted mt-0.5">
                     {isHigher ? translations.overview.leading : translations.overview.lagging}
                   </p>
                 </div>
