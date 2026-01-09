@@ -1157,6 +1157,19 @@ export function LeaderboardPage() {
             </button>
             {showSquadDropdown && (
               <div className="absolute top-full left-0 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[140px] overflow-hidden">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedSquad('All');
+                    setShowSquadDropdown(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
+                    selectedSquad === 'All' ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground-primary'
+                  }`}
+                >
+                  Squad vs Squad
+                </button>
                 {squadOptions.filter(s => s !== 'All').map((squad) => {
                   const isSelected = selectedSquad === squad;
                   return (
