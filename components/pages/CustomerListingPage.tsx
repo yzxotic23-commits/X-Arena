@@ -27,11 +27,6 @@ interface Customer {
 
 // REMOVED: getRandomLabel and mock data - no longer needed, using real data from Supabase
 
-const mockRecommendCustomers: Customer[] = [
-  { id: '7', uniqueCode: 'UC007', username: 'edward_taylor', brand: 'Brand C', handler: 'Handler 3', label: 'New' },
-  { id: '8', uniqueCode: 'UC008', username: 'fiona_anderson', brand: 'Brand B', handler: 'Handler 2', label: 'New' },
-];
-
 export function CustomerListingPage() {
   const { language } = useLanguage();
   const translations = t(language);
