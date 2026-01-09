@@ -77,9 +77,7 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
                     <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${config.color} flex-shrink-0`} />
                   </div>
                   <p className="text-lg sm:text-xl font-heading font-bold text-foreground-primary break-words overflow-wrap-anywhere">
-                    {config.format 
-                      ? config.format(value)
-                      : config.key === 'depositAmountPerUser'
+                    {config.key === 'depositAmountPerUser'
                       ? `$${formatNumber(value)}`
                       : formatNumber(value)}
                   </p>
