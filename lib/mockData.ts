@@ -45,6 +45,7 @@ function generateMockSquad(userId: string): Squad {
     personalShare: randomFloat(5, 25),
     squadRanking: randomInt(1, 10),
     squadName: `Squad ${randomInt(1, 5)}`,
+    squadDepositAmount: randomInt(100000, 1000000),
   };
 }
 
