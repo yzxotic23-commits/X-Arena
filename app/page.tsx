@@ -147,10 +147,6 @@ function DashboardContent() {
     fetchSquadUsers();
   }, [fetchSquadUsers]);
 
-  useEffect(() => {
-    fetchSquadUsers();
-  }, [fetchSquadUsers]);
-
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
