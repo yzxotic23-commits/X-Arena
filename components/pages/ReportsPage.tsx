@@ -1550,7 +1550,7 @@ export function ReportsPage() {
                           : 0;
                         
                         // Get global rank for top member
-                        const globalRank = topMember !== null ? getGlobalRank(topMember.username) : 0;
+                        const globalRank = topMember !== null ? getGlobalRank((topMember as { username: string; score: number; brand: string }).username) : 0;
                         
                         return (
                           <>
