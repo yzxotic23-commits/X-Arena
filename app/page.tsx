@@ -141,7 +141,7 @@ function DashboardContent() {
       // Note: userId setting is now handled in separate useEffect to avoid race conditions
     }
     setLoadingSquadUsers(false);
-  }, [userId, isLimitedAccess]);
+  }, []);
 
   useEffect(() => {
     fetchSquadUsers();
