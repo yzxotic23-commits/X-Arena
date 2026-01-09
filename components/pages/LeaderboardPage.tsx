@@ -96,6 +96,7 @@ export function LeaderboardPage() {
   const [targetPersonal, setTargetPersonal] = useState<TargetPersonal | null>(null);
   const [loadingScores, setLoadingScores] = useState(true);
   const [repeatCustomersCount, setRepeatCustomersCount] = useState<Map<string, number>>(new Map());
+  const [brandToSquadMap, setBrandToSquadMap] = useState<Map<string, string>>(new Map());
 
   // Get current month for data fetching
   const getCurrentMonth = () => {
@@ -203,13 +204,43 @@ export function LeaderboardPage() {
     };
   }, [showMonthDropdown, showCycleDropdown, showSquadDropdown]);
   
-  // Helper function to filter squad mappings by selected squad
+  // Fetch brand mapping to determine squad from brand
+  const fetchBrandMapping = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('brand_mapping')
+        .select('brand, squad')
+        .eq('status', 'active');
+
+      if (error) {
+        console.error('Failed to fetch brand mapping', error);
+        setBrandToSquadMap(new Map());
+      } else {
+        const map = new Map<string, string>();
+        (data ?? []).forEach((item: any) => {
+          if (item.brand && item.squad) {
+            map.set(item.brand, item.squad);
+          }
+        });
+        setBrandToSquadMap(map);
+      }
+    } catch (error) {
+      console.error('Error fetching brand mapping', error);
+      setBrandToSquadMap(new Map());
+    }
+  }, []);
+
+  // Helper function to filter squad mappings by selected squad (based on brand's squad, not shift)
   const getFilteredSquadMappings = (): SquadMappingData[] => {
     if (selectedSquad === 'All') {
       return squadMappings;
     }
-    const shiftFilter = selectedSquad === 'Squad A' ? 'Shift A' : 'Shift B';
-    return squadMappings.filter(m => m.shift === shiftFilter);
+    
+    // Filter by squad based on brand's squad from brand_mapping
+    return squadMappings.filter(m => {
+      const brandSquad = brandToSquadMap.get(m.brand);
+      return brandSquad === selectedSquad;
+    });
   };
 
   // Fetch squad mappings from database
@@ -588,7 +619,8 @@ export function LeaderboardPage() {
   useEffect(() => {
     fetchSquadMappings();
     fetchTargetPersonal();
-  }, [fetchSquadMappings, fetchTargetPersonal]);
+    fetchBrandMapping();
+  }, [fetchSquadMappings, fetchTargetPersonal, fetchBrandMapping]);
 
   useEffect(() => {
     if (squadMappings.length > 0 && targetPersonal && !loadingSquadMappings) {
