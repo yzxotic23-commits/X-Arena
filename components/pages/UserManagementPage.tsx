@@ -766,7 +766,7 @@ export function UserManagementPage() {
                           minLength={8}
                         />
                         <p className="text-xs text-muted mt-2">
-                          Leave empty if you don't want to change the password
+                          Leave empty if you don&apos;t want to change the password
                         </p>
                       </div>
 
