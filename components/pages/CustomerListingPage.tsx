@@ -1013,7 +1013,7 @@ export function CustomerListingPage() {
 
       setShowEditModal(false);
       setEditingCustomer(null);
-      setEditForm({ uniqueCode: '', username: '', brand: '', handler: '', label: '' });
+      setEditForm({ uniqueCode: '', username: '', brand: '', handler: '', label: '', month: '' });
       fetchCustomers(); // Refresh data
       alert('Customer updated successfully!');
     } catch (error) {
