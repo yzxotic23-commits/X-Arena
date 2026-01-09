@@ -1798,7 +1798,9 @@ export function LeaderboardPage() {
                     </div>
                     <div className="space-y-3">
                       <h4 className="text-lg font-heading font-semibold text-foreground-primary">Contribution Breakdown</h4>
-                      <div className="grid grid-cols-2 gap-3">
+                      
+                      {/* Main Categories - 4 columns */}
+                      <div className="grid grid-cols-4 gap-3">
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">Deposit</div>
                           <div className="text-lg font-heading font-bold text-foreground-primary">
@@ -1812,7 +1814,7 @@ export function LeaderboardPage() {
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                          <div className="text-xs text-muted mb-1">Activation</div>
+                          <div className="text-xs text-muted mb-1">Reactivation</div>
                           <div className="text-lg font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.activation)}
                           </div>
@@ -1825,35 +1827,35 @@ export function LeaderboardPage() {
                         </div>
                       </div>
                       
-                      {/* Days Categories */}
-                      <div className="grid grid-cols-2 gap-3 mt-3">
-                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                      {/* Days Categories - 5 columns, smaller size */}
+                      <div className="grid grid-cols-5 gap-2">
+                        <div className="bg-card-inner rounded-lg p-2 border border-card-border">
                           <div className="text-xs text-muted mb-1">4 - 7 Days</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-base font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_4_7 || 0)}
                           </div>
                         </div>
-                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                        <div className="bg-card-inner rounded-lg p-2 border border-card-border">
                           <div className="text-xs text-muted mb-1">8 - 11 Days</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-base font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_8_11 || 0)}
                           </div>
                         </div>
-                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                        <div className="bg-card-inner rounded-lg p-2 border border-card-border">
                           <div className="text-xs text-muted mb-1">12 - 15 Days</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-base font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_12_15 || 0)}
                           </div>
                         </div>
-                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                        <div className="bg-card-inner rounded-lg p-2 border border-card-border">
                           <div className="text-xs text-muted mb-1">16 - 19 Days</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-base font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_16_19 || 0)}
                           </div>
                         </div>
-                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                          <div className="text-xs text-muted mb-1">20 Days & Above</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                        <div className="bg-card-inner rounded-lg p-2 border border-card-border">
+                          <div className="text-xs text-muted mb-1">20+ Days</div>
+                          <div className="text-base font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_20_plus || 0)}
                           </div>
                         </div>
