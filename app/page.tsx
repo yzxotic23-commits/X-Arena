@@ -323,7 +323,7 @@ function DashboardContent() {
               {(activeMenu === 'dashboard' || activeMenu === 'overview') && data && (
             <>
               {/* Top Section - User, Month, and Cycle Slicers (Aligned) */}
-              <div className="flex flex-col items-center gap-4 mb-6 select-none">
+              <div className="flex flex-col items-center gap-4 mb-6 select-none -mt-4">
                 {/* User, Month, and Cycle Selectors - Aligned in a row */}
                 <div className="flex items-center gap-4">
                   {/* User Selector */}
@@ -338,7 +338,7 @@ function DashboardContent() {
                         setShowMonthDropdown(false);
                         setShowCycleDropdown(false);
                       }}
-                      className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+                      className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
                     >
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
@@ -390,7 +390,7 @@ function DashboardContent() {
                         setShowUserDropdown(false);
                         setShowCycleDropdown(false);
                       }}
-                      className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+                      className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
                     >
                       <span className="text-sm font-medium">{getMonthName(selectedMonth)}</span>
                       <ChevronDown className="w-3.5 h-3.5" />
@@ -432,7 +432,7 @@ function DashboardContent() {
                         setShowUserDropdown(false);
                         setShowMonthDropdown(false);
                       }}
-                      className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+                      className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
                     >
                       <span className="text-sm font-medium">{selectedCycle}</span>
                       <ChevronDown className="w-3.5 h-3.5" />
@@ -460,11 +460,6 @@ function DashboardContent() {
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Selected Month Display */}
-                <div className="text-sm text-muted mt-2">
-                  Month: {getMonthName(selectedMonth)}
                 </div>
               </div>
 

@@ -616,7 +616,7 @@ export function TargetSettingsPage() {
               type="month"
               value={selectedMonth}
               onChange={handleMonthChange}
-              className="px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+              className="px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
             />
           </div>
         </div>
@@ -703,7 +703,7 @@ export function TargetSettingsPage() {
                                 }
                               }}
                               autoFocus
-                              className="w-full pl-6 pr-3 py-2 bg-background border border-primary rounded-lg text-base text-foreground-primary text-right focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                              className="w-full pl-6 pr-3 py-2 bg-white dark:bg-gray-900 border border-primary rounded-lg text-base text-foreground-primary text-right focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                               placeholder={formatNumber(DEFAULT_GGR_TARGETS[index].value)}
                             />
                           </div>
@@ -714,7 +714,7 @@ export function TargetSettingsPage() {
                             onMouseLeave={() => setHoveredSquadTarget(null)}
                             className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all ${
                               hoveredSquadTarget === index
-                                ? 'bg-background border border-primary/50 hover:border-primary'
+                                ? 'bg-white dark:bg-gray-900 border border-primary/50 hover:border-primary'
                                 : 'border border-transparent'
                             }`}
                           >
@@ -918,7 +918,7 @@ export function TargetSettingsPage() {
                                 }
                               }}
                               autoFocus
-                              className="w-full pl-3 pr-3 py-2 bg-background border border-primary rounded-lg text-base text-foreground-primary text-right focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                              className="w-full pl-3 pr-3 py-2 bg-white dark:bg-gray-900 border border-primary rounded-lg text-base text-foreground-primary text-right focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                             />
                           </div>
                         ) : (
@@ -928,7 +928,7 @@ export function TargetSettingsPage() {
                             onMouseLeave={() => setHoveredPersonalField(null)}
                             className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all ${
                               hoveredPersonalField === 'deposit_amount'
-                                ? 'bg-background border border-primary/50 hover:border-primary'
+                                ? 'bg-white dark:bg-gray-900 border border-primary/50 hover:border-primary'
                                 : 'border border-transparent'
                             }`}
                           >
@@ -970,7 +970,7 @@ export function TargetSettingsPage() {
                                   }
                                 }}
                                 autoFocus
-                                className="w-full pl-3 pr-3 py-2 bg-background border border-primary rounded-lg text-base text-foreground-primary text-right focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                className="w-full pl-3 pr-3 py-2 bg-white dark:bg-gray-900 border border-primary rounded-lg text-base text-foreground-primary text-right focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                               />
                             </div>
                           ) : (
@@ -980,7 +980,7 @@ export function TargetSettingsPage() {
                               onMouseLeave={() => setHoveredPersonalField(null)}
                               className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all ${
                                 hoveredPersonalField === field
-                                  ? 'bg-background border border-primary/50 hover:border-primary'
+                                  ? 'bg-white dark:bg-gray-900 border border-primary/50 hover:border-primary'
                                   : 'border border-transparent'
                               }`}
                             >

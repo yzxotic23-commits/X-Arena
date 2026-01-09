@@ -100,7 +100,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Enter your username"
-                    className="w-full px-4 py-3 bg-background border-2 border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                     required
                     autoComplete="username"
                   />
@@ -118,7 +118,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full px-4 py-3 bg-background border-2 border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                     required
                     autoComplete="current-password"
                   />

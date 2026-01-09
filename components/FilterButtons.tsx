@@ -39,7 +39,6 @@ export function FilterButtons({ activeFilter, onFilterChange }: FilterButtonsPro
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="text-sm text-muted font-semibold">{translations.overview.view}:</span>
       <div className="inline-flex items-center gap-1">
         {filters.map((filter) => (
           <button

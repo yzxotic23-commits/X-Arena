@@ -61,6 +61,29 @@
     cursor: text;
   }
   
+  /* Ensure input boxes have solid background */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="month"],
+  input[type="date"],
+  textarea,
+  select {
+    background-color: white !important;
+  }
+  
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark input[type="number"],
+  .dark input[type="month"],
+  .dark input[type="date"],
+  .dark textarea,
+  .dark select {
+    background-color: rgb(17, 24, 39) !important; /* gray-900 */
+  }
+  
   /* Allow pointer cursor on clickable elements */
   button, a, [role="button"], [onclick] {
     cursor: pointer;
@@ -74,14 +97,25 @@
     overflow-x: hidden;
   }
   
-  /* Dark mode background - custom image */
+  /* Dark mode background - custom image with blur */
   .dark body {
-    background-image: url('/background-layout/dark.jpg');
+    position: relative;
+  }
+  
+  /* Background image with blur effect */
+  .dark body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('/background-layout/dark-blur.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    position: relative;
+    z-index: -1;
   }
   
   /* Stars effect for dark mode - hidden when using custom background */

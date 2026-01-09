@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from './supabase-client';
 
 interface UserInfo {
@@ -33,6 +34,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
   const [rankUsername, setRankUsername] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const router = useRouter();
+  const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  // Idle timeout: 30 minutes = 30 * 60 * 1000 = 1800000 ms
+  const IDLE_TIMEOUT = 30 * 60 * 1000;
+
+  // Reset idle timer on user activity
+  const resetIdleTimer = () => {
+    lastActivityRef.current = Date.now();
+    
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+    }
+
+    if (isAuthenticated) {
+      idleTimeoutRef.current = setTimeout(() => {
+        // Auto logout after 30 minutes of inactivity
+        handleAutoLogout();
+      }, IDLE_TIMEOUT);
+    }
+  };
+
+  // Handle auto logout
+  const handleAutoLogout = useCallback(() => {
+    setIsAuthenticated(false);
+    setIsLimitedAccess(false);
+    setRankUsername(null);
+    setUserInfo(null);
+    localStorage.removeItem('x-arena-auth');
+    localStorage.removeItem('x-arena-user-info');
+    localStorage.removeItem('x-arena-limited-access');
+    localStorage.removeItem('x-arena-rank-username');
+    router.push('/landing');
+  }, [router]);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -57,6 +93,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setIsLoading(false);
   }, []);
+
+  // Set up idle detection when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+        idleTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    // Initialize idle timer
+    resetIdleTimer();
+
+    // Listen for user activity events
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    const handleActivity = () => {
+      resetIdleTimer();
+    };
+
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+    };
+  }, [isAuthenticated, handleAutoLogout]);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {

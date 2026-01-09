@@ -321,8 +321,8 @@ export function UserManagementPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-8 px-4">
-                      <div className="flex justify-center">
+                    <td colSpan={7} className="py-12 px-4">
+                      <div className="flex items-center justify-center min-h-[200px]">
                         <Loading size="md" text={translations.common.loading} variant="gaming" />
                       </div>
                     </td>
@@ -468,7 +468,7 @@ export function UserManagementPage() {
                           name="fullName"
                           value={newAccount.fullName}
                           onChange={handleAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                           placeholder="Enter full name"
                         />
@@ -483,7 +483,7 @@ export function UserManagementPage() {
                           name="username"
                           value={newAccount.username}
                           onChange={handleAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                           placeholder="Enter username for login"
                         />
@@ -498,7 +498,7 @@ export function UserManagementPage() {
                           name="email"
                           value={newAccount.email}
                           onChange={handleAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                           placeholder="email@example.com"
                         />
@@ -512,7 +512,7 @@ export function UserManagementPage() {
                           name="role"
                           value={newAccount.role}
                           onChange={handleAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                         >
                           <option value="viewer">Viewer</option>
@@ -534,7 +534,7 @@ export function UserManagementPage() {
                           name="password"
                           value={newAccount.password}
                           onChange={handleAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                           placeholder="Minimum 8 characters"
                           minLength={8}
@@ -550,7 +550,7 @@ export function UserManagementPage() {
                           name="confirmPassword"
                           value={newAccount.confirmPassword}
                           onChange={handleAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                           placeholder="Confirm password"
                           minLength={8}
@@ -679,7 +679,7 @@ export function UserManagementPage() {
                           name="fullName"
                           value={editAccount.fullName}
                           onChange={handleEditAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                           placeholder="Enter full name"
                         />
@@ -694,7 +694,7 @@ export function UserManagementPage() {
                           name="username"
                           value={editAccount.username}
                           onChange={handleEditAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                           placeholder="Enter username for login"
                         />
@@ -709,7 +709,7 @@ export function UserManagementPage() {
                           name="email"
                           value={editAccount.email}
                           onChange={handleEditAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                           placeholder="email@example.com"
                         />
@@ -723,7 +723,7 @@ export function UserManagementPage() {
                           name="role"
                           value={editAccount.role}
                           onChange={handleEditAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                         >
                           <option value="viewer">Viewer</option>
@@ -744,7 +744,7 @@ export function UserManagementPage() {
                           name="status"
                           value={editAccount.status}
                           onChange={handleEditAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           required
                         >
                           <option value="active">Active</option>
@@ -761,7 +761,7 @@ export function UserManagementPage() {
                           name="password"
                           value={editAccount.password}
                           onChange={handleEditAccountInputChange}
-                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                           placeholder="Leave empty to keep current password"
                           minLength={8}
                         />
@@ -780,7 +780,7 @@ export function UserManagementPage() {
                             name="confirmPassword"
                             value={editAccount.confirmPassword}
                             onChange={handleEditAccountInputChange}
-                            className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                             placeholder="Confirm new password"
                             minLength={8}
                           />

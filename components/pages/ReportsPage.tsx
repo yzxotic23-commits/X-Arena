@@ -1186,7 +1186,11 @@ export function ReportsPage() {
   }, [fetchSquadData, fetchActiveMember, fetchSquadMembers, fetchDetailedMetrics, squadABrands, squadBBrands]);
   
   if (loading) {
-    return <Loading />;
+    return (
+      <div className="w-full flex items-center justify-center min-h-[60vh]">
+        <Loading size="lg" variant="gaming" />
+      </div>
+    );
   }
   
   return (
@@ -1205,7 +1209,7 @@ export function ReportsPage() {
                 setShowMonthDropdown(!showMonthDropdown);
                 setShowCycleDropdown(false);
               }}
-              className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+              className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
             >
               <span className="text-sm font-medium">{getMonthName(selectedMonth)}</span>
               <ChevronDown className="w-3.5 h-3.5" />
@@ -1246,7 +1250,7 @@ export function ReportsPage() {
                 setShowCycleDropdown(!showCycleDropdown);
                 setShowMonthDropdown(false);
               }}
-              className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+              className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
             >
               <span className="text-sm font-medium">{selectedCycle}</span>
               <ChevronDown className="w-3.5 h-3.5" />
@@ -1274,11 +1278,6 @@ export function ReportsPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Selected Month Display */}
-        <div className="text-sm text-muted mt-2">
-          Month: {getMonthName(selectedMonth)}
         </div>
       </div>
 
@@ -2218,12 +2217,12 @@ export function ReportsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="bg-blue-200 dark:bg-blue-900/30">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                      <tr className="bg-red-200 dark:bg-red-900/30">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
                           Metric
                         </th>
                         {squadABrands.map((brand) => (
-                          <th key={brand} className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          <th key={brand} className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
                             {brand}
                           </th>
                         ))}
@@ -2255,7 +2254,7 @@ export function ReportsPage() {
                           transition={{ duration: 0.3, delay: rowIndex * 0.05 }}
                           className={`border-b border-card-border ${
                             row.isNetProfit
-                              ? 'bg-yellow-100 dark:bg-yellow-900/20 font-bold'
+                              ? 'bg-yellow-100 dark:bg-yellow-900/40 font-bold'
                               : 'hover:bg-primary/5'
                           } transition-colors`}
                         >
@@ -2355,7 +2354,7 @@ export function ReportsPage() {
                           transition={{ duration: 0.3, delay: rowIndex * 0.05 }}
                           className={`border-b border-card-border ${
                             row.isNetProfit
-                              ? 'bg-yellow-100 dark:bg-yellow-900/20 font-bold'
+                              ? 'bg-yellow-100 dark:bg-yellow-900/40 font-bold'
                               : 'hover:bg-primary/5'
                           } transition-colors`}
                         >

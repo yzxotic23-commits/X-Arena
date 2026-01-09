@@ -804,6 +804,11 @@ export function LeaderboardPage() {
             retention: scoreData.retention,
             activation: scoreData.dormant,
             referral: scoreData.referrals,
+            days_4_7: scoreData.days_4_7,
+            days_8_11: scoreData.days_8_11,
+            days_12_15: scoreData.days_12_15,
+            days_16_19: scoreData.days_16_19,
+            days_20_plus: scoreData.days_20_plus,
           },
         };
       });
@@ -934,6 +939,11 @@ export function LeaderboardPage() {
         retention: scoreData?.retention || 0,
         activation: scoreData?.dormant || 0,
         referral: scoreData?.referrals || 0,
+        days_4_7: scoreData?.days_4_7 || 0,
+        days_8_11: scoreData?.days_8_11 || 0,
+        days_12_15: scoreData?.days_12_15 || 0,
+        days_16_19: scoreData?.days_16_19 || 0,
+        days_20_plus: scoreData?.days_20_plus || 0,
       },
     };
     handleMemberClick(entry);
@@ -1056,17 +1066,17 @@ export function LeaderboardPage() {
         }));
       topPerformers.push(...repeat12_15Days);
 
-      // 8. Repeat 15 - 17 Days
-      const repeat15_17Days = [...allBrandsWithScores]
-        .sort((a, b) => b.scoreData.days_15_17 - a.scoreData.days_15_17)
+      // 8. Repeat 16 - 19 Days
+      const repeat16_19Days = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.days_16_19 - a.scoreData.days_16_19)
         .slice(0, 3)
         .map((item, index) => ({
           rank: index + 1,
           name: item.brand,
-          value: item.scoreData.days_15_17,
-          category: 'Repeat 15 - 17 Days' as TopPerformer['category'],
+          value: item.scoreData.days_16_19,
+          category: 'Repeat 16 - 19 Days' as TopPerformer['category'],
         }));
-      topPerformers.push(...repeat15_17Days);
+      topPerformers.push(...repeat16_19Days);
 
       // 9. Repeat 20 Days & Above
       const repeat20DaysAbove = [...allBrandsWithScores]
@@ -1194,17 +1204,17 @@ export function LeaderboardPage() {
       }));
     topPerformers.push(...repeat12_15Days);
 
-    // 8. Repeat 15 - 17 Days
-    const repeat15_17Days = [...allMembersWithScores]
-      .sort((a, b) => b.scoreData.days_15_17 - a.scoreData.days_15_17)
+    // 8. Repeat 16 - 19 Days
+    const repeat16_19Days = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.days_16_19 - a.scoreData.days_16_19)
       .slice(0, 3)
       .map((member, index) => ({
         rank: index + 1,
         name: member.mapping.username,
-        value: member.scoreData.days_15_17,
-        category: 'Repeat 15 - 17 Days' as TopPerformer['category'],
+        value: member.scoreData.days_16_19,
+        category: 'Repeat 16 - 19 Days' as TopPerformer['category'],
       }));
-    topPerformers.push(...repeat15_17Days);
+    topPerformers.push(...repeat16_19Days);
 
     // 9. Repeat 20 Days & Above
     const repeat20DaysAbove = [...allMembersWithScores]
@@ -1238,7 +1248,7 @@ export function LeaderboardPage() {
       case 'Repeat 4 - 7 Days':
       case 'Repeat 8 - 11 Days':
       case 'Repeat 12 - 15 Days':
-      case 'Repeat 15 - 17 Days':
+      case 'Repeat 16 - 19 Days':
       case 'Repeat 20 Days & Above':
         return <TrendingUp className="w-5 h-5" />;
       default:
@@ -1339,7 +1349,7 @@ export function LeaderboardPage() {
               setShowMonthDropdown(!showMonthDropdown);
               setShowCycleDropdown(false);
             }}
-            className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+            className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
           >
             <span className="text-sm font-medium">{getMonthName(selectedMonth)}</span>
             <ChevronDown className="w-3.5 h-3.5" />
@@ -1380,7 +1390,7 @@ export function LeaderboardPage() {
               setShowCycleDropdown(!showCycleDropdown);
               setShowMonthDropdown(false);
             }}
-            className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+            className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
           >
             <span className="text-sm font-medium">{selectedCycle}</span>
             <ChevronDown className="w-3.5 h-3.5" />
@@ -1409,10 +1419,6 @@ export function LeaderboardPage() {
           )}
         </div>
 
-          {/* Selected Month Display - Sejajar dengan dropdown */}
-          <div className="text-sm text-muted">
-            Month: {getMonthName(selectedMonth)}
-          </div>
         </div>
       </div>
 
@@ -1661,7 +1667,7 @@ export function LeaderboardPage() {
               <Card className="bg-card-glass">
                 <CardContent className="p-6">
                   <div className="space-y-8">
-                    {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Repeat 4 - 7 Days', 'Repeat 8 - 11 Days', 'Repeat 12 - 15 Days', 'Repeat 15 - 17 Days', 'Repeat 20 Days & Above'] as TopPerformer['category'][]).map((category, categoryIndex) => {
+                    {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Repeat 4 - 7 Days', 'Repeat 8 - 11 Days', 'Repeat 12 - 15 Days', 'Repeat 16 - 19 Days', 'Repeat 20 Days & Above'] as TopPerformer['category'][]).map((category, categoryIndex) => {
                       const performers = getTopPerformersByCategory(category);
                       const reorderedPerformers = [
                         performers.find(p => p.rank === 2),
@@ -1788,6 +1794,7 @@ export function LeaderboardPage() {
                     </div>
                     <div className="space-y-3">
                       <h4 className="text-lg font-heading font-semibold text-foreground-primary">Contribution Breakdown</h4>
+                      {/* Deposit, Retention, Reactivation, Referral - 2x2 Grid */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">Deposit</div>
@@ -1802,7 +1809,7 @@ export function LeaderboardPage() {
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                          <div className="text-xs text-muted mb-1">Activation</div>
+                          <div className="text-xs text-muted mb-1">Reactivation</div>
                           <div className="text-lg font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.activation)}
                           </div>
@@ -1811,6 +1818,40 @@ export function LeaderboardPage() {
                           <div className="text-xs text-muted mb-1">Referral</div>
                           <div className="text-lg font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.referral)}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Days Categories - Horizontal Layout */}
+                      <div className="grid grid-cols-5 gap-2 mt-3">
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">4 - 7 Days</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_4_7 || 0)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">8 - 11 Days</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_8_11 || 0)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">12 - 15 Days</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_12_15 || 0)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">16 - 19 Days</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_16_19 || 0)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">20 Days & Above</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_20_plus || 0)}
                           </div>
                         </div>
                       </div>

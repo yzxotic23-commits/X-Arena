@@ -389,7 +389,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
                     <span
                       className={cn(
                         'font-medium text-sm relative z-10 transition-all duration-200',
-                        isActive && 'text-primary font-semibold dark:text-primary',
+                        isActive && 'text-primary font-semibold dark:text-white',
                         isHovered && !isActive && 'text-primary dark:text-white'
                       )}
                     >
@@ -437,15 +437,25 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
                           className={cn(
                             'w-full flex items-center gap-3 px-4 py-2 rounded-lg relative group text-left transition-all duration-200',
                             isSubActive
-                              ? 'text-primary bg-primary/10'
+                              ? 'text-primary dark:text-white bg-primary/10'
                               : 'text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-primary/10'
                           )}
                           whileHover={!isSubActive ? { x: 4 } : {}}
                           whileTap={{ scale: 0.98 }}
                           transition={{ duration: 0.15, ease: 'easeOut' }}
                         >
-                          <SubIcon className="w-4 h-4 flex-shrink-0" />
-                          <span className="text-sm font-medium whitespace-nowrap">{subItem.label}</span>
+                          <SubIcon className={cn(
+                            "w-4 h-4 flex-shrink-0 transition-colors",
+                            isSubActive 
+                              ? "text-primary dark:text-primary" 
+                              : "text-gray-600 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary"
+                          )} />
+                          <span className={cn(
+                            "text-sm font-medium whitespace-nowrap transition-colors",
+                            isSubActive
+                              ? "text-primary dark:text-white"
+                              : "text-gray-600 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-white"
+                          )}>{subItem.label}</span>
                           {isSubActive && (
                             <div
                               className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
@@ -518,12 +528,22 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
                           className={cn(
                             'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200 text-left',
                             isSubActive
-                              ? 'text-primary bg-primary/10'
+                              ? 'text-primary dark:text-white bg-primary/10'
                               : 'text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-primary/10'
                           )}
                         >
-                          <SubIcon className="w-4 h-4 flex-shrink-0" />
-                          <span className="whitespace-nowrap">{subItem.label}</span>
+                          <SubIcon className={cn(
+                            "w-4 h-4 flex-shrink-0 transition-colors",
+                            isSubActive 
+                              ? "text-primary dark:text-primary" 
+                              : "text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary"
+                          )} />
+                          <span className={cn(
+                            "whitespace-nowrap transition-colors",
+                            isSubActive
+                              ? "text-primary dark:text-white"
+                              : "text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-white"
+                          )}>{subItem.label}</span>
                           {isSubActive && (
                             <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full" />
                           )}

@@ -304,7 +304,7 @@ export function BrandPage() {
                         name="brandName"
                         value={form.brandName}
                         onChange={(e) => setForm({ ...form, brandName: e.target.value })}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                         placeholder="e.g., Brand A"
                       />
@@ -316,7 +316,7 @@ export function BrandPage() {
                         name="squadTeam"
                         value={form.squadTeam}
                         onChange={(e) => setForm({ ...form, squadTeam: e.target.value })}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                       >
                         <option value="" disabled>Select Squad</option>
@@ -330,7 +330,7 @@ export function BrandPage() {
                       <select
                         value={form.status}
                         onChange={(e) => setForm({ ...form, status: e.target.value as Brand['status'] })}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                       >
                         {STATUS_OPTIONS.map((s) => (
@@ -345,7 +345,7 @@ export function BrandPage() {
                         name="description"
                         value={form.description}
                         onChange={(e) => setForm({ ...form, description: e.target.value })}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         rows={3}
                         placeholder="Short notes about this brand"
                       />

@@ -660,11 +660,7 @@ export function TargetsPage() {
                   </tr>
                   
                   {/* Brand needed / Day */}
-                  <tr className={`${
-                    activeSquad === 'squad-a' 
-                      ? 'bg-primary/10 dark:bg-primary/20'
-                      : 'bg-blue-500/10 dark:bg-blue-500/20'
-                  }`}>
+                  <tr className="bg-yellow-500/10">
                     <td className="py-3 px-4 text-sm font-semibold text-foreground-primary">
                       {new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} → Brand needed / Day
                     </td>
@@ -681,7 +677,7 @@ export function TargetsPage() {
                       const brandCount = currentBrands.length || 1; // Avoid division by zero
                       const brandNeededPerDay = squadNeededPerDay / brandCount;
                       return (
-                        <td key={index} className="py-3 px-4 text-right text-sm font-bold text-foreground-primary">
+                        <td key={index} className="py-3 px-4 text-right text-sm font-bold text-yellow-600 dark:text-yellow-400">
                           {formatCurrency(brandNeededPerDay)}
                         </td>
                       );
@@ -931,17 +927,17 @@ export function TargetsPage() {
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold">
                           <div className="flex justify-end">
-                            <span className="text-yellow-400">{formatCurrency(Math.max(cycleTargets[0] - cycleTotal, 0) / currentBrands.length)}</span>
+                            <span className="text-yellow-600 dark:text-yellow-400">{formatCurrency(Math.max(cycleTargets[0] - cycleTotal, 0) / currentBrands.length)}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold">
                           <div className="flex justify-end">
-                            <span className="text-yellow-400">{formatCurrency(Math.max(cycleTargets[1] - cycleTotal, 0) / currentBrands.length)}</span>
+                            <span className="text-yellow-600 dark:text-yellow-400">{formatCurrency(Math.max(cycleTargets[1] - cycleTotal, 0) / currentBrands.length)}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold">
                           <div className="flex justify-end">
-                            <span className="text-yellow-400">{formatCurrency(Math.max(cycleTargets[2] - cycleTotal, 0) / currentBrands.length)}</span>
+                            <span className="text-yellow-600 dark:text-yellow-400">{formatCurrency(Math.max(cycleTargets[2] - cycleTotal, 0) / currentBrands.length)}</span>
                           </div>
                         </td>
                       </tr>
@@ -993,8 +989,8 @@ export function TargetsPage() {
               {/* Modal Content */}
               <div className="p-6 overflow-y-auto flex-1">
                 {loadingBrandDetails ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loading />
+                  <div className="flex items-center justify-center py-12 min-h-[200px]">
+                    <Loading size="md" variant="gaming" />
                   </div>
                 ) : brandDetails.length === 0 ? (
                   <div className="text-center py-12 text-muted">

@@ -227,8 +227,8 @@ export function BrandMappingPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="py-8 px-4">
-                      <div className="flex justify-center">
+                    <td colSpan={4} className="py-12 px-4">
+                      <div className="flex items-center justify-center min-h-[200px]">
                         <Loading size="md" text={translations.common.loading} variant="gaming" />
                       </div>
                     </td>
@@ -310,11 +310,11 @@ export function BrandMappingPage() {
                     <div className="space-y-4">
                       <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                         <label className="block text-sm font-semibold text-foreground-primary mb-2">Brand</label>
-                        <input type="text" name="brand" value={newMapping.brand} onChange={handleInputChange} className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required placeholder="Enter brand" />
+                        <input type="text" name="brand" value={newMapping.brand} onChange={handleInputChange} className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required placeholder="Enter brand" />
                       </div>
                       <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                         <label className="block text-sm font-semibold text-foreground-primary mb-2">Squad</label>
-                        <select name="squad" value={newMapping.squad} onChange={handleInputChange} className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required>
+                        <select name="squad" value={newMapping.squad} onChange={handleInputChange} className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required>
                           <option value="">Select Squad</option>
                           <option value="Squad A">Squad A</option>
                           <option value="Squad B">Squad B</option>
@@ -322,7 +322,7 @@ export function BrandMappingPage() {
                       </div>
                       <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                         <label className="block text-sm font-semibold text-foreground-primary mb-2">Status</label>
-                        <select name="status" value={newMapping.status} onChange={handleInputChange} className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required>
+                        <select name="status" value={newMapping.status} onChange={handleInputChange} className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required>
                           <option value="active">Active</option>
                           <option value="inactive">Inactive</option>
                         </select>
@@ -379,11 +379,11 @@ export function BrandMappingPage() {
                     <div className="space-y-4">
                       <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                         <label className="block text-sm font-semibold text-foreground-primary mb-2">Brand</label>
-                        <input type="text" name="brand" value={editMapping.brand} onChange={handleEditInputChange} className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required placeholder="Enter brand" />
+                        <input type="text" name="brand" value={editMapping.brand} onChange={handleEditInputChange} className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required placeholder="Enter brand" />
                       </div>
                       <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                         <label className="block text-sm font-semibold text-foreground-primary mb-2">Squad</label>
-                        <select name="squad" value={editMapping.squad} onChange={handleEditInputChange} className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required>
+                        <select name="squad" value={editMapping.squad} onChange={handleEditInputChange} className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required>
                           <option value="">Select Squad</option>
                           <option value="Squad A">Squad A</option>
                           <option value="Squad B">Squad B</option>
@@ -391,7 +391,7 @@ export function BrandMappingPage() {
                       </div>
                       <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                         <label className="block text-sm font-semibold text-foreground-primary mb-2">Status</label>
-                        <select name="status" value={editMapping.status} onChange={handleEditInputChange} className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required>
+                        <select name="status" value={editMapping.status} onChange={handleEditInputChange} className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors" required>
                           <option value="active">Active</option>
                           <option value="inactive">Inactive</option>
                         </select>

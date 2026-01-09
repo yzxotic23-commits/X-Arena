@@ -214,7 +214,7 @@ export function Header({
 
               {/* Weather */}
               {weather && (
-                <div className="flex items-center gap-2 sm:gap-3 pl-4 sm:pl-6 border-l border-gray-600 dark:border-gray-700">
+                <div className="flex items-center gap-2 sm:gap-3 pl-4 sm:pl-6 border-l border-gray-400 dark:border-white">
                   {getWeatherIcon(weather.icon)}
                   <div className="flex flex-col">
                     <div className="text-base sm:text-lg font-heading font-semibold text-foreground-primary">
@@ -451,7 +451,7 @@ export function Header({
                 onClick={toggleTheme}
                 onMouseEnter={() => setShowThemeTooltip(true)}
                 onMouseLeave={() => setShowThemeTooltip(false)}
-                className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                className="relative p-2 text-gray-900 dark:text-white hover:text-primary dark:hover:text-primary transition-colors"
                 aria-label="Toggle theme"
               >
                 {isDark ? (
@@ -474,7 +474,7 @@ export function Header({
                 onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
                 onMouseEnter={() => setShowNotificationTooltip(true)}
                 onMouseLeave={() => setShowNotificationTooltip(false)}
-                className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                className="relative p-2 text-gray-900 dark:text-white hover:text-primary dark:hover:text-primary transition-colors"
               >
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
@@ -531,7 +531,7 @@ export function Header({
                 onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
                 onMouseEnter={() => setShowLanguageTooltip(true)}
                 onMouseLeave={() => setShowLanguageTooltip(false)}
-                className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                className="relative p-2 text-gray-900 dark:text-white hover:text-primary dark:hover:text-primary transition-colors"
               >
                 <Languages className="w-5 h-5" />
               </button>
@@ -576,7 +576,7 @@ export function Header({
             <div className="relative" ref={profileDropdownRef}>
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-3 pl-4 border-l border-gray-600 dark:border-primary/20 hover:opacity-80 transition-opacity"
+                className="flex items-center gap-3 pl-4 border-l border-gray-700 dark:border-white hover:opacity-80 transition-opacity"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
                   <User className="w-6 h-6 text-white" />

@@ -215,7 +215,7 @@ export function LandingPage() {
                         value={rankUsername}
                         onChange={(e) => setRankUsername(e.target.value)}
                         placeholder="Enter username"
-                        className="w-full px-4 py-3 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         autoFocus
                       />
                     </div>

@@ -1630,8 +1630,8 @@ export function CustomerListingPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={activeTab === 'recommend' ? 8 : 7} className="py-8 px-4">
-                      <div className="flex justify-center">
+                    <td colSpan={activeTab === 'recommend' ? 8 : 7} className="py-12 px-4">
+                      <div className="flex items-center justify-center min-h-[200px]">
                         <Loading size="md" text={translations.common.loading} variant="gaming" />
                       </div>
                     </td>
@@ -1726,7 +1726,7 @@ export function CustomerListingPage() {
               <select
                 value={itemsPerPage}
                 onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                className="px-3 py-1.5 bg-background border border-card-border rounded-lg text-foreground-primary text-sm focus:outline-none focus:border-primary transition-colors"
+                className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary text-sm focus:outline-none focus:border-primary transition-colors"
               >
                 <option value={20}>20</option>
                 <option value={50}>50</option>
@@ -2044,7 +2044,7 @@ export function CustomerListingPage() {
                         name="uniqueCode"
                         value={newUser.uniqueCode}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                         placeholder="e.g., UC009"
                       />
@@ -2058,7 +2058,7 @@ export function CustomerListingPage() {
                             name="username"
                             value={newUser.username}
                             onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                             placeholder="Enter username"
                           />
                         </>
@@ -2070,7 +2070,7 @@ export function CustomerListingPage() {
                         name="brand"
                         value={newUser.brand}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                         disabled={loadingBrands || (isLimitedAccess && userBrand !== null)}
                       >
@@ -2091,7 +2091,7 @@ export function CustomerListingPage() {
                         name="handler"
                         value={newUser.handler}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                         disabled={isLimitedAccess && userShift !== null}
                       >
@@ -2168,7 +2168,7 @@ export function CustomerListingPage() {
                         type="text"
                         value={editForm.uniqueCode}
                         onChange={(e) => setEditForm({ ...editForm, uniqueCode: e.target.value })}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                         placeholder="e.g., UC001"
                       />
@@ -2181,7 +2181,7 @@ export function CustomerListingPage() {
                             type="text"
                             value={editForm.username}
                             onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                            className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                             placeholder="Enter username (optional)"
                           />
                         </>
@@ -2193,7 +2193,7 @@ export function CustomerListingPage() {
                         type="text"
                         value={editForm.brand}
                         onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                         placeholder="Enter brand"
                       />
@@ -2203,7 +2203,7 @@ export function CustomerListingPage() {
                       <select
                         value={editForm.handler}
                         onChange={(e) => setEditForm({ ...editForm, handler: e.target.value })}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                       >
                         <option value="">Select Handler</option>
@@ -2217,7 +2217,7 @@ export function CustomerListingPage() {
                         type="text"
                         value={editForm.month}
                         onChange={(e) => setEditForm({ ...editForm, month: e.target.value })}
-                        className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
                         placeholder="YYYY-MM (e.g., 2024-01)"
                         pattern="\d{4}-\d{2}"
