@@ -1133,15 +1133,10 @@ export function LeaderboardPage() {
             activeFilter={activeViewFilter}
             onFilterChange={setActiveViewFilter}
           />
-        </div>
-
-        {/* Date Filters - Right */}
-        <div className="flex items-center gap-4">
-          {/* Squad Filter */}
-          <div className="relative" ref={squadDropdownRef}>
-            <Button
-              variant="outline"
-              size="sm"
+          
+          {/* Squad vs Squad Dropdown */}
+          <div className="relative inline-flex items-center gap-1" ref={squadDropdownRef}>
+            <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1149,14 +1144,20 @@ export function LeaderboardPage() {
                 setShowMonthDropdown(false);
                 setShowCycleDropdown(false);
               }}
-              className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[140px] justify-between"
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
+                selectedSquad !== 'All'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-foreground-primary hover:bg-primary/10'
+              }`}
             >
-              <span className="text-sm font-medium">{selectedSquad}</span>
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">{selectedSquad === 'All' ? 'Squad vs Squad' : selectedSquad}</span>
+              <span className="sm:hidden">{selectedSquad === 'All' ? 'Squad vs Squad' : selectedSquad}</span>
               <ChevronDown className="w-3.5 h-3.5" />
-            </Button>
+            </button>
             {showSquadDropdown && (
-              <div className="absolute top-full right-0 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[140px] overflow-hidden">
-                {squadOptions.map((squad) => {
+              <div className="absolute top-full left-0 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[140px] overflow-hidden">
+                {squadOptions.filter(s => s !== 'All').map((squad) => {
                   const isSelected = selectedSquad === squad;
                   return (
                     <button
@@ -1178,7 +1179,10 @@ export function LeaderboardPage() {
               </div>
             )}
           </div>
-          
+        </div>
+
+        {/* Date Filters - Right */}
+        <div className="flex items-center gap-4">
           {/* Month Slicer */}
           <div className="relative" ref={monthDropdownRef}>
           <Button
