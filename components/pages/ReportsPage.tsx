@@ -1544,8 +1544,8 @@ export function ReportsPage() {
                           });
                         });
                         
-                        const contribution = totalSquadScore > 0 
-                          ? ((topMember?.score || 0) / totalSquadScore) * 100 
+                        const contribution = totalSquadScore > 0 && topMember
+                          ? (topMember.score / totalSquadScore) * 100 
                           : 0;
                         
                         // Get global rank for top member
