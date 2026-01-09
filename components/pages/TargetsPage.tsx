@@ -513,7 +513,7 @@ export function TargetsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-center">
+            <div className="text-center mb-6">
               <motion.div
                 initial={{ scale: 0.9 }}
                 animate={{ scale: 1 }}
@@ -522,6 +522,102 @@ export function TargetsPage() {
               >
                 {formatCurrency(totalSquadGgr)}
               </motion.div>
+            </div>
+            
+            {/* Squad Target Summary Table */}
+            <div className="mt-6 border-t border-card-border pt-6">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className={`border-b-2 ${
+                      activeSquad === 'squad-a' 
+                        ? 'border-primary/50 bg-gradient-to-r from-primary/10 to-primary/5 dark:bg-card-inner dark:border-primary/60'
+                        : 'border-blue-500/50 bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:bg-card-inner dark:border-blue-500/60'
+                    }`}>
+                      <th className="text-left py-3 px-4 text-sm font-bold text-foreground-primary">Target / Brand</th>
+                      <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">Option 1</th>
+                      <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">Option 2</th>
+                      <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">Option 3</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Squad Target */}
+                    <tr className="border-b border-card-border">
+                      <td className="py-3 px-4 text-sm font-semibold text-foreground-primary">Squad Target</td>
+                      {squadGgrTargets.map((target, index) => (
+                        <td key={index} className="py-3 px-4 text-right text-sm text-foreground-primary">
+                          {formatCurrency(target)}
+                        </td>
+                      ))}
+                    </tr>
+                    
+                    {/* Squad Balance */}
+                    <tr className="border-b border-card-border">
+                      <td className="py-3 px-4 text-sm font-semibold text-foreground-primary">Squad Balance</td>
+                      {squadGgrTargets.map((target, index) => {
+                        const balance = target - totalSquadGgr;
+                        return (
+                          <td key={index} className="py-3 px-4 text-right text-sm text-foreground-primary">
+                            {formatCurrency(balance)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    
+                    {/* Squad needed / Day */}
+                    <tr className="border-b border-card-border">
+                      <td className="py-3 px-4 text-sm font-semibold text-foreground-primary">
+                        {new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} → Squad needed / Day
+                      </td>
+                      {squadGgrTargets.map((target, index) => {
+                        const balance = target - totalSquadGgr;
+                        // Calculate remaining days in month
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = now.getMonth();
+                        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+                        const currentDay = now.getDate();
+                        const remainingDays = Math.max(1, lastDayOfMonth - currentDay + 1);
+                        const squadNeededPerDay = balance > 0 ? balance / remainingDays : 0;
+                        return (
+                          <td key={index} className="py-3 px-4 text-right text-sm text-foreground-primary">
+                            {formatCurrency(squadNeededPerDay)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    
+                    {/* Brand needed / Day */}
+                    <tr className={`${
+                      activeSquad === 'squad-a' 
+                        ? 'bg-primary/10 dark:bg-primary/20'
+                        : 'bg-blue-500/10 dark:bg-blue-500/20'
+                    }`}>
+                      <td className="py-3 px-4 text-sm font-semibold text-foreground-primary">
+                        {new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} → Brand needed / Day
+                      </td>
+                      {squadGgrTargets.map((target, index) => {
+                        const balance = target - totalSquadGgr;
+                        // Calculate remaining days in month
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = now.getMonth();
+                        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+                        const currentDay = now.getDate();
+                        const remainingDays = Math.max(1, lastDayOfMonth - currentDay + 1);
+                        const squadNeededPerDay = balance > 0 ? balance / remainingDays : 0;
+                        const brandCount = currentBrands.length || 1; // Avoid division by zero
+                        const brandNeededPerDay = squadNeededPerDay / brandCount;
+                        return (
+                          <td key={index} className="py-3 px-4 text-right text-sm font-bold text-foreground-primary">
+                            {formatCurrency(brandNeededPerDay)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </CardContent>
         </Card>
