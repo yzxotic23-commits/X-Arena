@@ -893,13 +893,13 @@ export function ReportsPage() {
       }));
       
       // Determine leading squad and lead amount from Net Profit
-      // Lead Amount = total Net Profit dari squad yang leading
+      // Lead Amount = Net Profit (Leading Squad) - Net Profit (Behind Squad)
       if (squadANetProfit > squadBNetProfit) {
         setLeadingSquad('squad-a');
-        setLeadAmount(squadANetProfit);
+        setLeadAmount(squadANetProfit - squadBNetProfit);
       } else {
         setLeadingSquad('squad-b');
-        setLeadAmount(squadBNetProfit);
+        setLeadAmount(squadBNetProfit - squadANetProfit);
       }
     } catch (error) {
       console.error('Error fetching squad data', error);
