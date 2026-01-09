@@ -61,6 +61,7 @@ interface MemberScoreData {
   days_4_7: number;
   days_8_11: number;
   days_12_15: number;
+  days_15_17: number;
   days_16_19: number;
   days_20_plus: number;
   totalActiveCustomers: number;
@@ -74,6 +75,7 @@ interface TargetPersonal {
   days_4_7: number;
   days_8_11: number;
   days_12_15: number;
+  days_15_17: number;
   days_16_19: number;
   days_20_more: number;
 }
@@ -253,6 +255,7 @@ export function LeaderboardPage() {
           days_4_7: 5,
           days_8_11: 5,
           days_12_15: 5,
+          days_15_17: 5,
           days_16_19: 5,
           days_20_more: 5,
         });
@@ -265,6 +268,7 @@ export function LeaderboardPage() {
           days_4_7: parseFloat(data.days_4_7 || 5),
           days_8_11: parseFloat(data.days_8_11 || 5),
           days_12_15: parseFloat(data.days_12_15 || 5),
+          days_15_17: parseFloat(data.days_15_17 || 5),
           days_16_19: parseFloat(data.days_16_19 || 5),
           days_20_more: parseFloat(data.days_20_more || 5),
         });
@@ -279,6 +283,7 @@ export function LeaderboardPage() {
         days_4_7: 5,
         days_8_11: 5,
         days_12_15: 5,
+        days_15_17: 5,
         days_16_19: 5,
         days_20_more: 5,
       });
@@ -301,6 +306,7 @@ export function LeaderboardPage() {
         days_4_7: 0,
         days_8_11: 0,
         days_12_15: 0,
+        days_15_17: 0,
         days_16_19: 0,
         days_20_plus: 0,
         totalActiveCustomers: 0,
@@ -397,6 +403,7 @@ export function LeaderboardPage() {
         days_4_7: 0,
         days_8_11: 0,
         days_12_15: 0,
+        days_15_17: 0,
         days_16_19: 0,
         days_20_plus: 0,
       };
@@ -407,8 +414,9 @@ export function LeaderboardPage() {
           const daysCount = datesSet.size;
           if (daysCount >= 4 && daysCount <= 7) daysCounts.days_4_7++;
           else if (daysCount >= 8 && daysCount <= 11) daysCounts.days_8_11++;
-          else if (daysCount >= 12 && daysCount <= 15) daysCounts.days_12_15++;
-          else if (daysCount >= 16 && daysCount <= 19) daysCounts.days_16_19++;
+          else if (daysCount >= 12 && daysCount <= 14) daysCounts.days_12_15++;
+          else if (daysCount >= 15 && daysCount <= 17) daysCounts.days_15_17++;
+          else if (daysCount >= 18 && daysCount <= 19) daysCounts.days_16_19++;
           else if (daysCount >= 20) daysCounts.days_20_plus++;
         }
       });
@@ -424,6 +432,7 @@ export function LeaderboardPage() {
           days_4_7: daysCounts.days_4_7,
           days_8_11: daysCounts.days_8_11,
           days_12_15: daysCounts.days_12_15,
+          days_15_17: daysCounts.days_15_17,
           days_16_19: daysCounts.days_16_19,
           days_20_plus: daysCounts.days_20_plus,
           totalActiveCustomers: activeCustomersSet.size,
@@ -437,11 +446,12 @@ export function LeaderboardPage() {
       const days4_7Score = daysCounts.days_4_7 * targetPersonal.days_4_7;
       const days8_11Score = daysCounts.days_8_11 * targetPersonal.days_8_11;
       const days12_15Score = daysCounts.days_12_15 * targetPersonal.days_12_15;
+      const days15_17Score = daysCounts.days_15_17 * targetPersonal.days_15_17;
       const days16_19Score = daysCounts.days_16_19 * targetPersonal.days_16_19;
       const days20PlusScore = daysCounts.days_20_plus * targetPersonal.days_20_more;
 
       const totalScore = depositScore + retentionScore + reactivationScore + recommendScore +
-        days4_7Score + days8_11Score + days12_15Score + days16_19Score + days20PlusScore;
+        days4_7Score + days8_11Score + days12_15Score + days15_17Score + days16_19Score + days20PlusScore;
 
       return {
         score: Math.round(totalScore),
@@ -452,6 +462,7 @@ export function LeaderboardPage() {
         days_4_7: daysCounts.days_4_7,
         days_8_11: daysCounts.days_8_11,
         days_12_15: daysCounts.days_12_15,
+        days_15_17: daysCounts.days_15_17,
         days_16_19: daysCounts.days_16_19,
         days_20_plus: daysCounts.days_20_plus,
         totalActiveCustomers: activeCustomersSet.size,
@@ -467,6 +478,7 @@ export function LeaderboardPage() {
         days_4_7: 0,
         days_8_11: 0,
         days_12_15: 0,
+        days_15_17: 0,
         days_16_19: 0,
         days_20_plus: 0,
         totalActiveCustomers: 0,
@@ -613,6 +625,7 @@ export function LeaderboardPage() {
             days_4_7: existing.days_4_7 + scoreData.days_4_7,
             days_8_11: existing.days_8_11 + scoreData.days_8_11,
             days_12_15: existing.days_12_15 + scoreData.days_12_15,
+            days_15_17: existing.days_15_17 + scoreData.days_15_17,
             days_16_19: existing.days_16_19 + scoreData.days_16_19,
             days_20_plus: existing.days_20_plus + scoreData.days_20_plus,
             totalActiveCustomers: existing.totalActiveCustomers + scoreData.totalActiveCustomers,
@@ -680,6 +693,7 @@ export function LeaderboardPage() {
             days_4_7: 0,
             days_8_11: 0,
             days_12_15: 0,
+            days_15_17: 0,
             days_16_19: 0,
             days_20_plus: 0,
           },
@@ -736,7 +750,7 @@ export function LeaderboardPage() {
         const reactivationScore = scoreData.dormant * (targetPersonal?.reactivation || 5);
         const recommendScore = scoreData.referrals * (targetPersonal?.recommend || 5);
         const daysScore = (scoreData.days_4_7 + scoreData.days_8_11 + scoreData.days_12_15 + 
-                          scoreData.days_16_19 + scoreData.days_20_plus) * (targetPersonal?.days_4_7 || 5);
+                          scoreData.days_15_17 + scoreData.days_16_19 + scoreData.days_20_plus) * (targetPersonal?.days_4_7 || 5);
 
         const maxScore = Math.max(depositScore, retentionScore, reactivationScore, recommendScore, daysScore);
         
@@ -780,6 +794,7 @@ export function LeaderboardPage() {
             days_4_7: 0,
             days_8_11: 0,
             days_12_15: 0,
+            days_15_17: 0,
             days_16_19: 0,
             days_20_plus: 0,
           },
@@ -865,8 +880,8 @@ export function LeaderboardPage() {
     const retentionScore = (scoreData?.retention || 0) * (targetPersonal?.retention || 5);
     const reactivationScore = (scoreData?.dormant || 0) * (targetPersonal?.reactivation || 5);
     const recommendScore = (scoreData?.referrals || 0) * (targetPersonal?.recommend || 5);
-    const daysScore = ((scoreData?.days_4_7 || 0) + (scoreData?.days_8_11 || 0) + (scoreData?.days_12_15 || 0) + 
-                      (scoreData?.days_16_19 || 0) + (scoreData?.days_20_plus || 0)) * (targetPersonal?.days_4_7 || 5);
+      const daysScore = ((scoreData?.days_4_7 || 0) + (scoreData?.days_8_11 || 0) + (scoreData?.days_12_15 || 0) + 
+                      (scoreData?.days_15_17 || 0) + (scoreData?.days_16_19 || 0) + (scoreData?.days_20_plus || 0)) * (targetPersonal?.days_4_7 || 5);
 
     const maxScore = Math.max(depositScore, retentionScore, reactivationScore, recommendScore, daysScore);
     const categoryTops: string[] = [];
@@ -915,6 +930,7 @@ export function LeaderboardPage() {
             days_4_7: 0,
             days_8_11: 0,
             days_12_15: 0,
+            days_15_17: 0,
             days_16_19: 0,
             days_20_plus: 0,
           },
@@ -1008,7 +1024,19 @@ export function LeaderboardPage() {
         }));
       topPerformers.push(...repeat12_15Days);
 
-      // 8. Repeat 20 Days & Above
+      // 8. Repeat 15 - 17 Days
+      const repeat15_17Days = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.days_15_17 - a.scoreData.days_15_17)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.scoreData.days_15_17,
+          category: 'Repeat 15 - 17 Days' as TopPerformer['category'],
+        }));
+      topPerformers.push(...repeat15_17Days);
+
+      // 9. Repeat 20 Days & Above
       const repeat20DaysAbove = [...allBrandsWithScores]
         .sort((a, b) => b.scoreData.days_20_plus - a.scoreData.days_20_plus)
         .slice(0, 3)
@@ -1039,6 +1067,7 @@ export function LeaderboardPage() {
             days_4_7: 0,
             days_8_11: 0,
             days_12_15: 0,
+            days_15_17: 0,
             days_16_19: 0,
             days_20_plus: 0,
           },
@@ -1133,7 +1162,19 @@ export function LeaderboardPage() {
       }));
     topPerformers.push(...repeat12_15Days);
 
-    // 8. Repeat 20 Days & Above
+    // 8. Repeat 15 - 17 Days
+    const repeat15_17Days = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.days_15_17 - a.scoreData.days_15_17)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.scoreData.days_15_17,
+        category: 'Repeat 15 - 17 Days' as TopPerformer['category'],
+      }));
+    topPerformers.push(...repeat15_17Days);
+
+    // 9. Repeat 20 Days & Above
     const repeat20DaysAbove = [...allMembersWithScores]
       .sort((a, b) => b.scoreData.days_20_plus - a.scoreData.days_20_plus)
       .slice(0, 3)
@@ -1165,6 +1206,7 @@ export function LeaderboardPage() {
       case 'Repeat 4 - 7 Days':
       case 'Repeat 8 - 11 Days':
       case 'Repeat 12 - 15 Days':
+      case 'Repeat 15 - 17 Days':
       case 'Repeat 20 Days & Above':
         return <TrendingUp className="w-5 h-5" />;
       default:
@@ -1587,7 +1629,7 @@ export function LeaderboardPage() {
               <Card className="bg-card-glass">
                 <CardContent className="p-6">
                   <div className="space-y-8">
-                    {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Repeat 4 - 7 Days', 'Repeat 8 - 11 Days', 'Repeat 12 - 15 Days', 'Repeat 20 Days & Above'] as TopPerformer['category'][]).map((category, categoryIndex) => {
+                    {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Repeat 4 - 7 Days', 'Repeat 8 - 11 Days', 'Repeat 12 - 15 Days', 'Repeat 15 - 17 Days', 'Repeat 20 Days & Above'] as TopPerformer['category'][]).map((category, categoryIndex) => {
                       const performers = getTopPerformersByCategory(category);
                       const reorderedPerformers = [
                         performers.find(p => p.rank === 2),

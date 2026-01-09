@@ -20,6 +20,7 @@ export interface Contribution {
     days_4_7?: number;
     days_8_11?: number;
     days_12_15?: number;
+    days_15_17?: number;
     days_20_plus?: number;
   };
 }
@@ -62,7 +63,7 @@ export interface TopPerformer {
   rank: number;
   name: string;
   value: number;
-  category: 'Highest Deposit' | 'Highest Retention' | 'Most Activated Customers' | 'Most Referrals' | 'Repeat 4 - 7 Days' | 'Repeat 8 - 11 Days' | 'Repeat 12 - 15 Days' | 'Repeat 20 Days & Above';
+  category: 'Highest Deposit' | 'Highest Retention' | 'Most Activated Customers' | 'Most Referrals' | 'Repeat 4 - 7 Days' | 'Repeat 8 - 11 Days' | 'Repeat 12 - 15 Days' | 'Repeat 15 - 17 Days' | 'Repeat 20 Days & Above';
 }
 
 export interface TrafficSource {

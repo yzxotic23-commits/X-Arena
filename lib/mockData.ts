@@ -110,6 +110,7 @@ function generateMockTopPerformers(): TopPerformer[] {
     'Repeat 4 - 7 Days',
     'Repeat 8 - 11 Days',
     'Repeat 12 - 15 Days',
+    'Repeat 15 - 17 Days',
     'Repeat 20 Days & Above',
   ];
   
