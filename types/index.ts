@@ -21,6 +21,7 @@ export interface Contribution {
     days_8_11?: number;
     days_12_15?: number;
     days_15_17?: number;
+    days_16_19?: number;
     days_20_plus?: number;
   };
 }
