@@ -1525,7 +1525,12 @@ export function ReportsPage() {
                     <div className="w-full">
                       {(() => {
                         // Find top contributor from squadAMembers
-                        let topMember: { username: string; score: number; brand: string } | null = null;
+                        type TopMember = {
+                          username: string;
+                          score: number;
+                          brand: string;
+                        };
+                        let topMember: TopMember | null = null;
                         let totalSquadScore = 0;
                         
                         squadAMembers.forEach((group) => {
@@ -1544,13 +1549,13 @@ export function ReportsPage() {
                           });
                         });
                         
-                        const topMemberScore = topMember?.score ?? 0;
+                        const topMemberScore = topMember !== null ? topMember.score : 0;
                         const contribution = totalSquadScore > 0
                           ? (topMemberScore / totalSquadScore) * 100 
                           : 0;
                         
                         // Get global rank for top member
-                        const globalRank = topMember ? getGlobalRank(topMember.username) : 0;
+                        const globalRank = topMember !== null ? getGlobalRank(topMember.username) : 0;
                         
                         return (
                           <>
