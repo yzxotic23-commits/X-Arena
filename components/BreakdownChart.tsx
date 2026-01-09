@@ -102,8 +102,8 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
             {translations.overview.contributionBreakdown}
           </CardTitle>
         </CardHeader>
-        <CardContent className="relative z-10 pt-0 flex-1 flex flex-col">
-          <div className="h-96">
+        <CardContent className="relative z-10 pt-0 flex-1 flex flex-col justify-between">
+          <div className="flex-1 flex items-center justify-center min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -134,7 +134,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4 flex-shrink-0">
             {allData.map((item, index) => {
               // Find index in filtered data for color mapping
               const filteredIndex = data.findIndex(d => d.name === item.name);

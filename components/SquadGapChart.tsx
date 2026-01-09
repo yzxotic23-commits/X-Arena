@@ -60,8 +60,8 @@ export function SquadGapChart({ squad }: SquadGapChartProps) {
             {translations.overview.gapBetweenSquads}
           </CardTitle>
         </CardHeader>
-        <CardContent className="relative z-10 pt-0 flex-1 flex flex-col">
-          <div className="h-96">
+        <CardContent className="relative z-10 pt-0 flex-1 flex flex-col justify-between">
+          <div className="flex-1 flex items-center justify-center min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <XAxis 
@@ -86,7 +86,7 @@ export function SquadGapChart({ squad }: SquadGapChartProps) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 gap-2 mt-4">
+          <div className="grid grid-cols-2 gap-2 mt-4 flex-shrink-0">
             {chartData.map((entry) => {
               const isHigher = entry.score > (entry.name === 'Squad A' ? squadBScore : squadAScore);
               return (
