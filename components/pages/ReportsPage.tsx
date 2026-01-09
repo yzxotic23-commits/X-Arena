@@ -1690,11 +1690,11 @@ export function ReportsPage() {
                           });
                           
                           const contribution = totalSquadScore > 0 
-                            ? ((topMember?.score || 0) / totalSquadScore) * 100 
+                            ? (((topMember as { username: string; score: number; brand: string } | null)?.score || 0) / totalSquadScore) * 100 
                             : 0;
                           
                           // Get global rank for top member
-                          const globalRank = topMember ? getGlobalRank(topMember.username) : 0;
+                          const globalRank = topMember ? getGlobalRank((topMember as { username: string; score: number; brand: string }).username) : 0;
                           
                           return (
                             <>
@@ -1730,7 +1730,7 @@ export function ReportsPage() {
                           });
                           
                           const contribution = totalSquadScore > 0 
-                            ? ((topMember?.score || 0) / totalSquadScore) * 100 
+                            ? (((topMember as { username: string; score: number; brand: string } | null)?.score || 0) / totalSquadScore) * 100 
                             : 0;
                           
                           return `${translations.overview.contribution}: ${formatPercentage(contribution)}`;
@@ -1755,7 +1755,7 @@ export function ReportsPage() {
                             });
                           });
                           
-                          return `${formatNumber(topMember?.score || 0)} ${translations.overview.points}`;
+                          return `${formatNumber((topMember as { username: string; score: number; brand: string } | null)?.score || 0)} ${translations.overview.points}`;
                         })()}
                       </p>
                     </div>
