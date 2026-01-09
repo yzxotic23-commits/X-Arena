@@ -1,7 +1,7 @@
 import { DashboardData, LeaderboardEntry, Contribution, Squad, Target, BaseBusinessMetrics, ContributionMetrics, BehaviorResultMetrics, TopPerformer, TrafficSource } from '@/types';
 
 const levels: Array<'Bronze' | 'Silver' | 'Gold' | 'Platinum'> = ['Bronze', 'Silver', 'Gold', 'Platinum'];
-const statuses: Array<'Leading' | 'Lagging'> = ['Leading', 'Lagging'];
+const statuses: Array<'Leading' | 'Behind'> = ['Leading', 'Behind'];
 const paces: Array<'Fast' | 'Medium' | 'Slow'> = ['Fast', 'Medium', 'Slow'];
 const categories = ['Highest Deposit', 'Retention', 'Activation', 'Referral'];
 
