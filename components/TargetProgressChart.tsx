@@ -49,12 +49,12 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                 <CircularProgressbar
                   value={target.completion}
                   text={`${target.completion.toFixed(0)}%`}
+                  strokeWidth={20}
                   styles={buildStyles({
                     pathColor: progressColor,
                     textColor: textColor,
                     trailColor: trailColor,
                     textSize: '16px',
-                    strokeWidth: 20,
                   })}
                 />
               </div>
