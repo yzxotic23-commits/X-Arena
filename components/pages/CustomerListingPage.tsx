@@ -829,10 +829,19 @@ export function CustomerListingPage() {
         ? 'customer_retention' 
         : 'customer_recommend';
       
-      const { data, error } = await supabase
+      // Build query with filters for limited access users
+      let query = supabase
         .from(tableName)
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
+      
+      // Filter by shift and brand for limited access users directly in query
+      if (isLimitedAccess && userShift && userBrand) {
+        query = query
+          .eq('handler', userShift)
+          .eq('brand', userBrand);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Failed to fetch customers', error);
@@ -849,12 +858,8 @@ export function CustomerListingPage() {
           month: row.month ?? getCurrentMonth(),
         }));
 
-        // Filter by shift and brand for limited access users
-        if (isLimitedAccess && userShift && userBrand) {
-          mappedData = mappedData.filter(
-            (customer) => customer.handler === userShift && customer.brand === userBrand
-          );
-        }
+        // Note: Filter by shift and brand is now done directly in the Supabase query above
+        // This ensures only data matching the user's shift and brand is fetched
 
         // For reactivation, retention, and recommend, check active status directly from Supabase 2
         if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'recommend') && mappedData.length > 0) {
@@ -895,16 +900,15 @@ export function CustomerListingPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, checkCustomersActiveStatus, currentPage, itemsPerPage]);
+  }, [activeTab, checkCustomersActiveStatus, currentPage, itemsPerPage, isLimitedAccess, userShift, userBrand]);
 
   // REMOVED: useEffect that sets all labels to "non active" on mount
   // Now labels are determined dynamically based on deposit_cases > 0 from Supabase 2
   
   useEffect(() => {
-    // Only fetch on mount or when tab changes
+    // Fetch when tab changes, or when user shift/brand changes (for limited access users)
     fetchCustomers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]); // Only depend on activeTab, not fetchCustomers to prevent infinite loop
+  }, [activeTab, fetchCustomers]);
 
   // Reset pagination and selected customers when tab changes
   useEffect(() => {
