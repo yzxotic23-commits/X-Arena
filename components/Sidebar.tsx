@@ -76,13 +76,14 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   ];
 
   // Filter menu items based on limited access
-  // Limited access users can see: dashboard, leaderboard, targets (Target Summary), and reports
+  // Limited access users can see: dashboard, leaderboard, targets (Target Summary), reports, and customer-listing
   const filteredMenuItems = isLimitedAccess
     ? menuItems.filter((item: MenuItem) => 
         item.id === 'dashboard' || 
         item.id === 'leaderboard' || 
         item.id === 'targets' || 
-        item.id === 'reports'
+        item.id === 'reports' ||
+        item.id === 'customer-listing'
       )
     : menuItems;
 

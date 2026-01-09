@@ -11,6 +11,7 @@ import { t } from '@/lib/translations';
 import { supabase } from '@/lib/supabase-client';
 import { supabase2 } from '@/lib/supabase-client-2';
 import { Loading } from '@/components/Loading';
+import { useAuth } from '@/lib/auth-context';
 import * as XLSX from 'xlsx';
 
 type TabType = 'reactivation' | 'retention' | 'recommend';
@@ -30,6 +31,7 @@ interface Customer {
 export function CustomerListingPage() {
   const { language } = useLanguage();
   const translations = t(language);
+  const { isLimitedAccess, rankUsername } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('reactivation');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showImportSidebar, setShowImportSidebar] = useState(false);
@@ -70,12 +72,49 @@ export function CustomerListingPage() {
   });
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
+  const [userShift, setUserShift] = useState<string | null>(null);
+  const [userBrand, setUserBrand] = useState<string | null>(null);
   
   // Get current month for default value
   const getCurrentMonth = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   };
+
+  // Fetch user shift and brand from squad_mapping for limited access users
+  const fetchUserShiftAndBrand = useCallback(async () => {
+    if (!isLimitedAccess || !rankUsername) {
+      setUserShift(null);
+      setUserBrand(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('squad_mapping')
+        .select('shift, brand')
+        .eq('username', rankUsername)
+        .eq('status', 'active')
+        .single();
+
+      if (error) {
+        console.error('Failed to fetch user shift and brand', error);
+        setUserShift(null);
+        setUserBrand(null);
+      } else {
+        setUserShift(data?.shift || null);
+        setUserBrand(data?.brand || null);
+      }
+    } catch (error) {
+      console.error('Error fetching user shift and brand', error);
+      setUserShift(null);
+      setUserBrand(null);
+    }
+  }, [isLimitedAccess, rankUsername]);
+
+  useEffect(() => {
+    fetchUserShiftAndBrand();
+  }, [fetchUserShiftAndBrand]);
 
   // Fetch brands from brand_mapping
   const fetchBrands = useCallback(async () => {
@@ -810,6 +849,13 @@ export function CustomerListingPage() {
           month: row.month ?? getCurrentMonth(),
         }));
 
+        // Filter by shift and brand for limited access users
+        if (isLimitedAccess && userShift && userBrand) {
+          mappedData = mappedData.filter(
+            (customer) => customer.handler === userShift && customer.brand === userBrand
+          );
+        }
+
         // For reactivation, retention, and recommend, check active status directly from Supabase 2
         if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'recommend') && mappedData.length > 0) {
           console.log('[Fetch] Checking active status from Supabase 2...');
@@ -1353,13 +1399,17 @@ export function CustomerListingPage() {
   };
 
   const handleAddUser = async () => {
+    // For limited access users, use their shift and brand
+    const finalHandler = isLimitedAccess && userShift ? userShift : newUser.handler;
+    const finalBrand = isLimitedAccess && userBrand ? userBrand : newUser.brand;
+
     // Validation
-    if (!newUser.uniqueCode || !newUser.brand || !newUser.handler) {
+    if (!newUser.uniqueCode || !finalBrand || !finalHandler) {
       alert('Please fill in all required fields (Unique Code, Brand, Handler)');
       return;
     }
 
-    if (newUser.handler !== 'Shift A' && newUser.handler !== 'Shift B') {
+    if (finalHandler !== 'Shift A' && finalHandler !== 'Shift B') {
       alert('Handler must be "Shift A" or "Shift B"');
       return;
     }
@@ -1376,8 +1426,8 @@ export function CustomerListingPage() {
       // Label is automatically set by Supabase based on deposit_cases > 0
       const insertData: any = {
         unique_code: newUser.uniqueCode,
-        brand: newUser.brand,
-        handler: newUser.handler,
+        brand: finalBrand,
+        handler: finalHandler,
         month: getCurrentMonth(), // Always use current month
       };
       
@@ -1528,7 +1578,17 @@ export function CustomerListingPage() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => setShowAddUserModal(true)}
+                onClick={() => {
+                  // Auto-set handler and brand for limited access users
+                  if (isLimitedAccess && userShift && userBrand) {
+                    setNewUser(prev => ({
+                      ...prev,
+                      handler: userShift,
+                      brand: userBrand,
+                    }));
+                  }
+                  setShowAddUserModal(true);
+                }}
                 className="flex items-center gap-2"
               >
                 <UserPlus className="w-4 h-4" />
@@ -2008,7 +2068,7 @@ export function CustomerListingPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
-                        disabled={loadingBrands}
+                        disabled={loadingBrands || (isLimitedAccess && userBrand !== null)}
                       >
                         <option value="">{loadingBrands ? 'Loading brands...' : 'Select Brand'}</option>
                         {availableBrands.map((brand) => (
@@ -2017,6 +2077,9 @@ export function CustomerListingPage() {
                           </option>
                         ))}
                       </select>
+                      {isLimitedAccess && userBrand && (
+                        <p className="text-xs text-muted">Brand is automatically set to your assigned brand: {userBrand}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-foreground-primary">Handler</label>
@@ -2026,11 +2089,15 @@ export function CustomerListingPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         required
+                        disabled={isLimitedAccess && userShift !== null}
                       >
                         <option value="">Select Handler</option>
                         <option value="Shift A">Shift A</option>
                         <option value="Shift B">Shift B</option>
                       </select>
+                      {isLimitedAccess && userShift && (
+                        <p className="text-xs text-muted">Handler is automatically set to your shift: {userShift}</p>
+                      )}
                     </div>
                     <div className="flex gap-3 pt-4">
                       <Button type="submit" variant="default" className="flex-1">

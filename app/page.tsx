@@ -503,7 +503,7 @@ function DashboardContent() {
           {activeMenu === 'leaderboard' && <LeaderboardPage />}
           {activeMenu === 'targets' && <TargetsPage />}
           {!isLimitedAccess && activeMenu === 'target-settings' && <TargetSettingsPage />}
-          {!isLimitedAccess && activeMenu === 'customer-listing' && <CustomerListingPage />}
+          {activeMenu === 'customer-listing' && <CustomerListingPage />}
           {activeMenu === 'reports' && <ReportsPage />}
           {!isLimitedAccess && activeMenu === 'settings' && <SettingsPage />}
           {!isLimitedAccess && activeMenu === 'user-management' && <UserManagementPage />}
