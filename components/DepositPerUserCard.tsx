@@ -15,9 +15,9 @@ interface DepositPerUserCardProps {
 export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
   const { language } = useLanguage();
   const translations = t(language);
-  // Mock trend data - bisa diganti dengan data real
-  const trendChange = 12.5; // percentage change
-  const previousValue = target.depositPerUser / (1 + trendChange / 100);
+  // No last period data yet, set to 0
+  const trendChange = 0; // percentage change
+  const previousValue = 0; // Last period average
   const isPositive = trendChange >= 0;
 
   return (

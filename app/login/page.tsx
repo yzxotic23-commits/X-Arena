@@ -25,19 +25,22 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      const success = await login(username, password);
 
-    const success = login(username, password);
-
-    if (success) {
-      showToast('Login successful! Welcome to X Arena Dashboard', 'success', 3000);
-      // Delay navigation to show toast
-      setTimeout(() => {
-        router.push('/');
-      }, 500);
-    } else {
-      setError('Invalid username or password');
+      if (success) {
+        showToast('Login successful! Welcome to X Arena Dashboard', 'success', 3000);
+        // Delay navigation to show toast
+        setTimeout(() => {
+          router.push('/');
+        }, 500);
+      } else {
+        setError('Invalid username or password');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('An error occurred during login. Please try again.');
       setIsLoading(false);
     }
   };

@@ -48,6 +48,28 @@ interface TargetSetting {
   cycle4_ggr_option1: number;
   cycle4_ggr_option2: number;
   cycle4_ggr_option3: number;
+  squad_a_ggr_option1?: number;
+  squad_a_ggr_option2?: number;
+  squad_a_ggr_option3?: number;
+  squad_b_ggr_option1?: number;
+  squad_b_ggr_option2?: number;
+  squad_b_ggr_option3?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface TargetPersonal {
+  id?: string;
+  month: string;
+  deposit_amount: number;
+  retention: number;
+  reactivation: number;
+  recommend: number;
+  days_4_7: number;
+  days_8_11: number;
+  days_12_15: number;
+  days_16_19: number;
+  days_20_more: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -131,11 +153,7 @@ export function TargetSettingsPage() {
   const MOCK_SQUAD_B_BRANDS = ['WBSG', 'M24SG', 'OK188SG'];
   
   // Squad-level GGR targets (editable)
-  const [squadGgrTargets, setSquadGgrTargets] = useState<number[]>([
-    DEFAULT_GGR_TARGETS[0].value,
-    DEFAULT_GGR_TARGETS[1].value,
-    DEFAULT_GGR_TARGETS[2].value,
-  ]);
+  const [squadGgrTargets, setSquadGgrTargets] = useState<number[]>([0, 0, 0]);
   
   const [editingSquadTarget, setEditingSquadTarget] = useState<number | null>(null);
   const [hoveredSquadTarget, setHoveredSquadTarget] = useState<number | null>(null);
@@ -147,12 +165,20 @@ export function TargetSettingsPage() {
     [key: string]: number;
   }>({});
 
+  // Target Personal state
+  const [targetPersonal, setTargetPersonal] = useState<TargetPersonal | null>(null);
+  const [savingPersonal, setSavingPersonal] = useState(false);
+  const [editingPersonalField, setEditingPersonalField] = useState<string | null>(null);
+  const [hoveredPersonalField, setHoveredPersonalField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>(''); // Store raw input value during editing
+
   useEffect(() => {
+    // Initialize with 0, will be loaded from database or set to 0 if not found
     const initialTargets: { [key: string]: number } = {};
     CYCLES.forEach(cycle => {
       DEFAULT_GGR_TARGETS.forEach(option => {
         const key = `cycle${cycle.id}_option${option.id}`;
-        initialTargets[key] = option.value;
+        initialTargets[key] = 0;
       });
     });
     setGgrTargets(initialTargets);
@@ -174,6 +200,12 @@ export function TargetSettingsPage() {
       cycle4_ggr_option1: row?.cycle4_ggr_option1 ?? DEFAULT_GGR_TARGETS[0].value,
       cycle4_ggr_option2: row?.cycle4_ggr_option2 ?? DEFAULT_GGR_TARGETS[1].value,
       cycle4_ggr_option3: row?.cycle4_ggr_option3 ?? DEFAULT_GGR_TARGETS[2].value,
+      squad_a_ggr_option1: row?.squad_a_ggr_option1,
+      squad_a_ggr_option2: row?.squad_a_ggr_option2,
+      squad_a_ggr_option3: row?.squad_a_ggr_option3,
+      squad_b_ggr_option1: row?.squad_b_ggr_option1,
+      squad_b_ggr_option2: row?.squad_b_ggr_option2,
+      squad_b_ggr_option3: row?.squad_b_ggr_option3,
       created_at: row?.created_at,
       updated_at: row?.updated_at,
     };
@@ -192,14 +224,17 @@ export function TargetSettingsPage() {
 
     if (error) {
       if (error.code === 'PGRST116') {
+        // No data found, use 0 (000) for all options
         const defaultTargets: { [key: string]: number } = {};
         CYCLES.forEach(cycle => {
           DEFAULT_GGR_TARGETS.forEach(option => {
             const key = `cycle${cycle.id}_option${option.id}`;
-            defaultTargets[key] = option.value;
+            defaultTargets[key] = 0;
           });
         });
         setGgrTargets(defaultTargets);
+        // Reset squad targets to 0
+        setSquadGgrTargets([0, 0, 0]);
       } else {
         console.error('Failed to fetch target settings', error);
         setError(error.message);
@@ -215,14 +250,112 @@ export function TargetSettingsPage() {
         });
       });
       setGgrTargets(fetchedTargets);
+      
+      // Load squad GGR targets based on active squad
+      if (activeSquad === 'squad-a') {
+        if (setting.squad_a_ggr_option1 !== undefined && setting.squad_a_ggr_option2 !== undefined && setting.squad_a_ggr_option3 !== undefined) {
+          setSquadGgrTargets([
+            setting.squad_a_ggr_option1,
+            setting.squad_a_ggr_option2,
+            setting.squad_a_ggr_option3,
+          ]);
+        } else {
+          // Use 0 if not set
+          setSquadGgrTargets([0, 0, 0]);
+        }
+      } else {
+        if (setting.squad_b_ggr_option1 !== undefined && setting.squad_b_ggr_option2 !== undefined && setting.squad_b_ggr_option3 !== undefined) {
+          setSquadGgrTargets([
+            setting.squad_b_ggr_option1,
+            setting.squad_b_ggr_option2,
+            setting.squad_b_ggr_option3,
+          ]);
+        } else {
+          // Use 0 if not set
+          setSquadGgrTargets([0, 0, 0]);
+        }
+      }
     }
 
     if (withLoading) setLoading(false); else setRefreshing(false);
+  }, [selectedMonth, activeSquad]);
+
+  // Fetch Target Personal data
+  const fetchTargetPersonal = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('target_personal')
+        .select('*')
+        .eq('month', selectedMonth)
+        .limit(1)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No data found, create default
+          setTargetPersonal({
+            month: selectedMonth,
+            deposit_amount: 0,
+            retention: 0,
+            reactivation: 0,
+            recommend: 0,
+            days_4_7: 0,
+            days_8_11: 0,
+            days_12_15: 0,
+            days_16_19: 0,
+            days_20_more: 0,
+          });
+        } else {
+          console.error('Failed to fetch target personal', error);
+          setTargetPersonal({
+            month: selectedMonth,
+            deposit_amount: 0,
+            retention: 0,
+            reactivation: 0,
+            recommend: 0,
+            days_4_7: 0,
+            days_8_11: 0,
+            days_12_15: 0,
+            days_16_19: 0,
+            days_20_more: 0,
+          });
+        }
+      } else if (data) {
+        setTargetPersonal({
+          id: data.id.toString(),
+          month: data.month ?? selectedMonth,
+          deposit_amount: parseFloat(data.deposit_amount ?? 0),
+          retention: parseFloat(data.retention ?? 0),
+          reactivation: parseFloat(data.reactivation ?? 0),
+          recommend: parseFloat(data.recommend ?? 0),
+          days_4_7: parseFloat(data.days_4_7 ?? 0),
+          days_8_11: parseFloat(data.days_8_11 ?? 0),
+          days_12_15: parseFloat(data.days_12_15 ?? 0),
+          days_16_19: parseFloat(data.days_16_19 ?? 0),
+          days_20_more: parseFloat(data.days_20_more ?? 0),
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching target personal', error);
+      setTargetPersonal({
+        month: selectedMonth,
+        deposit_amount: 0,
+        retention: 0,
+        reactivation: 0,
+        recommend: 0,
+        days_4_7: 0,
+        days_8_11: 0,
+        days_12_15: 0,
+        days_16_19: 0,
+        days_20_more: 0,
+      });
+    }
   }, [selectedMonth]);
 
   useEffect(() => {
     fetchTargetSettings(true);
-  }, [fetchTargetSettings]);
+    fetchTargetPersonal();
+  }, [fetchTargetSettings, fetchTargetPersonal]);
 
   const handleGgrChange = (cycleId: number, optionId: number, value: string) => {
     const numValue = parseFloat(value.replace(/,/g, '')) || 0;
@@ -252,7 +385,18 @@ export function TargetSettingsPage() {
   };
 
   const formatNumber = (num: number) => {
-    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Support up to 6 decimal places for small numbers like 0.001
+    if (num === 0) return '0';
+    const str = num.toString();
+    // If it's a decimal number, preserve up to 6 decimal places
+    if (str.includes('.')) {
+      const parts = str.split('.');
+      const decimals = parts[1]?.substring(0, 6) || '';
+      // Remove trailing zeros but keep at least one if it's a decimal
+      const trimmed = decimals.replace(/0+$/, '');
+      return trimmed ? `${parts[0]}.${trimmed}` : parts[0];
+    }
+    return num.toLocaleString('en-US');
   };
 
   const handleSave = async () => {
@@ -267,18 +411,43 @@ export function TargetSettingsPage() {
       DEFAULT_GGR_TARGETS.forEach(option => {
         const key = `cycle${cycle.id}_option${option.id}`;
         const dbKey = `cycle${cycle.id}_ggr_option${option.id}`;
-        payload[dbKey] = ggrTargets[key] || DEFAULT_GGR_TARGETS[option.id - 1].value;
+        payload[dbKey] = ggrTargets[key] || 0;
       });
     });
 
+    // Save squad GGR targets
+    if (activeSquad === 'squad-a') {
+      payload.squad_a_ggr_option1 = squadGgrTargets[0];
+      payload.squad_a_ggr_option2 = squadGgrTargets[1];
+      payload.squad_a_ggr_option3 = squadGgrTargets[2];
+    } else {
+      payload.squad_b_ggr_option1 = squadGgrTargets[0];
+      payload.squad_b_ggr_option2 = squadGgrTargets[1];
+      payload.squad_b_ggr_option3 = squadGgrTargets[2];
+    }
+
     const { data: existing } = await supabase
       .from('target_settings')
-      .select('id')
+      .select('*')
       .eq('month', selectedMonth)
       .single();
 
     let result;
     if (existing) {
+      // Preserve squad targets that are not being updated
+      const existingSetting = mapRow(existing);
+      if (activeSquad === 'squad-a') {
+        // Preserve Squad B targets
+        payload.squad_b_ggr_option1 = existingSetting.squad_b_ggr_option1 ?? 0;
+        payload.squad_b_ggr_option2 = existingSetting.squad_b_ggr_option2 ?? 0;
+        payload.squad_b_ggr_option3 = existingSetting.squad_b_ggr_option3 ?? 0;
+      } else {
+        // Preserve Squad A targets
+        payload.squad_a_ggr_option1 = existingSetting.squad_a_ggr_option1 ?? 0;
+        payload.squad_a_ggr_option2 = existingSetting.squad_a_ggr_option2 ?? 0;
+        payload.squad_a_ggr_option3 = existingSetting.squad_a_ggr_option3 ?? 0;
+      }
+      
       result = await supabase
         .from('target_settings')
         .update(payload)
@@ -286,6 +455,17 @@ export function TargetSettingsPage() {
         .select()
         .single();
     } else {
+      // For new records, set 0 for the squad that's not active
+      if (activeSquad === 'squad-a') {
+        payload.squad_b_ggr_option1 = 0;
+        payload.squad_b_ggr_option2 = 0;
+        payload.squad_b_ggr_option3 = 0;
+      } else {
+        payload.squad_a_ggr_option1 = 0;
+        payload.squad_a_ggr_option2 = 0;
+        payload.squad_a_ggr_option3 = 0;
+      }
+      
       result = await supabase
         .from('target_settings')
         .insert([payload])
@@ -309,6 +489,83 @@ export function TargetSettingsPage() {
     setSelectedMonth(e.target.value);
   };
 
+  // Handle Target Personal changes
+  const handlePersonalChange = (field: string, value: string) => {
+    // Store raw string value during editing, parse on blur
+    const cleanedValue = value.replace(/,/g, '').trim();
+    if (cleanedValue === '' || cleanedValue === '-') {
+      // Allow empty or minus for editing
+      setTargetPersonal(prev => prev ? { ...prev, [field]: 0 } : null);
+      return;
+    }
+    const numValue = parseFloat(cleanedValue);
+    if (!isNaN(numValue)) {
+      setTargetPersonal(prev => prev ? { ...prev, [field]: numValue } : null);
+    }
+  };
+
+  // Save Target Personal
+  const handleSavePersonal = async () => {
+    if (!targetPersonal) return;
+    
+    setSavingPersonal(true);
+    setError(null);
+
+    try {
+      const payload = {
+        month: selectedMonth,
+        deposit_amount: targetPersonal.deposit_amount,
+        retention: targetPersonal.retention,
+        reactivation: targetPersonal.reactivation,
+        recommend: targetPersonal.recommend,
+        days_4_7: targetPersonal.days_4_7,
+        days_8_11: targetPersonal.days_8_11,
+        days_12_15: targetPersonal.days_12_15,
+        days_16_19: targetPersonal.days_16_19,
+        days_20_more: targetPersonal.days_20_more,
+      };
+
+      // Check if record exists
+      const { data: existing } = await supabase
+        .from('target_personal')
+        .select('id')
+        .eq('month', selectedMonth)
+        .limit(1)
+        .single();
+
+      let result;
+      if (existing) {
+        // Update existing record
+        result = await supabase
+          .from('target_personal')
+          .update(payload)
+          .eq('month', selectedMonth)
+          .select()
+          .single();
+      } else {
+        // Insert new record
+        result = await supabase
+          .from('target_personal')
+          .insert([payload])
+          .select()
+          .single();
+      }
+
+      if (result.error) {
+        console.error('Failed to save target personal', result.error);
+        setError(result.error.message);
+        alert('Failed to save target personal: ' + result.error.message);
+      } else {
+        alert('Target personal saved successfully!');
+        fetchTargetPersonal();
+      }
+    } catch (error) {
+      console.error('Error saving target personal', error);
+      alert('An error occurred while saving target personal.');
+    } finally {
+      setSavingPersonal(false);
+    }
+  };
 
   // Get current date for daily required calculation
   const getCurrentDate = () => {
@@ -576,6 +833,173 @@ export function TargetSettingsPage() {
                     </div>
                   </td>
                 </motion.tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Target Personal Table */}
+      <Card className="relative overflow-hidden group">
+        <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+        <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+        <CardHeader className="relative z-10">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <Target className="w-6 h-6 text-primary" />
+              Target Personal
+            </CardTitle>
+            <Button
+              variant="default"
+              onClick={handleSavePersonal}
+              disabled={savingPersonal || loading}
+              className="flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              {savingPersonal ? 'Saving...' : 'Save Setting'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="relative z-10">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className={`border-b-2 ${
+                  activeSquad === 'squad-a' 
+                    ? 'border-primary/50 bg-gradient-to-r from-primary/10 to-primary/5 dark:bg-card-inner dark:border-primary/60'
+                    : 'border-blue-500/50 bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:bg-card-inner dark:border-blue-500/60'
+                }`}>
+                  <th className="text-left py-4 px-4 text-base font-bold text-foreground-primary">Deposit Amount</th>
+                  <th className="text-right py-4 px-4 text-base font-bold text-foreground-primary">Retention</th>
+                  <th className="text-right py-4 px-4 text-base font-bold text-foreground-primary">Reactivation</th>
+                  <th className="text-right py-4 px-4 text-base font-bold text-foreground-primary">Recommend</th>
+                  <th className="text-right py-4 px-4 text-base font-bold text-foreground-primary">4 - 7 Days</th>
+                  <th className="text-right py-4 px-4 text-base font-bold text-foreground-primary">8 - 11 Days</th>
+                  <th className="text-right py-4 px-4 text-base font-bold text-foreground-primary">12-15 Days</th>
+                  <th className="text-right py-4 px-4 text-base font-bold text-foreground-primary">16 - 19 Days</th>
+                  <th className="text-right py-4 px-4 text-base font-bold text-foreground-primary">20 Days / More</th>
+                </tr>
+              </thead>
+              <tbody>
+                {targetPersonal ? (
+                  <motion.tr
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="border-b border-card-border hover:bg-card-inner/20 transition-colors"
+                  >
+                    {/* Deposit Amount - with number format */}
+                    <td className="py-4 px-4 text-base text-foreground-primary">
+                      <div className="flex justify-end items-center min-h-[2.5rem]">
+                        {editingPersonalField === 'deposit_amount' ? (
+                          <div className="relative w-[120px]">
+                            <input
+                              type="text"
+                              value={editingPersonalField === 'deposit_amount' ? editingValue : formatNumber(targetPersonal.deposit_amount)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                // Allow raw input during editing (numbers, decimal point, minus)
+                                if (value === '' || value === '-' || /^-?\d*\.?\d*$/.test(value)) {
+                                  setEditingValue(value);
+                                  handlePersonalChange('deposit_amount', value);
+                                }
+                              }}
+                              onFocus={() => {
+                                setEditingValue(targetPersonal.deposit_amount.toString());
+                              }}
+                              onBlur={() => {
+                                setEditingPersonalField(null);
+                                setEditingValue('');
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  setEditingPersonalField(null);
+                                  setEditingValue('');
+                                }
+                              }}
+                              autoFocus
+                              className="w-full pl-3 pr-3 py-2 bg-background border border-primary rounded-lg text-base text-foreground-primary text-right focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => setEditingPersonalField('deposit_amount')}
+                            onMouseEnter={() => setHoveredPersonalField('deposit_amount')}
+                            onMouseLeave={() => setHoveredPersonalField(null)}
+                            className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all ${
+                              hoveredPersonalField === 'deposit_amount'
+                                ? 'bg-background border border-primary/50 hover:border-primary'
+                                : 'border border-transparent'
+                            }`}
+                          >
+                            <span className="text-base text-foreground-primary">
+                              {formatNumber(targetPersonal.deposit_amount)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    {/* Other fields - with number format (no currency) */}
+                    {['retention', 'reactivation', 'recommend', 'days_4_7', 'days_8_11', 'days_12_15', 'days_16_19', 'days_20_more'].map((field) => (
+                      <td key={field} className="py-4 px-4 text-base text-foreground-primary">
+                        <div className="flex justify-end items-center min-h-[2.5rem]">
+                          {editingPersonalField === field ? (
+                            <div className="relative w-[120px]">
+                              <input
+                                type="text"
+                                value={editingPersonalField === field ? editingValue : formatNumber(targetPersonal[field as keyof TargetPersonal] as number)}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Allow raw input during editing (numbers, decimal point, minus)
+                                  if (value === '' || value === '-' || /^-?\d*\.?\d*$/.test(value)) {
+                                    setEditingValue(value);
+                                    handlePersonalChange(field, value);
+                                  }
+                                }}
+                                onFocus={() => {
+                                  setEditingValue((targetPersonal[field as keyof TargetPersonal] as number)?.toString() || '');
+                                }}
+                                onBlur={() => {
+                                  setEditingPersonalField(null);
+                                  setEditingValue('');
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    setEditingPersonalField(null);
+                                    setEditingValue('');
+                                  }
+                                }}
+                                autoFocus
+                                className="w-full pl-3 pr-3 py-2 bg-background border border-primary rounded-lg text-base text-foreground-primary text-right focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => setEditingPersonalField(field)}
+                              onMouseEnter={() => setHoveredPersonalField(field)}
+                              onMouseLeave={() => setHoveredPersonalField(null)}
+                              className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all ${
+                                hoveredPersonalField === field
+                                  ? 'bg-background border border-primary/50 hover:border-primary'
+                                  : 'border border-transparent'
+                              }`}
+                            >
+                              <span className="text-base text-foreground-primary">
+                                {formatNumber(targetPersonal[field as keyof TargetPersonal] as number)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    ))}
+                  </motion.tr>
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="py-8 px-4 text-center text-muted">
+                      Loading...
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

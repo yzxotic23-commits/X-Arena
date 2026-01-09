@@ -1,5 +1,5 @@
 export type Level = 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
-export type SquadStatus = 'Leading' | 'Lagging';
+export type SquadStatus = 'Leading' | 'Behind';
 export type Pace = 'Fast' | 'Medium' | 'Slow';
 export type TimeFilter = 'Daily' | 'Weekly' | 'Monthly' | 'Custom';
 
@@ -27,6 +27,7 @@ export interface Squad {
   personalShare: number;
   squadRanking: number;
   squadName: string;
+  squadDepositAmount: number;
 }
 
 export interface Target {
@@ -35,6 +36,7 @@ export interface Target {
   gap: number;
   pace: Pace;
   depositPerUser: number;
+  netProfitSquad?: number; // Total net profit of the squad
 }
 
 export interface LeaderboardEntry {
@@ -85,8 +87,7 @@ export interface BehaviorResultMetrics {
   numberOfReferredCustomers: number;
   numberOfReactivatedDormantCustomers: number;
   numberOfRetentionCustomers: number;
-  depositAmountPerUser: number; // Already exists in target.depositPerUser
-  targetGapActiveMemberGrossProfit: number; // Formula: Active Member / Gross Profit
+  depositAmountPerUser: number; // Deposit amount of the member
 }
 
 export interface DashboardData {

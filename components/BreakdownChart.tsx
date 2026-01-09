@@ -31,14 +31,19 @@ const COLORS = ['#FF0000', '#DC2626', '#EF4444', '#F87171']; // Bright Red, Prim
 export function BreakdownChart({ contribution }: BreakdownChartProps) {
   const { language } = useLanguage();
   const translations = t(language);
-  const data = [
+  // Filter out items with 0 value for pie chart
+  const allData = [
     { name: 'Deposit', value: contribution.breakdown.deposit },
     { name: 'Retention', value: contribution.breakdown.retention },
     { name: 'Activation', value: contribution.breakdown.activation },
     { name: 'Referral', value: contribution.breakdown.referral },
   ];
-
-  const total = data.reduce((sum, item) => sum + item.value, 0);
+  
+  // Filter data for pie chart (exclude 0 values)
+  const data = allData.filter(item => item.value > 0);
+  
+  // Use allData for total calculation to include all values
+  const total = allData.reduce((sum, item) => sum + item.value, 0);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -83,7 +88,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
       className="w-full"
       style={{ minWidth: 0, maxWidth: '100%' }}
     >
-      <Card className="relative overflow-hidden group w-full" style={{ maxWidth: '100%' }}>
+      <Card className="relative overflow-hidden group w-full shadow-none" style={{ maxWidth: '100%', boxShadow: 'none !important' }}>
         <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
         <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
         <CardHeader className="relative z-10">
@@ -92,7 +97,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
             {translations.overview.contributionBreakdown}
           </CardTitle>
         </CardHeader>
-        <CardContent className="relative z-10">
+        <CardContent className="relative z-10 pt-0">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -108,9 +113,13 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
                   animationBegin={0}
                   animationDuration={1000}
                 >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                  {data.map((entry, index) => {
+                    // Find original index in allData to get correct color
+                    const originalIndex = allData.findIndex(item => item.name === entry.name);
+                    return (
+                      <Cell key={`cell-${index}`} fill={COLORS[originalIndex % COLORS.length]} />
+                    );
+                  })}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
                 <Legend
@@ -121,24 +130,29 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-            {data.map((item, index) => (
-              <div
-                key={item.name}
-                className="bg-card-inner rounded-lg p-3 border border-card-border transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: COLORS[index] }}
-                  />
-                  <span className="text-xs text-muted">{item.name}</span>
+            {allData.map((item, index) => {
+              // Find index in filtered data for color mapping
+              const filteredIndex = data.findIndex(d => d.name === item.name);
+              const colorIndex = filteredIndex >= 0 ? filteredIndex : index;
+              return (
+                <div
+                  key={item.name}
+                  className="bg-card-inner rounded-lg p-3 border border-card-border transition-colors h-full flex flex-col min-h-[100px]"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="text-xs text-muted">{item.name}</span>
+                  </div>
+                  <p className="text-lg font-bold text-foreground-primary">{formatNumber(item.value)}</p>
+                  <p className="text-xs text-muted">
+                    {total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0'}%
+                  </p>
                 </div>
-                <p className="text-lg font-bold text-foreground-primary">{formatNumber(item.value)}</p>
-                <p className="text-xs text-muted">
-                  {((item.value / total) * 100).toFixed(1)}%
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>

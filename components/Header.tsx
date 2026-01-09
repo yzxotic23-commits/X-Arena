@@ -44,7 +44,7 @@ interface HeaderProps {
 export function Header({ 
   hideBorder = false, 
   showGreeting = false, 
-  userName = 'Jane Copper', 
+  userName, 
   showLeaderboardHeader = false, 
   leaderboardData,
   showCustomerListingHeader = false,
@@ -68,10 +68,14 @@ export function Header({
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
-  const { logout } = useAuth();
+  const { logout, userInfo } = useAuth();
   const { language, setLanguage } = useLanguage();
   const router = useRouter();
   const isDark = theme === 'dark';
+  
+  // Get display name from userInfo (Full Name) and role
+  const displayName = userInfo?.fullName || userName || 'User';
+  const displayRole = userInfo?.role ? userInfo.role.charAt(0).toUpperCase() + userInfo.role.slice(1) : 'User';
   
   // Live Clock State
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -188,7 +192,7 @@ export function Header({
           {/* Greeting Message - Left side */}
           {showGreeting && (
             <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground-primary flex-1">
-              {getGreeting()}, <span className="text-gray-900 dark:text-primary">{userName}</span>!
+              {getGreeting()}, <span className="text-gray-900 dark:text-primary">{displayName}</span>!
             </h2>
           )}
 
@@ -578,8 +582,8 @@ export function Header({
                   <User className="w-6 h-6 text-white" />
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Jane Copper</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">{t(language).overview.medicineSpecialist}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{displayName}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 capitalize">{displayRole}</p>
                 </div>
                 <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
               </button>

@@ -1,18 +1,21 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Trophy, User, Crown, Medal, X, TrendingUp, TrendingDown, DollarSign, RefreshCw, UserPlus, Repeat, Users, Calendar, Award, Eye, Pencil, Trash2, UserCircle2, ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
+import { Trophy, User, Crown, Medal, X, TrendingUp, TrendingDown, DollarSign, RefreshCw, UserPlus, Repeat, Users, Award, Eye, Pencil, Trash2, UserCircle2, ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FilterButtons } from '@/components/FilterButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LeaderboardEntry, TopPerformer, TimeFilter } from '@/types';
+import { LeaderboardEntry, TopPerformer } from '@/types';
 import { formatNumber, formatPercentage } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
+import { supabase } from '@/lib/supabase-client';
+import { supabase2 } from '@/lib/supabase-client-2';
+import { Loading } from '@/components/Loading';
 
 interface PodiumUser {
   rank: number;
@@ -39,207 +42,771 @@ const squadBAvatars = [
   '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyartists-removebg-preview.png',
 ];
 
-// Mix and match avatars for podium (random selection from all avatars)
-const mockPodiumUsers: PodiumUser[] = [
-  { rank: 2, name: 'Brian Ngo', points: 2000, prize: 50000, avatar: '/pictures/juara 2.png' }, // Left - New image
-  { rank: 1, name: 'Jolie Joie', points: 2000, prize: 100000, avatar: allAvatars[1] }, // Center (highest) - Mix
-  { rank: 3, name: 'David Do', points: 2000, prize: 20000, avatar: allAvatars[4] }, // Right - Mix
-];
+// Removed all mock data - using real data only
 
-const mockLeaderboard: LeaderboardEntry[] = [
-  { 
-    rank: 4, 
-    name: "Henrietta O'Connell", 
-    score: 2114424, 
-    categoryTops: ['Deposit'], 
-    isCurrentUser: false,
-    avatar: allAvatars[0],
-    breakdown: { deposit: 800000, retention: 500000, activation: 500000, referral: 314424 }
-  },
-  { 
-    rank: 5, 
-    name: 'Darrel Bins', 
-    score: 2114424, 
-    categoryTops: ['Retention'], 
-    isCurrentUser: false,
-    avatar: allAvatars[1],
-    breakdown: { deposit: 600000, retention: 800000, activation: 500000, referral: 214424 }
-  },
-  { 
-    rank: 6, 
-    name: 'John Smith', 
-    score: 2050000, 
-    categoryTops: ['Activation'], 
-    isCurrentUser: false,
-    avatar: allAvatars[2],
-    breakdown: { deposit: 500000, retention: 500000, activation: 800000, referral: 250000 }
-  },
-  { 
-    rank: 7, 
-    name: 'Emma Wilson', 
-    score: 1980000, 
-    categoryTops: ['Referral'], 
-    isCurrentUser: false,
-    avatar: allAvatars[3],
-    breakdown: { deposit: 400000, retention: 400000, activation: 400000, referral: 780000 }
-  },
-  { 
-    rank: 8, 
-    name: 'Michael Brown', 
-    score: 1920000, 
-    categoryTops: [], 
-    isCurrentUser: false,
-    avatar: allAvatars[4],
-    breakdown: { deposit: 500000, retention: 500000, activation: 500000, referral: 420000 }
-  },
-  { 
-    rank: 61, 
-    name: 'You', 
-    score: 26007, 
-    categoryTops: [], 
-    isCurrentUser: true,
-    avatar: allAvatars[5],
-    breakdown: { deposit: 10000, retention: 8000, activation: 5000, referral: 3007 }
-  },
-];
-
-interface SquadMember {
+interface SquadMappingData {
   id: string;
-  name: string;
-  employeeId: string;
-  team: string;
-  role: string;
-  department: string;
-  lines: string[];
+  username: string;
+  brand: string;
   shift: string;
-  status: string;
-  score: number;
-  rank: number;
-  contribution: number;
-  avatar?: string;
+  status: 'active' | 'inactive';
 }
 
-const mockSquadMembers: SquadMember[] = [
-  { 
-    id: '1', 
-    name: 'Alda', 
-    employeeId: 'CSS-018',
-    team: 'CSS → SGD',
-    role: 'E1',
-    department: 'SNR',
-    lines: ['M24SG', 'OK188SG'],
-    shift: 'HQ-C',
-    status: 'Active',
-    score: 26007, 
-    rank: 1, 
-    contribution: 22.4 
-  },
-  { 
-    id: '2', 
-    name: 'Christine', 
-    employeeId: 'SquadA-006',
-    team: 'Squad A',
-    role: 'E1',
-    department: 'Sales Operation',
-    lines: ['ABSG'],
-    shift: 'WFH-B',
-    status: 'Active',
-    score: 24500, 
-    rank: 2, 
-    contribution: 21.1 
-  },
-  { 
-    id: '3', 
-    name: 'Darren', 
-    employeeId: 'SO-11',
-    team: 'Squad A',
-    role: 'E1',
-    department: 'Sales Operation',
-    lines: ['ABSG'],
-    shift: 'SO-11',
-    status: 'Active',
-    score: 23000, 
-    rank: 3, 
-    contribution: 19.8 
-  },
-  { 
-    id: '4', 
-    name: 'Edmund', 
-    employeeId: 'SquadB-014',
-    team: 'Squad B',
-    role: 'E1',
-    department: 'SNR',
-    lines: ['FWSG'],
-    shift: 'WFH-A',
-    status: 'Active',
-    score: 21500, 
-    rank: 4, 
-    contribution: 18.5 
-  },
-  { 
-    id: '5', 
-    name: 'Tom Brown', 
-    employeeId: 'TB-005',
-    team: 'Squad B',
-    role: 'E1',
-    department: 'Sales Operation',
-    lines: ['ABSG', 'FWSG'],
-    shift: 'HQ-C',
-    status: 'Active',
-    score: 20000, 
-    rank: 5, 
-    contribution: 17.2 
-  },
-];
+interface MemberScoreData {
+  score: number;
+  deposits: number;
+  retention: number;
+  dormant: number;
+  referrals: number;
+  days_4_7: number;
+  days_8_11: number;
+  days_12_15: number;
+  days_16_19: number;
+  days_20_plus: number;
+  totalActiveCustomers: number;
+}
 
-const mockTopPerformers: TopPerformer[] = [
-  { rank: 1, name: 'Jolie Joie', value: 500000, category: 'Highest Deposit' },
-  { rank: 2, name: 'Brian Ngo', value: 450000, category: 'Highest Deposit' },
-  { rank: 3, name: 'David Do', value: 400000, category: 'Highest Deposit' },
-  { rank: 1, name: 'Emma Wilson', value: 85, category: 'Highest Retention' },
-  { rank: 2, name: 'John Smith', value: 80, category: 'Highest Retention' },
-  { rank: 3, name: 'Michael Brown', value: 75, category: 'Highest Retention' },
-  { rank: 1, name: 'Henrietta O\'Connell', value: 120, category: 'Most Activated Customers' },
-  { rank: 2, name: 'Darrel Bins', value: 110, category: 'Most Activated Customers' },
-  { rank: 3, name: 'Jolie Joie', value: 100, category: 'Most Activated Customers' },
-  { rank: 1, name: 'Emma Wilson', value: 95, category: 'Most Referrals' },
-  { rank: 2, name: 'John Smith', value: 90, category: 'Most Referrals' },
-  { rank: 3, name: 'Michael Brown', value: 85, category: 'Most Referrals' },
-  { rank: 1, name: 'Jolie Joie', value: 200, category: 'Highest Repeat Customers' },
-  { rank: 2, name: 'Brian Ngo', value: 180, category: 'Highest Repeat Customers' },
-  { rank: 3, name: 'David Do', value: 160, category: 'Highest Repeat Customers' },
-];
+interface TargetPersonal {
+  deposit_amount: number;
+  retention: number;
+  reactivation: number;
+  recommend: number;
+  days_4_7: number;
+  days_8_11: number;
+  days_12_15: number;
+  days_16_19: number;
+  days_20_more: number;
+}
 
 export function LeaderboardPage() {
   const { language } = useLanguage();
   const translations = t(language);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('Daily');
-  const [showDateRangePicker, setShowDateRangePicker] = useState(false);
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [activeViewFilter, setActiveViewFilter] = useState<'Squad vs Squad' | 'Squad → Brand' | 'Brand → Personal'>('Squad vs Squad');
+  const [activeViewFilter, setActiveViewFilter] = useState<'Squad → Personal' | 'Squad → Brand'>('Squad → Personal');
   const [currentUserRank] = useState(23141);
   const [currentUserEarned] = useState(5);
   const [totalUsers] = useState(23141);
   const [selectedMember, setSelectedMember] = useState<LeaderboardEntry | null>(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
-  const datePickerRef = useRef<HTMLDivElement>(null);
+  const [squadMappings, setSquadMappings] = useState<SquadMappingData[]>([]);
+  const [loadingSquadMappings, setLoadingSquadMappings] = useState(true);
+  const [memberScores, setMemberScores] = useState<Map<string, MemberScoreData>>(new Map());
+  const [targetPersonal, setTargetPersonal] = useState<TargetPersonal | null>(null);
+  const [loadingScores, setLoadingScores] = useState(true);
+  const [repeatCustomersCount, setRepeatCustomersCount] = useState<Map<string, number>>(new Map());
 
-  // Close date picker when clicking outside
+  // Get current month for data fetching
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+  
+  // Month and Cycle slicers
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const [selectedCycle, setSelectedCycle] = useState<string>('All');
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [showCycleDropdown, setShowCycleDropdown] = useState(false);
+  const monthDropdownRef = useRef<HTMLDivElement>(null);
+  const cycleDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Get current year
+  const currentYear = new Date().getFullYear();
+  
+  // Generate months list (January to December)
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  
+  // Generate cycles list
+  const cycles = ['All', 'Cycle 1', 'Cycle 2', 'Cycle 3', 'Cycle 4'];
+  
+  // Get month name from selectedMonth (format: YYYY-MM)
+  const getMonthName = (monthStr: string): string => {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('en-US', { month: 'long' });
+  };
+  
+  // Handle month change
+  const handleMonthChange = (monthIndex: number) => {
+    const month = String(monthIndex + 1).padStart(2, '0');
+    setSelectedMonth(`${currentYear}-${month}`);
+    setShowMonthDropdown(false);
+  };
+  
+  // Handle cycle change
+  const handleCycleChange = (cycle: string) => {
+    setSelectedCycle(cycle);
+    setShowCycleDropdown(false);
+  };
+  
+  // Helper function to get date range based on cycle
+  const getCycleDateRange = (monthStr: string, cycle: string): { startDate: Date; endDate: Date } => {
+    const [year, month] = monthStr.split('-').map(Number);
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    
+    let startDate: Date;
+    let endDate: Date;
+    
+    if (cycle === 'All') {
+      startDate = startOfMonth;
+      endDate = endOfMonth;
+    } else if (cycle === 'Cycle 1') {
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month - 1, 7, 23, 59, 59, 999);
+    } else if (cycle === 'Cycle 2') {
+      startDate = new Date(year, month - 1, 8);
+      endDate = new Date(year, month - 1, 14, 23, 59, 59, 999);
+    } else if (cycle === 'Cycle 3') {
+      startDate = new Date(year, month - 1, 15);
+      endDate = new Date(year, month - 1, 21, 23, 59, 59, 999);
+    } else if (cycle === 'Cycle 4') {
+      startDate = new Date(year, month - 1, 22);
+      endDate = endOfMonth;
+    } else {
+      startDate = startOfMonth;
+      endDate = endOfMonth;
+    }
+    
+    return { startDate, endDate };
+  };
+  
+  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
-        setShowDateRangePicker(false);
+      if (monthDropdownRef.current && !monthDropdownRef.current.contains(event.target as Node)) {
+        setShowMonthDropdown(false);
+      }
+      if (cycleDropdownRef.current && !cycleDropdownRef.current.contains(event.target as Node)) {
+        setShowCycleDropdown(false);
       }
     }
 
-    if (showDateRangePicker) {
+    if (showMonthDropdown || showCycleDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showDateRangePicker]);
+  }, [showMonthDropdown, showCycleDropdown]);
+
+  // Fetch squad mappings from database
+  const fetchSquadMappings = useCallback(async () => {
+    setLoadingSquadMappings(true);
+    const { data, error } = await supabase
+      .from('squad_mapping')
+      .select('*')
+      .eq('status', 'active')
+      .order('username', { ascending: true });
+
+    if (error) {
+      console.error('Failed to fetch squad mappings', error);
+      setSquadMappings([]);
+    } else {
+      setSquadMappings((data ?? []).map((row) => ({
+        id: row.id.toString(),
+        username: row.username ?? 'Unknown',
+        brand: row.brand ?? 'Unknown',
+        shift: row.shift ?? 'Unknown',
+        status: row.status === 'inactive' ? 'inactive' : 'active',
+      })));
+    }
+    setLoadingSquadMappings(false);
+  }, []);
+
+  // Fetch target_personal from database
+  const fetchTargetPersonal = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('target_personal')
+        .select('*')
+        .eq('month', selectedMonth)
+        .single();
+
+      if (error) {
+        console.error('Failed to fetch target personal', error);
+        setTargetPersonal({
+          deposit_amount: 0.001,
+          retention: 5,
+          reactivation: 5,
+          recommend: 5,
+          days_4_7: 5,
+          days_8_11: 5,
+          days_12_15: 5,
+          days_16_19: 5,
+          days_20_more: 5,
+        });
+      } else {
+        setTargetPersonal({
+          deposit_amount: parseFloat(data.deposit_amount || 0.001),
+          retention: parseFloat(data.retention || 5),
+          reactivation: parseFloat(data.reactivation || 5),
+          recommend: parseFloat(data.recommend || 5),
+          days_4_7: parseFloat(data.days_4_7 || 5),
+          days_8_11: parseFloat(data.days_8_11 || 5),
+          days_12_15: parseFloat(data.days_12_15 || 5),
+          days_16_19: parseFloat(data.days_16_19 || 5),
+          days_20_more: parseFloat(data.days_20_more || 5),
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching target personal', error);
+      setTargetPersonal({
+        deposit_amount: 0.001,
+        retention: 5,
+        reactivation: 5,
+        recommend: 5,
+        days_4_7: 5,
+        days_8_11: 5,
+        days_12_15: 5,
+        days_16_19: 5,
+        days_20_more: 5,
+      });
+    }
+  }, [selectedMonth]);
+
+  // Calculate member score based on real data - USING CYCLE FILTER ✅
+  const calculateMemberScore = useCallback(async (
+    username: string,
+    shift: string,
+    brand: string
+  ): Promise<MemberScoreData> => {
+    if (!targetPersonal) {
+      return {
+        score: 0,
+        deposits: 0,
+        retention: 0,
+        dormant: 0,
+        referrals: 0,
+        days_4_7: 0,
+        days_8_11: 0,
+        days_12_15: 0,
+        days_16_19: 0,
+        days_20_plus: 0,
+        totalActiveCustomers: 0,
+      };
+    }
+
+    try {
+      // Get date range based on cycle ✅
+      const { startDate, endDate } = getCycleDateRange(selectedMonth, selectedCycle);
+      
+      const formatDateLocal = (date: Date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      };
+      
+      const startDateStr = formatDateLocal(startDate);
+      const endDateStr = formatDateLocal(endDate);
+
+      // Get customers from customer listing
+      const [retentionCustomers, reactivationCustomers, recommendCustomers] = await Promise.all([
+        supabase.from('customer_retention').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
+        supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
+        supabase.from('customer_recommend').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
+      ]);
+
+      const retentionUniqueCodes = (retentionCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
+      const reactivationUniqueCodes = (reactivationCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
+      const recommendUniqueCodes = (recommendCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
+
+      const allUniqueCodes = Array.from(new Set([
+        ...retentionUniqueCodes,
+        ...reactivationUniqueCodes,
+        ...recommendUniqueCodes,
+      ]));
+
+      // OPTIMIZED: Single query to get all active customer data (deposit_cases > 0) with dates and deposit_amount
+      const activeCustomersSet = new Set<string>();
+      const customerDeposits = new Map<string, number>(); // Track deposit per customer
+      const customerDaysCount = new Map<string, Set<string>>(); // Track distinct dates per customer
+      let totalDeposit = 0;
+
+      if (allUniqueCodes.length > 0) {
+        // Single query to get all data: active customers with deposit_amount and dates
+        const { data: activeData, error: activeError } = await supabase2
+          .from('blue_whale_sgd')
+          .select('unique_code, line, deposit_cases, deposit_amount, date')
+          .in('unique_code', allUniqueCodes)
+          .eq('line', brand)
+          .gte('date', startDateStr)
+          .lte('date', endDateStr)
+          .gt('deposit_cases', 0)
+          .limit(50000);
+
+        if (activeError) {
+          console.error(`[Leaderboard] Error fetching active customers for ${username}:`, activeError);
+        } else if (activeData) {
+          // Process all data in one pass
+          activeData.forEach((row: any) => {
+            const uniqueCode = String(row.unique_code || '').trim();
+            if (uniqueCode) {
+              activeCustomersSet.add(uniqueCode);
+              
+              // Sum deposit_amount per customer (avoid double counting)
+              const depositAmount = parseFloat(row.deposit_amount || 0) || 0;
+              if (!customerDeposits.has(uniqueCode)) {
+                customerDeposits.set(uniqueCode, 0);
+              }
+              customerDeposits.set(uniqueCode, customerDeposits.get(uniqueCode)! + depositAmount);
+              
+              // Track distinct dates per customer
+              if (!customerDaysCount.has(uniqueCode)) {
+                customerDaysCount.set(uniqueCode, new Set());
+              }
+              customerDaysCount.get(uniqueCode)!.add(row.date);
+            }
+          });
+
+          // Calculate total deposit from unique customers
+          customerDeposits.forEach((deposit) => {
+            totalDeposit += deposit;
+          });
+        }
+      }
+
+      // Calculate counts (ONLY ACTIVE CUSTOMERS)
+      const retentionCount = retentionUniqueCodes.filter(code => activeCustomersSet.has(code)).length;
+      const reactivationCount = reactivationUniqueCodes.filter(code => activeCustomersSet.has(code)).length;
+      const recommendCount = recommendUniqueCodes.filter(code => activeCustomersSet.has(code)).length;
+
+      // Calculate days (4-7, 8-11, etc.) from already processed data
+      const daysCounts = {
+        days_4_7: 0,
+        days_8_11: 0,
+        days_12_15: 0,
+        days_16_19: 0,
+        days_20_plus: 0,
+      };
+
+      // Count ACTIVE customers by number of active days (minimum 4 days)
+      customerDaysCount.forEach((datesSet, uniqueCode) => {
+        if (activeCustomersSet.has(uniqueCode)) {
+          const daysCount = datesSet.size;
+          if (daysCount >= 4 && daysCount <= 7) daysCounts.days_4_7++;
+          else if (daysCount >= 8 && daysCount <= 11) daysCounts.days_8_11++;
+          else if (daysCount >= 12 && daysCount <= 15) daysCounts.days_12_15++;
+          else if (daysCount >= 16 && daysCount <= 19) daysCounts.days_16_19++;
+          else if (daysCount >= 20) daysCounts.days_20_plus++;
+        }
+      });
+
+      // Calculate scores
+      if (!targetPersonal) {
+        return {
+          score: 0,
+          deposits: totalDeposit,
+          retention: retentionCount,
+          dormant: reactivationCount,
+          referrals: recommendCount,
+          days_4_7: daysCounts.days_4_7,
+          days_8_11: daysCounts.days_8_11,
+          days_12_15: daysCounts.days_12_15,
+          days_16_19: daysCounts.days_16_19,
+          days_20_plus: daysCounts.days_20_plus,
+          totalActiveCustomers: activeCustomersSet.size,
+        };
+      }
+
+      const depositScore = totalDeposit * targetPersonal.deposit_amount;
+      const retentionScore = retentionCount * targetPersonal.retention;
+      const reactivationScore = reactivationCount * targetPersonal.reactivation;
+      const recommendScore = recommendCount * targetPersonal.recommend;
+      const days4_7Score = daysCounts.days_4_7 * targetPersonal.days_4_7;
+      const days8_11Score = daysCounts.days_8_11 * targetPersonal.days_8_11;
+      const days12_15Score = daysCounts.days_12_15 * targetPersonal.days_12_15;
+      const days16_19Score = daysCounts.days_16_19 * targetPersonal.days_16_19;
+      const days20PlusScore = daysCounts.days_20_plus * targetPersonal.days_20_more;
+
+      const totalScore = depositScore + retentionScore + reactivationScore + recommendScore +
+        days4_7Score + days8_11Score + days12_15Score + days16_19Score + days20PlusScore;
+
+      return {
+        score: Math.round(totalScore),
+        deposits: totalDeposit,
+        retention: retentionCount,
+        dormant: reactivationCount,
+        referrals: recommendCount,
+        days_4_7: daysCounts.days_4_7,
+        days_8_11: daysCounts.days_8_11,
+        days_12_15: daysCounts.days_12_15,
+        days_16_19: daysCounts.days_16_19,
+        days_20_plus: daysCounts.days_20_plus,
+        totalActiveCustomers: activeCustomersSet.size,
+      };
+    } catch (error) {
+      console.error(`[Leaderboard] Error calculating score for ${username}:`, error);
+      return {
+        score: 0,
+        deposits: 0,
+        retention: 0,
+        dormant: 0,
+        referrals: 0,
+        days_4_7: 0,
+        days_8_11: 0,
+        days_12_15: 0,
+        days_16_19: 0,
+        days_20_plus: 0,
+        totalActiveCustomers: 0,
+      };
+    }
+  }, [targetPersonal, selectedMonth, selectedCycle]);
+
+  // Calculate scores for all members
+  const calculateAllMemberScores = useCallback(async () => {
+    if (squadMappings.length === 0 || !targetPersonal || loadingSquadMappings) {
+      return;
+    }
+
+    setLoadingScores(true);
+    const scoresMap = new Map<string, MemberScoreData>();
+    const repeatCountMap = new Map<string, number>();
+
+    // OPTIMIZED: Process all members in parallel
+    const activeMappings = squadMappings.filter(m => m.status === 'active');
+    
+    // Calculate scores for all members in parallel
+    const scorePromises = activeMappings.map(async (mapping) => {
+      const scoreData = await calculateMemberScore(mapping.username, mapping.shift, mapping.brand);
+      return { username: mapping.username, scoreData };
+    });
+
+    // Calculate repeat customers for all members in parallel - USING CYCLE FILTER ✅
+    const repeatPromises = activeMappings.map(async (mapping) => {
+      try {
+        // Get date range based on cycle ✅
+        const { startDate, endDate } = getCycleDateRange(selectedMonth, selectedCycle);
+        
+        const formatDateLocal = (date: Date) => {
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        };
+        
+        const startDateStr = formatDateLocal(startDate);
+        const endDateStr = formatDateLocal(endDate);
+
+        // Get customers from customer listing
+        const [retentionCustomers, reactivationCustomers, recommendCustomers] = await Promise.all([
+          supabase.from('customer_retention').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand),
+          supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand),
+          supabase.from('customer_recommend').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand),
+        ]);
+
+        const allUniqueCodes = Array.from(new Set([
+          ...(retentionCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean),
+          ...(reactivationCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean),
+          ...(recommendCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean),
+        ]));
+
+        if (allUniqueCodes.length > 0) {
+          // Count customers with deposit_cases > 2
+          const { data: repeatData } = await supabase2
+            .from('blue_whale_sgd')
+            .select('unique_code, line, deposit_cases')
+            .in('unique_code', allUniqueCodes)
+            .eq('line', mapping.brand)
+            .gte('date', startDateStr)
+            .lte('date', endDateStr)
+            .gt('deposit_cases', 2)
+            .limit(50000);
+
+          const uniqueRepeatCustomers = new Set<string>();
+          (repeatData || []).forEach((row: any) => {
+            const uniqueCode = String(row.unique_code || '').trim();
+            if (uniqueCode) {
+              uniqueRepeatCustomers.add(uniqueCode);
+            }
+          });
+
+          return { username: mapping.username, repeatCount: uniqueRepeatCustomers.size };
+        } else {
+          return { username: mapping.username, repeatCount: 0 };
+        }
+      } catch (error) {
+        console.error(`[Leaderboard] Error calculating repeat customers for ${mapping.username}:`, error);
+        return { username: mapping.username, repeatCount: 0 };
+      }
+    });
+
+    // Wait for all promises to complete in parallel
+    const [scoreResults, repeatResults] = await Promise.all([
+      Promise.all(scorePromises),
+      Promise.all(repeatPromises),
+    ]);
+
+    // Set scores
+    scoreResults.forEach(({ username, scoreData }) => {
+      scoresMap.set(username, scoreData);
+    });
+
+    // Set repeat counts
+    repeatResults.forEach(({ username, repeatCount }) => {
+      repeatCountMap.set(username, repeatCount);
+    });
+
+    setMemberScores(scoresMap);
+    setRepeatCustomersCount(repeatCountMap);
+    setLoadingScores(false);
+  }, [squadMappings, targetPersonal, loadingSquadMappings, calculateMemberScore, selectedMonth, selectedCycle]);
+
+  useEffect(() => {
+    fetchSquadMappings();
+    fetchTargetPersonal();
+  }, [fetchSquadMappings, fetchTargetPersonal]);
+
+  useEffect(() => {
+    if (squadMappings.length > 0 && targetPersonal && !loadingSquadMappings) {
+      calculateAllMemberScores();
+    }
+  }, [squadMappings, targetPersonal, loadingSquadMappings, calculateAllMemberScores]);
+
+  // Calculate brand scores (aggregate all members per brand)
+  const getBrandScores = (): Map<string, MemberScoreData> => {
+    const brandScoresMap = new Map<string, MemberScoreData>();
+
+    if (memberScores.size === 0 || loadingScores || loadingSquadMappings) {
+      return brandScoresMap;
+    }
+
+    // Group members by brand and aggregate scores
+    squadMappings
+      .filter(m => m.status === 'active')
+      .forEach(mapping => {
+        const scoreData = memberScores.get(mapping.username);
+        if (!scoreData) return;
+
+        const brand = mapping.brand;
+        const existing = brandScoresMap.get(brand);
+
+        if (existing) {
+          // Aggregate scores
+          brandScoresMap.set(brand, {
+            score: existing.score + scoreData.score,
+            deposits: existing.deposits + scoreData.deposits,
+            retention: existing.retention + scoreData.retention,
+            dormant: existing.dormant + scoreData.dormant,
+            referrals: existing.referrals + scoreData.referrals,
+            days_4_7: existing.days_4_7 + scoreData.days_4_7,
+            days_8_11: existing.days_8_11 + scoreData.days_8_11,
+            days_12_15: existing.days_12_15 + scoreData.days_12_15,
+            days_16_19: existing.days_16_19 + scoreData.days_16_19,
+            days_20_plus: existing.days_20_plus + scoreData.days_20_plus,
+            totalActiveCustomers: existing.totalActiveCustomers + scoreData.totalActiveCustomers,
+          });
+        } else {
+          // First member for this brand
+          brandScoresMap.set(brand, { ...scoreData });
+        }
+      });
+
+    return brandScoresMap;
+  };
+
+  // Get podium users (top 3) based on real scores
+  const getPodiumUsers = (): PodiumUser[] => {
+    if (memberScores.size === 0 || loadingScores || loadingSquadMappings) {
+      return [];
+    }
+
+    if (activeViewFilter === 'Squad → Brand') {
+      // Show brands in podium
+      const brandScores = getBrandScores();
+      const brandsWithScores = Array.from(brandScores.entries())
+        .map(([brand, scoreData]) => ({
+          brand,
+          score: scoreData.score,
+          scoreData,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+      if (brandsWithScores.length < 3) {
+        return [];
+      }
+
+      const prizes = [100000, 50000, 20000];
+      const avatarIndices = [0, 1, 2];
+
+      return brandsWithScores.map((item, index) => {
+        const rank = index + 1;
+        return {
+          rank,
+          name: item.brand,
+          points: item.score,
+          prize: prizes[index],
+          avatar: rank === 2 ? '/pictures/juara 2.png' : allAvatars[avatarIndices[index]],
+        };
+      });
+    }
+
+    // Default: Show members (Squad → Personal)
+    const membersWithScores = squadMappings
+      .filter(m => m.status === 'active')
+      .map(mapping => {
+        const scoreData = memberScores.get(mapping.username);
+        return {
+          mapping,
+          score: scoreData?.score || 0,
+          scoreData: scoreData || {
+            score: 0,
+            deposits: 0,
+            retention: 0,
+            dormant: 0,
+            referrals: 0,
+            days_4_7: 0,
+            days_8_11: 0,
+            days_12_15: 0,
+            days_16_19: 0,
+            days_20_plus: 0,
+          },
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3); // Top 3
+
+    if (membersWithScores.length < 3) {
+      return [];
+    }
+
+    const prizes = [100000, 50000, 20000]; // Rank 1, 2, 3
+    const avatarIndices = [0, 1, 2];
+
+    return membersWithScores.map((member, index) => {
+      const rank = index + 1;
+      return {
+        rank,
+        name: member.mapping.username,
+        points: member.score,
+        prize: prizes[index],
+        avatar: rank === 2 ? '/pictures/juara 2.png' : allAvatars[avatarIndices[index]],
+      };
+    });
+  };
+
+  // Get leaderboard entries based on real scores
+  const getLeaderboardEntries = (): LeaderboardEntry[] => {
+    if (memberScores.size === 0 || loadingScores || loadingSquadMappings) {
+      return [];
+    }
+
+    if (activeViewFilter === 'Squad → Brand') {
+      // Show brands in leaderboard
+      const brandScores = getBrandScores();
+      const allBrandsWithScores = Array.from(brandScores.entries())
+        .map(([brand, scoreData]) => ({
+          brand,
+          score: scoreData.score,
+          scoreData,
+        }))
+        .sort((a, b) => b.score - a.score);
+
+      // Skip first 3 (they're in podium), start from rank 4
+      return allBrandsWithScores.slice(3).map((item, index) => {
+        const rank = index + 4;
+        const scoreData = item.scoreData;
+
+        // Determine category tops
+        const categoryTops: string[] = [];
+        const depositScore = scoreData.deposits * (targetPersonal?.deposit_amount || 0.001);
+        const retentionScore = scoreData.retention * (targetPersonal?.retention || 5);
+        const reactivationScore = scoreData.dormant * (targetPersonal?.reactivation || 5);
+        const recommendScore = scoreData.referrals * (targetPersonal?.recommend || 5);
+        const daysScore = (scoreData.days_4_7 + scoreData.days_8_11 + scoreData.days_12_15 + 
+                          scoreData.days_16_19 + scoreData.days_20_plus) * (targetPersonal?.days_4_7 || 5);
+
+        const maxScore = Math.max(depositScore, retentionScore, reactivationScore, recommendScore, daysScore);
+        
+        if (depositScore === maxScore && depositScore > 0) categoryTops.push('Deposit');
+        if (retentionScore === maxScore && retentionScore > 0) categoryTops.push('Retention');
+        if (reactivationScore === maxScore && reactivationScore > 0) categoryTops.push('Activation');
+        if (recommendScore === maxScore && recommendScore > 0) categoryTops.push('Referral');
+        if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
+
+        return {
+          rank,
+          name: item.brand,
+          score: item.score,
+          categoryTops: categoryTops,
+          isCurrentUser: false,
+          avatar: allAvatars[index % allAvatars.length],
+          breakdown: {
+            deposit: scoreData.deposits,
+            retention: scoreData.retention,
+            activation: scoreData.dormant,
+            referral: scoreData.referrals,
+          },
+        };
+      });
+    }
+
+    // Default: Show members (Squad → Personal)
+    const allMembersWithScores = squadMappings
+      .filter(m => m.status === 'active')
+      .map(mapping => {
+        const scoreData = memberScores.get(mapping.username);
+        return {
+          mapping,
+          score: scoreData?.score || 0,
+          scoreData: scoreData || {
+            score: 0,
+            deposits: 0,
+            retention: 0,
+            dormant: 0,
+            referrals: 0,
+            days_4_7: 0,
+            days_8_11: 0,
+            days_12_15: 0,
+            days_16_19: 0,
+            days_20_plus: 0,
+          },
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    // Skip first 3 (they're in podium), start from rank 4
+    return allMembersWithScores.slice(3).map((member, index) => {
+      const rank = index + 4; // Start from rank 4
+      const scoreData = member.scoreData;
+
+      // Determine category tops based on which score component is highest
+      const categoryTops: string[] = [];
+      const depositScore = scoreData.deposits * (targetPersonal?.deposit_amount || 0.001);
+      const retentionScore = scoreData.retention * (targetPersonal?.retention || 5);
+      const reactivationScore = scoreData.dormant * (targetPersonal?.reactivation || 5);
+      const recommendScore = scoreData.referrals * (targetPersonal?.recommend || 5);
+      const daysScore = (scoreData.days_4_7 + scoreData.days_8_11 + scoreData.days_12_15 + 
+                        scoreData.days_16_19 + scoreData.days_20_plus) * (targetPersonal?.days_4_7 || 5);
+
+      const maxScore = Math.max(depositScore, retentionScore, reactivationScore, recommendScore, daysScore);
+      
+      if (depositScore === maxScore && depositScore > 0) categoryTops.push('Deposit');
+      if (retentionScore === maxScore && retentionScore > 0) categoryTops.push('Retention');
+      if (reactivationScore === maxScore && reactivationScore > 0) categoryTops.push('Activation');
+      if (recommendScore === maxScore && recommendScore > 0) categoryTops.push('Referral');
+      if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
+
+      return {
+        rank,
+        name: member.mapping.username,
+        score: member.score,
+        categoryTops: categoryTops,
+        isCurrentUser: false,
+        avatar: allAvatars[index % allAvatars.length],
+        breakdown: {
+          deposit: scoreData.deposits,
+          retention: scoreData.retention,
+          activation: scoreData.dormant,
+          referral: scoreData.referrals,
+        },
+      };
+    });
+  };
 
   const getPodiumHeight = (rank: number) => {
     if (rank === 1) return 'h-52 md:h-64'; // Highest - center
@@ -266,25 +833,250 @@ export function LeaderboardPage() {
   };
 
   const handlePodiumClick = (user: PodiumUser) => {
-    // Convert PodiumUser to LeaderboardEntry format
+    // Convert PodiumUser to LeaderboardEntry format using real data
+    let scoreData: MemberScoreData | undefined;
+    
+    if (activeViewFilter === 'Squad → Brand') {
+      const brandScores = getBrandScores();
+      scoreData = brandScores.get(user.name);
+    } else {
+      scoreData = memberScores.get(user.name);
+    }
+
+    const depositScore = (scoreData?.deposits || 0) * (targetPersonal?.deposit_amount || 0.001);
+    const retentionScore = (scoreData?.retention || 0) * (targetPersonal?.retention || 5);
+    const reactivationScore = (scoreData?.dormant || 0) * (targetPersonal?.reactivation || 5);
+    const recommendScore = (scoreData?.referrals || 0) * (targetPersonal?.recommend || 5);
+    const daysScore = ((scoreData?.days_4_7 || 0) + (scoreData?.days_8_11 || 0) + (scoreData?.days_12_15 || 0) + 
+                      (scoreData?.days_16_19 || 0) + (scoreData?.days_20_plus || 0)) * (targetPersonal?.days_4_7 || 5);
+
+    const maxScore = Math.max(depositScore, retentionScore, reactivationScore, recommendScore, daysScore);
+    const categoryTops: string[] = [];
+    if (depositScore === maxScore && depositScore > 0) categoryTops.push('Deposit');
+    if (retentionScore === maxScore && retentionScore > 0) categoryTops.push('Retention');
+    if (reactivationScore === maxScore && reactivationScore > 0) categoryTops.push('Activation');
+    if (recommendScore === maxScore && recommendScore > 0) categoryTops.push('Referral');
+    if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
+
     const entry: LeaderboardEntry = {
       rank: user.rank,
       name: user.name,
       score: user.points,
-      categoryTops: user.rank === 1 ? ['Top Performer'] : user.rank === 2 ? ['Silver Medal'] : ['Bronze Medal'],
+      categoryTops: categoryTops.length > 0 ? categoryTops : (user.rank === 1 ? ['Top Performer'] : user.rank === 2 ? ['Silver Medal'] : ['Bronze Medal']),
       isCurrentUser: false,
       breakdown: {
-        deposit: Math.floor(user.points * 0.4),
-        retention: Math.floor(user.points * 0.3),
-        activation: Math.floor(user.points * 0.2),
-        referral: Math.floor(user.points * 0.1),
+        deposit: scoreData?.deposits || 0,
+        retention: scoreData?.retention || 0,
+        activation: scoreData?.dormant || 0,
+        referral: scoreData?.referrals || 0,
       },
     };
     handleMemberClick(entry);
   };
 
+  // Get top performers from real data
+  const getTopPerformers = (): TopPerformer[] => {
+    if (memberScores.size === 0 || loadingScores || loadingSquadMappings) {
+      return [];
+    }
+
+    const topPerformers: TopPerformer[] = [];
+
+    if (activeViewFilter === 'Squad → Brand') {
+      // Get all brands with scores
+      const brandScores = getBrandScores();
+      const allBrandsWithScores = Array.from(brandScores.entries())
+        .map(([brand, scoreData]) => ({
+          brand,
+          scoreData: scoreData || {
+            score: 0,
+            deposits: 0,
+            retention: 0,
+            dormant: 0,
+            referrals: 0,
+            days_4_7: 0,
+            days_8_11: 0,
+            days_12_15: 0,
+            days_16_19: 0,
+            days_20_plus: 0,
+          },
+        }));
+
+      // 1. Highest Deposit - sort by deposits descending
+      const highestDeposit = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.deposits - a.scoreData.deposits)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.scoreData.deposits,
+          category: 'Highest Deposit' as TopPerformer['category'],
+        }));
+      topPerformers.push(...highestDeposit);
+
+      // 2. Highest Retention - sort by retention count descending
+      const highestRetention = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.retention - a.scoreData.retention)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.scoreData.retention,
+          category: 'Highest Retention' as TopPerformer['category'],
+        }));
+      topPerformers.push(...highestRetention);
+
+      // 3. Most Activated Customers - total active customers
+      const mostActivated = [...allBrandsWithScores]
+        .map(item => ({
+          ...item,
+          totalActive: item.scoreData.retention + item.scoreData.dormant + item.scoreData.referrals,
+        }))
+        .sort((a, b) => b.totalActive - a.totalActive)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.totalActive,
+          category: 'Most Activated Customers' as TopPerformer['category'],
+        }));
+      topPerformers.push(...mostActivated);
+
+      // 4. Most Referrals - sort by referrals count descending
+      const mostReferrals = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.referrals - a.scoreData.referrals)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.scoreData.referrals,
+          category: 'Most Referrals' as TopPerformer['category'],
+        }));
+      topPerformers.push(...mostReferrals);
+
+      // 5. Highest Repeat Customers - aggregate from all members in brand
+      const brandRepeatCounts = new Map<string, number>();
+      squadMappings
+        .filter(m => m.status === 'active')
+        .forEach(mapping => {
+          const repeatCount = repeatCustomersCount.get(mapping.username) || 0;
+          const existing = brandRepeatCounts.get(mapping.brand) || 0;
+          brandRepeatCounts.set(mapping.brand, existing + repeatCount);
+        });
+
+      const highestRepeatCustomers = [...allBrandsWithScores]
+        .map(item => ({
+          ...item,
+          repeatCount: brandRepeatCounts.get(item.brand) || 0,
+        }))
+        .sort((a, b) => b.repeatCount - a.repeatCount)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.repeatCount,
+          category: 'Highest Repeat Customers' as TopPerformer['category'],
+        }));
+      topPerformers.push(...highestRepeatCustomers);
+
+      return topPerformers;
+    }
+
+    // Default: Get all members with scores (Squad → Personal)
+    const allMembersWithScores = squadMappings
+      .filter(m => m.status === 'active')
+      .map(mapping => {
+        const scoreData = memberScores.get(mapping.username);
+        return {
+          mapping,
+          scoreData: scoreData || {
+            score: 0,
+            deposits: 0,
+            retention: 0,
+            dormant: 0,
+            referrals: 0,
+            days_4_7: 0,
+            days_8_11: 0,
+            days_12_15: 0,
+            days_16_19: 0,
+            days_20_plus: 0,
+          },
+        };
+      });
+
+    // 1. Highest Deposit - sort by deposits descending
+    const highestDeposit = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.deposits - a.scoreData.deposits)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.scoreData.deposits,
+        category: 'Highest Deposit' as TopPerformer['category'],
+      }));
+    topPerformers.push(...highestDeposit);
+
+    // 2. Highest Retention - sort by retention count descending
+    const highestRetention = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.retention - a.scoreData.retention)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.scoreData.retention,
+        category: 'Highest Retention' as TopPerformer['category'],
+      }));
+    topPerformers.push(...highestRetention);
+
+    // 3. Most Activated Customers - total active customers (retention + reactivation + recommend)
+    const mostActivated = [...allMembersWithScores]
+      .map(member => ({
+        ...member,
+        totalActive: member.scoreData.retention + member.scoreData.dormant + member.scoreData.referrals,
+      }))
+      .sort((a, b) => b.totalActive - a.totalActive)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.totalActive,
+        category: 'Most Activated Customers' as TopPerformer['category'],
+      }));
+    topPerformers.push(...mostActivated);
+
+    // 4. Most Referrals - sort by referrals (recommend) count descending
+    const mostReferrals = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.referrals - a.scoreData.referrals)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.scoreData.referrals,
+        category: 'Most Referrals' as TopPerformer['category'],
+      }));
+    topPerformers.push(...mostReferrals);
+
+    // 5. Highest Repeat Customers - customers with deposit_cases > 2
+    const highestRepeatCustomers = [...allMembersWithScores]
+      .map(member => ({
+        ...member,
+        repeatCount: repeatCustomersCount.get(member.mapping.username) || 0,
+      }))
+      .sort((a, b) => b.repeatCount - a.repeatCount)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.repeatCount,
+        category: 'Highest Repeat Customers' as TopPerformer['category'],
+      }));
+    topPerformers.push(...highestRepeatCustomers);
+
+    return topPerformers;
+  };
+
   const getTopPerformersByCategory = (category: TopPerformer['category']) => {
-    return mockTopPerformers.filter(p => p.category === category).slice(0, 3);
+    return getTopPerformers().filter(p => p.category === category).slice(0, 3);
   };
 
   const getCategoryIcon = (category: TopPerformer['category']) => {
@@ -304,138 +1096,120 @@ export function LeaderboardPage() {
     }
   };
 
+  // Show loading state while fetching data
+  if (loadingScores || loadingSquadMappings || memberScores.size === 0) {
+    return (
+      <div className="w-full flex items-center justify-center min-h-[60vh]">
+        <Loading size="lg" text={translations.common.loading} variant="gaming" />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-6 select-none" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
-      {/* Top Section: Filter Buttons (Left) + Time Filter (Right) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-6">
+      {/* Month and Cycle Slicers - Top Right (Sejajar) */}
+      <div className="flex items-center justify-between gap-4 mb-6 select-none">
         {/* Filter Buttons - Left */}
-        <FilterButtons
-          activeFilter={activeViewFilter}
-          onFilterChange={setActiveViewFilter}
-        />
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+          <FilterButtons
+            activeFilter={activeViewFilter}
+            onFilterChange={setActiveViewFilter}
+          />
+        </div>
 
-        {/* Time Filter Buttons - Right (Frameless) */}
-        <div className="relative" ref={datePickerRef}>
-          <div className="inline-flex items-center gap-1">
-            {[
-              { key: 'Daily', label: translations.leaderboardTable.daily },
-              { key: 'Weekly', label: translations.leaderboardTable.weekly },
-              { key: 'Monthly', label: translations.leaderboardTable.monthly },
-            ].map((filter) => (
-              <button
-                key={filter.key}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setTimeFilter(filter.key as TimeFilter);
-                  setShowDateRangePicker(false);
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none ${
-                  timeFilter === filter.key
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-foreground-primary hover:bg-primary/10'
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (timeFilter === 'Custom') {
-                  setShowDateRangePicker(!showDateRangePicker);
-                } else {
-                  setShowDateRangePicker(true);
-                  setTimeFilter('Custom' as TimeFilter);
-                }
-              }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-1.5 ${
-                timeFilter === 'Custom'
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-foreground-primary hover:bg-primary/10'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              Custom
-            </button>
-          </div>
-          {showDateRangePicker && timeFilter === 'Custom' && (
-            <div className="absolute top-full right-0 mt-2 bg-card-inner border border-card-border rounded-lg p-4 shadow-lg z-50 min-w-[300px]">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-semibold text-foreground-primary">Select Date Range</h4>
+        {/* Date Filters - Right */}
+        <div className="flex items-center gap-4">
+          {/* Month Slicer */}
+          <div className="relative" ref={monthDropdownRef}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowMonthDropdown(!showMonthDropdown);
+              setShowCycleDropdown(false);
+            }}
+            className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+          >
+            <span className="text-sm font-medium">{getMonthName(selectedMonth)}</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </Button>
+          {showMonthDropdown && (
+            <div className="absolute top-full right-0 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[160px] overflow-hidden max-h-[300px] overflow-y-auto">
+              {months.map((month, index) => {
+                const monthValue = `${currentYear}-${String(index + 1).padStart(2, '0')}`;
+                const isSelected = selectedMonth === monthValue;
+                return (
                   <button
+                    key={month}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setShowDateRangePicker(false);
+                      handleMonthChange(index);
                     }}
-                    className="text-muted hover:text-foreground-primary transition-colors"
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
+                      isSelected ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground-primary'
+                    }`}
                   >
-                    <X className="w-4 h-4" />
+                    {month}
                   </button>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-foreground-primary mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.start}
-                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-foreground-primary mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.end}
-                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                    min={dateRange.start}
-                    className="w-full px-3 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowDateRangePicker(false);
-                    }}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (dateRange.start && dateRange.end) {
-                        setShowDateRangePicker(false);
-                      }
-                    }}
-                    className="flex-1"
-                  >
-                    Apply
-                  </Button>
-                </div>
-              </div>
+                );
+              })}
             </div>
           )}
+        </div>
+
+        {/* Cycle Slicer */}
+        <div className="relative" ref={cycleDropdownRef}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowCycleDropdown(!showCycleDropdown);
+              setShowMonthDropdown(false);
+            }}
+            className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between"
+          >
+            <span className="text-sm font-medium">{selectedCycle}</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </Button>
+          {showCycleDropdown && (
+            <div className="absolute top-full right-0 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[120px] overflow-hidden">
+              {cycles.map((cycle) => {
+                const isSelected = selectedCycle === cycle;
+                return (
+                  <button
+                    key={cycle}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCycleChange(cycle);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
+                      isSelected ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground-primary'
+                    }`}
+                  >
+                    {cycle}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+          {/* Selected Month Display - Sejajar dengan dropdown */}
+          <div className="text-sm text-muted">
+            Month: {getMonthName(selectedMonth)}
+          </div>
         </div>
       </div>
 
       {/* Top 3 Podium */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-end mt-16 md:mt-24 lg:mt-32 select-none">
-        {mockPodiumUsers.map((user, index) => {
+        {getPodiumUsers().map((user, index) => {
           const podiumConfig = {
             1: {
               height: 'h-64 md:h-80',
@@ -582,7 +1356,7 @@ export function LeaderboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockLeaderboard.map((entry, index) => (
+                      {getLeaderboardEntries().map((entry, index) => (
                         <motion.tr
                           key={entry.rank}
                           initial={{ opacity: 0, x: -20 }}

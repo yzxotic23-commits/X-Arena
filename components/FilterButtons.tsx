@@ -5,7 +5,7 @@ import { Users, User, Building2 } from 'lucide-react';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
 
-type FilterType = 'Squad vs Squad' | 'Squad → Brand' | 'Brand → Personal';
+type FilterType = 'Squad → Personal' | 'Squad → Brand';
 
 interface FilterButtonsProps {
   activeFilter: FilterType;
@@ -15,16 +15,14 @@ interface FilterButtonsProps {
 export function FilterButtons({ activeFilter, onFilterChange }: FilterButtonsProps) {
   const { language } = useLanguage();
   const translations = t(language);
-  const filters: FilterType[] = ['Squad vs Squad', 'Squad → Brand', 'Brand → Personal'];
+  const filters: FilterType[] = ['Squad → Personal', 'Squad → Brand'];
   
   const getFilterLabel = (filter: FilterType) => {
     switch (filter) {
-      case 'Squad vs Squad':
-        return translations.leaderboardTable.squadVsSquad;
+      case 'Squad → Personal':
+        return translations.leaderboardTable.squadVsSquad || 'Squad → Personal';
       case 'Squad → Brand':
         return translations.leaderboardTable.squadToBrand;
-      case 'Brand → Personal':
-        return translations.leaderboardTable.brandToPersonal;
       default:
         return filter;
     }
@@ -32,12 +30,10 @@ export function FilterButtons({ activeFilter, onFilterChange }: FilterButtonsPro
 
   const getIcon = (filter: FilterType) => {
     switch (filter) {
-      case 'Squad vs Squad':
+      case 'Squad → Personal':
         return <Users className="w-4 h-4" />;
       case 'Squad → Brand':
         return <Building2 className="w-4 h-4" />;
-      case 'Brand → Personal':
-        return <User className="w-4 h-4" />;
     }
   };
 

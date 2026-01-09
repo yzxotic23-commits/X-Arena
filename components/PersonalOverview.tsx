@@ -81,10 +81,34 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
     };
   }, [contribution.totalScore, contribution.ranking]);
 
-  const progressPercentage = Math.min(
-    ((contribution.totalScore - (contribution.totalScore - contribution.gapToNext)) / contribution.gapToNext) * 100,
-    100
-  );
+  // Calculate progress percentage based on permanent targets (1000, 1500, 2000)
+  // Progress shows how close user is to the next target
+  let progressPercentage = 0;
+  
+  if (contribution.gapToNext === 0) {
+    // All targets reached (score >= 2000), show 100% progress
+    progressPercentage = 100;
+  } else {
+    // Calculate which target we're working towards
+    const targets = [1000, 1500, 2000];
+    let currentTarget = 0;
+    let previousTarget = 0;
+    
+    for (const target of targets) {
+      if (contribution.totalScore < target) {
+        currentTarget = target;
+        break;
+      }
+      previousTarget = target;
+    }
+    
+    if (currentTarget > 0) {
+      // Progress = (current score - previous target) / (current target - previous target) * 100
+      const range = currentTarget - previousTarget;
+      const progressInRange = contribution.totalScore - previousTarget;
+      progressPercentage = Math.min(100, (progressInRange / range) * 100);
+    }
+  }
 
   const metricConfig = [
     {

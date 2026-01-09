@@ -16,6 +16,8 @@ import {
       ChevronDown,
       BarChart3,
       FileText,
+      Map,
+      Building2,
     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme-context';
@@ -66,6 +68,8 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
       submenu: [
         { id: 'target-settings', label: translations.nav.targetSettings, icon: Target },
         { id: 'user-management', label: translations.nav.userManagement, icon: UserPlus },
+        { id: 'squad-mapping', label: 'Squad Mapping', icon: Map },
+        { id: 'brand-mapping', label: 'Brand Mapping', icon: Building2 },
         { id: 'appearance-settings', label: translations.nav.appearance, icon: Palette },
       ]
     },

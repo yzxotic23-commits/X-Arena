@@ -24,11 +24,16 @@ export function UserManagementPage() {
   const { language } = useLanguage();
   const translations = t(language);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   // Form state for Add Account
   const [newAccount, setNewAccount] = useState({
@@ -38,6 +43,17 @@ export function UserManagementPage() {
     confirmPassword: '',
     role: 'viewer',
     fullName: '',
+  });
+
+  // Form state for Edit Account
+  const [editAccount, setEditAccount] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'viewer',
+    fullName: '',
+    status: 'active' as 'active' | 'inactive',
   });
 
   const mapRow = (row: any): User => ({
@@ -79,6 +95,13 @@ export function UserManagementPage() {
   const handleAccountInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setNewAccount({
       ...newAccount,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleEditAccountInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setEditAccount({
+      ...editAccount,
       [e.target.name]: e.target.value,
     });
   };
@@ -127,6 +150,112 @@ export function UserManagementPage() {
     }
 
     setSaving(false);
+  };
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+    setEditAccount({
+      username: user.username,
+      email: user.email,
+      password: '',
+      confirmPassword: '',
+      role: user.role.toLowerCase(),
+      fullName: user.fullName,
+      status: user.status,
+    });
+    setShowEditUserModal(true);
+  };
+
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    // If password is provided, check if they match
+    if (editAccount.password && editAccount.password !== editAccount.confirmPassword) {
+      alert('Passwords do not match!');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    const payload: any = {
+      full_name: editAccount.fullName,
+      username: editAccount.username,
+      email: editAccount.email,
+      role: editAccount.role,
+      status: editAccount.status,
+    };
+
+    // Only update password if provided
+    if (editAccount.password) {
+      payload.password_hash = editAccount.password;
+    }
+
+    const { data, error } = await supabase
+      .from('users_management')
+      .update(payload)
+      .eq('id', editingUser.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to update user', error);
+      setError(error.message);
+      alert('Failed to update user: ' + error.message);
+    } else if (data) {
+      setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? mapRow(data) : u)));
+      setShowEditUserModal(false);
+      setEditingUser(null);
+      setEditAccount({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'viewer',
+        fullName: '',
+        status: 'active',
+      });
+      alert('User updated successfully!');
+    }
+
+    setSaving(false);
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
+    const userId = userToDelete.id;
+    setDeletingId(userId);
+    setError(null);
+    setShowDeleteConfirmModal(false);
+
+    const { error } = await supabase
+      .from('users_management')
+      .delete()
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Failed to delete user', error);
+      setError(error.message);
+      alert('Failed to delete user: ' + error.message);
+    } else {
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      alert('User deleted successfully!');
+    }
+
+    setDeletingId(null);
+    setUserToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirmModal(false);
+    setUserToDelete(null);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -231,11 +360,19 @@ export function UserManagementPage() {
                     <td className="py-3 px-4 text-sm text-muted">{user.createdAt}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-primary">
+                        <button 
+                          onClick={() => handleEdit(user)}
+                          className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-primary"
+                          disabled={deletingId === user.id}
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-red-400">
-                          <Trash2 className="w-4 h-4" />
+                        <button 
+                          onClick={() => handleDeleteClick(user)}
+                          className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-red-400"
+                          disabled={deletingId === user.id || loading}
+                        >
+                          <Trash2 className={`w-4 h-4 ${deletingId === user.id ? 'opacity-50' : ''}`} />
                         </button>
                       </div>
                     </td>
@@ -446,6 +583,370 @@ export function UserManagementPage() {
                       </Button>
                     </div>
                   </form>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Edit User Modal */}
+      <AnimatePresence>
+        {showEditUserModal && editingUser && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => {
+                setShowEditUserModal(false);
+                setEditingUser(null);
+              }}
+              style={{ 
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100%',
+                height: '100%',
+                minWidth: '100vw',
+                minHeight: '100vh',
+                margin: 0,
+                padding: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                zIndex: 99999,
+                boxSizing: 'border-box'
+              }}
+            />
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ 
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100vw',
+                height: '100vh',
+                margin: 0,
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 100000,
+                pointerEvents: 'none'
+              }}
+            >
+              <Card className="relative overflow-hidden group w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={{ pointerEvents: 'auto', margin: '1rem' }}>
+                <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+                <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+                <CardHeader className="relative z-10">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Edit className="w-5 h-5 text-primary" />
+                      Edit User
+                    </CardTitle>
+                    <button
+                      onClick={() => {
+                        setShowEditUserModal(false);
+                        setEditingUser(null);
+                      }}
+                      className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-foreground-primary"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative z-10">
+                  <form onSubmit={handleUpdateAccount} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <label className="block text-sm font-semibold text-foreground-primary mb-2">
+                          Full Name
+                        </label>
+                        <input
+                          type="text"
+                          name="fullName"
+                          value={editAccount.fullName}
+                          onChange={handleEditAccountInputChange}
+                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          required
+                          placeholder="Enter full name"
+                        />
+                      </div>
+
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <label className="block text-sm font-semibold text-foreground-primary mb-2">
+                          Username
+                        </label>
+                        <input
+                          type="text"
+                          name="username"
+                          value={editAccount.username}
+                          onChange={handleEditAccountInputChange}
+                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          required
+                          placeholder="Enter username for login"
+                        />
+                      </div>
+
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <label className="block text-sm font-semibold text-foreground-primary mb-2">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={editAccount.email}
+                          onChange={handleEditAccountInputChange}
+                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          required
+                          placeholder="email@example.com"
+                        />
+                      </div>
+
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <label className="block text-sm font-semibold text-foreground-primary mb-2">
+                          Role
+                        </label>
+                        <select
+                          name="role"
+                          value={editAccount.role}
+                          onChange={handleEditAccountInputChange}
+                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          required
+                        >
+                          <option value="viewer">Viewer</option>
+                          <option value="admin">Administrator</option>
+                          <option value="manager">Manager</option>
+                          <option value="operator">Operator</option>
+                        </select>
+                        <p className="text-xs text-muted mt-2">
+                          Viewer: Read-only access | Admin: Full access to all features
+                        </p>
+                      </div>
+
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <label className="block text-sm font-semibold text-foreground-primary mb-2">
+                          Status
+                        </label>
+                        <select
+                          name="status"
+                          value={editAccount.status}
+                          onChange={handleEditAccountInputChange}
+                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          required
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </div>
+
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <label className="block text-sm font-semibold text-foreground-primary mb-2">
+                          New Password (Optional)
+                        </label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={editAccount.password}
+                          onChange={handleEditAccountInputChange}
+                          className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          placeholder="Leave empty to keep current password"
+                          minLength={8}
+                        />
+                        <p className="text-xs text-muted mt-2">
+                          Leave empty if you don't want to change the password
+                        </p>
+                      </div>
+
+                      {editAccount.password && (
+                        <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                          <label className="block text-sm font-semibold text-foreground-primary mb-2">
+                            Confirm New Password
+                          </label>
+                          <input
+                            type="password"
+                            name="confirmPassword"
+                            value={editAccount.confirmPassword}
+                            onChange={handleEditAccountInputChange}
+                            className="w-full px-4 py-2 bg-background border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            placeholder="Confirm new password"
+                            minLength={8}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button type="submit" variant="default" className="flex-1" disabled={saving}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        {saving ? 'Updating...' : 'Update User'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowEditUserModal(false);
+                          setEditingUser(null);
+                          setEditAccount({
+                            username: '',
+                            email: '',
+                            password: '',
+                            confirmPassword: '',
+                            role: 'viewer',
+                            fullName: '',
+                            status: 'active',
+                          });
+                        }}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirmModal && userToDelete && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={handleDeleteCancel}
+              style={{ 
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100%',
+                height: '100%',
+                minWidth: '100vw',
+                minHeight: '100vh',
+                margin: 0,
+                padding: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                zIndex: 99999,
+                boxSizing: 'border-box'
+              }}
+            />
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ 
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100vw',
+                height: '100vh',
+                margin: 0,
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 100000,
+                pointerEvents: 'none'
+              }}
+            >
+              <Card className="relative overflow-hidden group w-full max-w-md" style={{ pointerEvents: 'auto', margin: '1rem' }}>
+                <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+                <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+                <CardHeader className="relative z-10">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-red-400">
+                      <Trash2 className="w-5 h-5" />
+                      Delete User
+                    </CardTitle>
+                    <button
+                      onClick={handleDeleteCancel}
+                      className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-foreground-primary"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative z-10">
+                  <div className="space-y-4">
+                    <p className="text-foreground-primary">
+                      Are you sure you want to delete this user? This action cannot be undone.
+                    </p>
+                    {userToDelete && (
+                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-sm text-muted">Full Name:</span>
+                            <p className="text-sm font-semibold text-foreground-primary">{userToDelete.fullName}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted">Username:</span>
+                            <p className="text-sm font-semibold text-foreground-primary">{userToDelete.username}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted">Email:</span>
+                            <p className="text-sm font-semibold text-foreground-primary">{userToDelete.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleDeleteCancel}
+                        className="flex-1"
+                        disabled={deletingId === userToDelete?.id}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="default"
+                        onClick={handleDeleteConfirm}
+                        className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                        disabled={deletingId === userToDelete?.id}
+                      >
+                        {deletingId === userToDelete?.id ? (
+                          <>
+                            <Loading size="sm" variant="minimal" />
+                            <span className="ml-2">Deleting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>

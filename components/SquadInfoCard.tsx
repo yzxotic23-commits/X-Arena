@@ -65,12 +65,12 @@ export function SquadInfoCard({ squad }: SquadInfoCardProps) {
             </div>
           </div>
 
-          {/* Squad Ranking */}
+          {/* Squad Deposit Amount */}
           <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted">{translations.overview.squadRanking}</span>
+              <span className="text-sm text-muted">{translations.overview.squadDepositAmount}</span>
               <span className="text-2xl font-heading font-bold text-foreground-primary">
-                #{squad.squadRanking} / 10
+                ${formatNumber(squad.squadDepositAmount)}
               </span>
             </div>
           </div>

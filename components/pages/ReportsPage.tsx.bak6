@@ -1,0 +1,1248 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Trophy, TrendingUp, Users, UserPlus, Crown, Award, ArrowUpRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { formatNumber, formatPercentage } from '@/lib/utils';
+import { useLanguage } from '@/lib/language-context';
+import { t } from '@/lib/translations';
+import { supabase } from '@/lib/supabase-client';
+import { supabase2 } from '@/lib/supabase-client-2';
+import { Loading } from '@/components/Loading';
+
+interface SquadMember {
+  id: string;
+  name: string;
+  employeeId: string;
+  team: string;
+  role: string;
+  department: string;
+  lines: string[];
+  shift: string;
+  status: string;
+  score: number;
+  rank: number;
+  contribution: number;
+  avatar?: string;
+}
+
+const mockSquadMembers: SquadMember[] = [
+  { 
+    id: '1', 
+    name: 'Alda', 
+    employeeId: 'CSS-018',
+    team: 'CSS → SGD',
+    role: 'E1',
+    department: 'SNR',
+    lines: ['M24SG', 'OK188SG'],
+    shift: 'HQ-C',
+    status: 'Active',
+    score: 26007, 
+    rank: 1, 
+    contribution: 22.4 
+  },
+  { 
+    id: '2', 
+    name: 'Christine', 
+    employeeId: 'SquadA-006',
+    team: 'Squad A',
+    role: 'E1',
+    department: 'Sales Operation',
+    lines: ['ABSG'],
+    shift: 'WFH-B',
+    status: 'Active',
+    score: 24500, 
+    rank: 2, 
+    contribution: 21.1 
+  },
+  { 
+    id: '3', 
+    name: 'Darren', 
+    employeeId: 'SO-11',
+    team: 'Squad A',
+    role: 'E1',
+    department: 'Sales Operation',
+    lines: ['ABSG'],
+    shift: 'SO-11',
+    status: 'Active',
+    score: 23000, 
+    rank: 3, 
+    contribution: 19.8 
+  },
+  { 
+    id: '4', 
+    name: 'Edmund', 
+    employeeId: 'SquadB-014',
+    team: 'Squad B',
+    role: 'E1',
+    department: 'SNR',
+    lines: ['FWSG'],
+    shift: 'WFH-A',
+    status: 'Active',
+    score: 21500, 
+    rank: 4, 
+    contribution: 18.5 
+  },
+  { 
+    id: '5', 
+    name: 'Tom Brown', 
+    employeeId: 'TB-005',
+    team: 'Squad B',
+    role: 'E1',
+    department: 'Sales Operation',
+    lines: ['ABSG', 'FWSG'],
+    shift: 'HQ-C',
+    status: 'Active',
+    score: 20000, 
+    rank: 5, 
+    contribution: 17.2 
+  },
+];
+
+interface SquadData {
+  netProfit: number;
+  totalDeposit: number;
+  totalActive: number;
+}
+
+export function ReportsPage() {
+  const { language } = useLanguage();
+  const translations = t(language);
+  
+  const [loading, setLoading] = useState(true);
+  const [squadAData, setSquadAData] = useState<SquadData>({ netProfit: 0, totalDeposit: 0, totalActive: 0 });
+  const [squadBData, setSquadBData] = useState<SquadData>({ netProfit: 0, totalDeposit: 0, totalActive: 0 });
+  const [leadingSquad, setLeadingSquad] = useState<'squad-a' | 'squad-b'>('squad-b');
+  const [leadAmount, setLeadAmount] = useState(0);
+  const [squadABrands, setSquadABrands] = useState<string[]>([]);
+  const [squadBBrands, setSquadBBrands] = useState<string[]>([]);
+  
+  const getCurrentMonth = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  };
+  
+  const [selectedMonth] = useState(getCurrentMonth());
+  
+  // Fetch total GGR from Target Summary (all cycles)
+  
+  // Fetch brand mapping
+  const fetchBrandMapping = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('brand_mapping')
+        .select('brand, squad')
+        .eq('status', 'active')
+        .order('brand', { ascending: true });
+
+      if (error) {
+        console.error('Failed to fetch brand mapping', error);
+        setSquadABrands(['ABSG', 'FWSG', 'OXSG']);
+        setSquadBBrands(['WBSG', 'M24SG', 'OK188SG']);
+      } else {
+        const squadA = (data ?? [])
+          .filter((item) => item.squad === 'Squad A')
+          .map((item) => item.brand)
+          .filter(Boolean);
+        
+        const squadB = (data ?? [])
+          .filter((item) => item.squad === 'Squad B')
+          .map((item) => item.brand)
+          .filter(Boolean);
+
+        setSquadABrands(squadA.length > 0 ? squadA : ['ABSG', 'FWSG', 'OXSG']);
+        setSquadBBrands(squadB.length > 0 ? squadB : ['WBSG', 'M24SG', 'OK188SG']);
+      }
+    } catch (error) {
+      console.error('Error fetching brand mapping', error);
+      setSquadABrands(['ABSG', 'FWSG', 'OXSG']);
+      setSquadBBrands(['WBSG', 'M24SG', 'OK188SG']);
+    }
+  }, []);
+  
+  // Fetch active member from blue_whale_sgd_monthly_summary
+  const fetchActiveMember = useCallback(async () => {
+    if (squadABrands.length === 0 && squadBBrands.length === 0) {
+      return;
+    }
+    
+    try {
+      const year = parseInt(selectedMonth.split('-')[0]);
+      const month = parseInt(selectedMonth.split('-')[1]);
+      
+      // Fetch data from blue_whale_sgd_monthly_summary
+      const { data, error } = await supabase2
+        .from('blue_whale_sgd_monthly_summary')
+        .select('line, active_member, month, year')
+        .eq('month', month)
+        .eq('year', year);
+      
+      if (error) {
+        console.error('Failed to fetch active member data', error);
+        return;
+      }
+      
+      // Calculate totals per squad
+      let squadATotalActive = 0;
+      let squadBTotalActive = 0;
+      
+      (data ?? []).forEach((row: any) => {
+        const brand = row.line || '';
+        const activeMember = parseFloat(row.active_member || 0) || 0;
+        
+        if (squadABrands.includes(brand)) {
+          squadATotalActive += activeMember;
+        } else if (squadBBrands.includes(brand)) {
+          squadBTotalActive += activeMember;
+        }
+      });
+      
+      // Update only active member in squad data
+      setSquadAData(prev => ({
+        ...prev,
+        totalActive: Math.round(squadATotalActive),
+      }));
+      
+      setSquadBData(prev => ({
+        ...prev,
+        totalActive: Math.round(squadBTotalActive),
+      }));
+    } catch (error) {
+      console.error('Error fetching active member data', error);
+    }
+  }, [selectedMonth, squadABrands, squadBBrands]);
+  
+  // Fetch squad data from Supabase 2 (net_profit and deposit_amount)
+  const fetchSquadData = useCallback(async () => {
+    if (squadABrands.length === 0 && squadBBrands.length === 0) {
+      return;
+    }
+    
+    try {
+      const year = parseInt(selectedMonth.split('-')[0]);
+      const month = parseInt(selectedMonth.split('-')[1]);
+      const startOfMonth = new Date(year, month - 1, 1);
+      const endOfMonth = new Date(year, month, 0);
+      
+      const formatDateLocal = (date: Date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      };
+      
+      const startDateStr = formatDateLocal(startOfMonth);
+      const endDateStr = formatDateLocal(endOfMonth);
+      
+      // Fetch data from blue_whale_sgd_summary (only net_profit and deposit_amount)
+      const { data, error } = await supabase2
+        .from('blue_whale_sgd_summary')
+        .select('line, net_profit, deposit_amount')
+        .gte('date', startDateStr)
+        .lte('date', endDateStr)
+        .limit(50000);
+      
+      if (error) {
+        console.error('Failed to fetch squad data', error);
+        return;
+      }
+      
+      // Calculate totals per squad
+      let squadANetProfit = 0;
+      let squadATotalDeposit = 0;
+      
+      let squadBNetProfit = 0;
+      let squadBTotalDeposit = 0;
+      
+      (data ?? []).forEach((row: any) => {
+        const brand = row.line || '';
+        const netProfit = parseFloat(row.net_profit || 0) || 0;
+        const depositAmount = parseFloat(row.deposit_amount || 0) || 0;
+        
+        if (squadABrands.includes(brand)) {
+          squadANetProfit += netProfit;
+          squadATotalDeposit += depositAmount;
+        } else if (squadBBrands.includes(brand)) {
+          squadBNetProfit += netProfit;
+          squadBTotalDeposit += depositAmount;
+        }
+      });
+      
+      setSquadAData(prev => ({
+        ...prev,
+        netProfit: squadANetProfit,
+        totalDeposit: squadATotalDeposit,
+      }));
+      
+      setSquadBData(prev => ({
+        ...prev,
+        netProfit: squadBNetProfit,
+        totalDeposit: squadBTotalDeposit,
+      }));
+      
+      // Determine leading squad from Net Profit (for status display)
+      // But status in cards is determined by Net Profit
+    } catch (error) {
+      console.error('Error fetching squad data', error);
+    }
+  }, [selectedMonth, squadABrands, squadBBrands]);
+  
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await fetchBrandMapping();
+      setLoading(false);
+    };
+    loadData();
+  }, [fetchBrandMapping]);
+  
+  useEffect(() => {
+    if (squadABrands.length > 0 || squadBBrands.length > 0) {
+      fetchSquadData();
+      fetchActiveMember();
+    }
+  }, [fetchSquadData, fetchActiveMember, fetchTargetSummaryGGR]);
+  
+  if (loading) {
+    return <Loading />;
+  }
+  
+  return (
+    <div className="w-full space-y-6">
+      {/* Monthly Target & Report */}
+      <div className="space-y-4 select-none pt-2 md:pt-4 lg:pt-6">
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <Trophy className="w-6 h-6 text-primary" />
+          <h3 className="text-2xl font-heading font-bold text-foreground-primary">{translations.reports.title}</h3>
+        </div>
+      </div>
+
+      {/* Squad Comparison Report Section - From Reports Page */}
+      <div className="space-y-6 select-none">
+        {/* Leading Squad Result - Top */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full"
+        >
+          <Card className="relative overflow-hidden group">
+            <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+            <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+            <CardContent className="relative z-10 p-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center ${
+                    leadingSquad === 'squad-b'
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600'
+                      : 'bg-gradient-to-br from-primary to-primary-dark'
+                  }`}>
+                    <Trophy className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted mb-1">{translations.reports.currentLeader}</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      {leadingSquad === 'squad-b' ? `${translations.reports.squadB} ${translations.reports.isLeading}` : `${translations.reports.squadA} ${translations.reports.isLeading}`}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-sm text-muted mb-1">{translations.reports.leadAmount}</div>
+                    <div className={`text-3xl font-heading font-bold ${
+                      leadingSquad === 'squad-b' ? 'text-blue-400' : 'text-primary'
+                    }`}>
+                      +${formatNumber(leadAmount)}
+                    </div>
+                  </div>
+                  <TrendingUp className={`w-8 h-8 ${
+                    leadingSquad === 'squad-b' ? 'text-blue-400' : 'text-primary'
+                  }`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Squad Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {/* Squad A Card */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card className="relative overflow-hidden group w-full h-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl font-heading font-bold text-primary">{translations.reports.squadA.toUpperCase()}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">{translations.reports.netProfit}</div>
+                    <div className="text-2xl font-heading font-bold text-gray-900 dark:text-white">
+                      ${formatNumber(squadAData.netProfit)}
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">{translations.reports.totalDeposit}</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      ${formatNumber(squadAData.totalDeposit)}
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">{translations.reports.totalActive}</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      {formatNumber(squadAData.totalActive)}
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">{translations.common.status}</div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {squadAData.netProfit > squadBData.netProfit ? translations.overview.leading : translations.overview.behind}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Squad B Card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="relative overflow-hidden group w-full h-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl font-heading font-bold text-blue-400">SQUAD B</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">{translations.reports.netProfit}</div>
+                    <div className="text-2xl font-heading font-bold text-blue-400">
+                      ${formatNumber(squadBData.netProfit)}
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">{translations.reports.totalDeposit}</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      ${formatNumber(squadBData.totalDeposit)}
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">{translations.reports.totalActive}</div>
+                    <div className="text-2xl font-heading font-bold text-foreground-primary">
+                      {formatNumber(squadBData.totalActive)}
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
+                    <div className="text-xs text-muted mb-1">{translations.common.status}</div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {squadBData.netProfit > squadAData.netProfit ? translations.overview.leading : translations.overview.behind}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Squad Details & Top Contributor Section - Combined Design */}
+      <div className="space-y-6 select-none">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Squad A Details & Top Contributor */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card className="relative overflow-hidden group w-full h-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10 border-b border-card-border pb-4">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-heading font-bold text-primary">SQUAD A</div>
+                    <div className="text-xs text-muted">{translations.overview.squadDetailsTopContributor}</div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 pt-6">
+                {/* Metrics Section */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">{translations.overview.totalSquadScore}</span>
+                      <Crown className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-gray-900 dark:text-white">
+                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').reduce((sum, member) => sum + member.score, 0))}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-3 h-3 text-green-400" />
+                      <span className="text-xs text-green-400 font-semibold">+12.5%</span>
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">{translations.overview.avgScore}</span>
+                      <TrendingUp className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').reduce((sum, member) => sum + member.score, 0) / mockSquadMembers.filter(m => m.team === 'Squad A').length || 1)}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <ArrowUpRight className="w-3 h-3 text-green-400" />
+                      <span className="text-xs text-green-400 font-semibold">+8.3%</span>
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">{translations.overview.members}</span>
+                      <UserPlus className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {mockSquadMembers.filter(m => m.team === 'Squad A').length}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <UserPlus className="w-3 h-3 text-blue-400" />
+                      <span className="text-xs text-blue-400 font-semibold">{translations.userManagement.active}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Contributor Section */}
+                <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Award className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-semibold text-foreground-primary">{translations.overview.topContributor}</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center gap-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg">
+                      <Crown className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="w-full">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <h3 className="text-xl font-heading font-bold text-foreground-primary">
+                          {mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.name || 'N/A'}
+                        </h3>
+                        <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
+                          #1
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted mb-2">
+                        {translations.overview.contribution}: {formatPercentage(mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.contribution || 0)}
+                      </p>
+                      <p className="text-2xl font-heading font-bold text-gray-900 dark:text-white">
+                        {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad A').sort((a, b) => b.score - a.score)[0]?.score || 0)} {translations.overview.points}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Squad B Details & Top Contributor */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="relative overflow-hidden group w-full h-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10 border-b border-card-border pb-4">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-heading font-bold text-blue-400">SQUAD B</div>
+                    <div className="text-xs text-muted">{translations.overview.squadDetailsTopContributor}</div>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 pt-6">
+                {/* Metrics Section */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">{translations.overview.totalSquadScore}</span>
+                      <Crown className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-blue-400">
+                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').reduce((sum, member) => sum + member.score, 0))}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <TrendingUp className="w-3 h-3 text-green-400" />
+                      <span className="text-xs text-green-400 font-semibold">+15.2%</span>
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">{translations.overview.avgScore}</span>
+                      <TrendingUp className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').reduce((sum, member) => sum + member.score, 0) / mockSquadMembers.filter(m => m.team === 'Squad B').length || 1)}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <ArrowUpRight className="w-3 h-3 text-green-400" />
+                      <span className="text-xs text-green-400 font-semibold">+10.7%</span>
+                    </div>
+                  </div>
+                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted">{translations.overview.members}</span>
+                      <UserPlus className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="text-lg font-heading font-bold text-foreground-primary">
+                      {mockSquadMembers.filter(m => m.team === 'Squad B').length}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <UserPlus className="w-3 h-3 text-blue-400" />
+                      <span className="text-xs text-blue-400 font-semibold">{translations.userManagement.active}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Contributor Section */}
+                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl p-6 border border-blue-500/20">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Award className="w-5 h-5 text-blue-400" />
+                    <span className="text-sm font-semibold text-foreground-primary">{translations.overview.topContributor}</span>
+                  </div>
+                  <div className="flex flex-col items-center text-center gap-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                      <Crown className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="w-full">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <h3 className="text-xl font-heading font-bold text-foreground-primary">
+                          {mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.name || 'N/A'}
+                        </h3>
+                        <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
+                          #1
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted mb-2">
+                        {translations.overview.contribution}: {formatPercentage(mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.contribution || 0)}
+                      </p>
+                      <p className="text-2xl font-heading font-bold text-blue-400">
+                        {formatNumber(mockSquadMembers.filter(m => m.team === 'Squad B').sort((a, b) => b.score - a.score)[0]?.score || 0)} {translations.overview.points}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Monthly Target & Report Table */}
+      <div className="space-y-4 select-none mt-12 md:mt-16 lg:mt-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* SQUAD A Table */}
+          <Card className="bg-card-glass border border-card-border shadow-lg">
+            <CardContent className="p-0">
+              {/* SQUAD A Header - Top */}
+              <div className="border-b border-card-border py-3 px-4">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  <span className="text-lg font-heading font-bold text-gray-900 dark:text-white">SQUAD A</span>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <TrendingUp className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{translations.overview.avg}: <span className="text-primary font-bold">1,026.27</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-red-200 dark:bg-red-900/30">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        Name
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        Score
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        Deposits
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        Retention
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        Dormant
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        Referrals
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        4-7
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        8-11
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        12-15
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        16-19
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
+                        20+
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* ABSG Group */}
+                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
+                      <td colSpan={11} className="py-2 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Users className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">ABSG</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Yunlai
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-primary">1,310.67</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$193,666</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">64</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">15</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">20</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">11</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">6</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Christine
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-primary">1,098.53</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$163,535</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">67</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">24</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">13</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">11</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">3</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">3</td>
+                    </tr>
+                    {/* FWSG Group */}
+                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
+                      <td colSpan={11} className="py-2 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Users className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">FWSG</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Edmund
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-primary">997.34</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$177,338</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">40</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">20</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">2</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">6</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Poi Chee
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-primary">964.44</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$269,436</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">45</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">9</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">1</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">14</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">5</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">5</td>
+                    </tr>
+                    {/* OXSG Group */}
+                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
+                      <td colSpan={11} className="py-2 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Users className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">OXSG</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Cath
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-primary">750.18</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$99,181</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">42</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">9</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">0</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">16</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">14</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">4</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">5</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">2</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Vinz
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-primary">1,036.49</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$206,485</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">65</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">1</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">24</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">14</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">3</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">9</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">2</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* SQUAD B Table */}
+          <Card className="bg-card-glass border border-card-border shadow-lg">
+            <CardContent className="p-0">
+              {/* SQUAD B Header - Top */}
+              <div className="border-b border-card-border py-3 px-4">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-blue-400" />
+                  <span className="text-lg font-heading font-bold text-gray-900 dark:text-white">SQUAD B</span>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <TrendingUp className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Avg: <span className="text-blue-400 font-bold">1,006.44</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-blue-200 dark:bg-blue-900/30">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        Name
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        Score
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        Deposits
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        Retention
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        Dormant
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        Referrals
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        4-7
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        8-11
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        12-15
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        16-19
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
+                        20+
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* WBSG Group */}
+                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
+                      <td colSpan={11} className="py-2 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Users className="w-3.5 h-3.5 text-blue-400" />
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">WBSG</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Winnie
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-blue-400">1,147.80</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$238,805</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">52</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">10</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">2</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">17</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">7</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">11</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Hiew
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-blue-400">718.51</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$129,509</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">43</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">2</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">0</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">7</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">4</td>
+                    </tr>
+                    {/* M24SG Group */}
+                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
+                      <td colSpan={11} className="py-2 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Users className="w-3.5 h-3.5 text-blue-400" />
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">M24SG</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Edward
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-blue-400">1,229.70</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$212,701</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">63</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">19</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">3</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">15</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">13</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">3</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">7</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">9</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        YongXin
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-blue-400">957.82</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$186,821</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">64</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">8</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">19</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">5</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">5</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">1</td>
+                    </tr>
+                    {/* OK188SG Group */}
+                    <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
+                      <td colSpan={11} className="py-2 px-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Users className="w-3.5 h-3.5 text-blue-400" />
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">OK188SG</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        Zu Er
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-blue-400">952.88</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$150,876</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">58</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">7</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">0</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">13</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">11</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">9</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">2</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">8</td>
+                    </tr>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        KX ProMax
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">
+                        <span className="font-bold text-blue-400">1,031.91</span>
+                      </td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">$159,906</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">56</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">13</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">17</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">12</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">11</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">6</td>
+                      <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white">2</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Detailed Squad Comparison Tables */}
+      <div className="space-y-4 select-none mt-12 md:mt-16 lg:mt-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Squad A Detailed Table */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-full"
+          >
+            <Card className="relative overflow-hidden group w-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl font-heading font-bold text-primary">SQUAD A - Detailed Metrics</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-blue-200 dark:bg-blue-900/30">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          Metric
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          ABSG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          FWSG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          OXSG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
+                          Total Count
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { metric: 'Total Deposit', values: [361243.39, 443894.57, 306059.05], total: 1111197.01 },
+                        { metric: 'Total Withdraw', values: [324619.97, 391153.62, 291688.18], total: 1007461.77 },
+                        { metric: 'Total Case', values: [4332, 3510, 3337], total: 11179 },
+                        { metric: 'Total Active', values: [202, 124, 135], total: 461 },
+                        { metric: 'Retention', values: [131, 85, 107], total: 323 },
+                        { metric: 'Reactivation', values: [38, 32, 15], total: 85 },
+                        { metric: 'Recommend', values: [12, 3, 1], total: 16 },
+                        { metric: 'Gross Profit', values: [36623.42, 52740.95, 14370.87], total: 103735.24 },
+                        { metric: 'Net Profit', values: [36623.42, 52360.95, 14190.87], total: 103175.24, isNetProfit: true },
+                      ].map((row, rowIndex) => (
+                        <motion.tr
+                          key={rowIndex}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: rowIndex * 0.05 }}
+                          className={`border-b border-card-border ${
+                            row.isNetProfit
+                              ? 'bg-yellow-100 dark:bg-yellow-900/20 font-bold'
+                              : 'hover:bg-primary/5'
+                          } transition-colors`}
+                        >
+                          <td
+                            className={`py-3 px-4 text-sm font-semibold border-r border-card-border ${
+                              row.isNetProfit
+                                ? 'text-gray-900 dark:text-white'
+                                : 'text-foreground-primary'
+                            }`}
+                          >
+                            {row.metric}
+                          </td>
+                          {row.values.map((value, colIndex) => (
+                            <td
+                              key={colIndex}
+                              className={`text-center py-3 px-4 text-sm border-r border-card-border ${
+                                row.isNetProfit
+                                  ? 'text-gray-900 dark:text-white font-bold'
+                                  : 'text-foreground-primary'
+                              }`}
+                            >
+                              {row.metric === 'Net Profit' ? `$${formatNumber(value)}` : formatNumber(value)}
+                            </td>
+                          ))}
+                          <td
+                            className={`text-center py-3 px-4 text-sm font-semibold ${
+                              row.isNetProfit
+                                ? 'text-gray-900 dark:text-white font-bold'
+                                : 'text-foreground-primary'
+                            }`}
+                          >
+                            {row.metric === 'Net Profit' ? `$${formatNumber(row.total)}` : formatNumber(row.total)}
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Squad B Detailed Table */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="w-full"
+          >
+            <Card className="relative overflow-hidden group w-full">
+              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+              <CardHeader className="relative z-10">
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-xl font-heading font-bold text-blue-400">SQUAD B - Detailed Metrics</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-blue-200 dark:bg-blue-900/30">
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          Metric
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          WBSG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          M24SG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          OK188SG
+                        </th>
+                        <th className="text-center py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
+                          Total Count
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { metric: 'Total Deposit', values: [369393.79, 409839.28, 317287.69], total: 1096520.76 },
+                        { metric: 'Total Withdraw', values: [311375.1, 283258.1, 262918.41], total: 857551.61 },
+                        { metric: 'Total Case', values: [3636, 3796, 4105], total: 11537 },
+                        { metric: 'Total Active', values: [125, 176, 152], total: 453 },
+                        { metric: 'Retention', values: [94, 126, 114], total: 334 },
+                        { metric: 'Reactivation', values: [17, 32, 22], total: 71 },
+                        { metric: 'Recommend', values: [2, 9, 6], total: 17 },
+                        { metric: 'Gross Profit', values: [58018.69, 126581.18, 54369.28], total: 238969.15 },
+                        { metric: 'Net Profit', values: [57519.62, 126516.68, 53415.78], total: 237452.08, isNetProfit: true },
+                      ].map((row, rowIndex) => (
+                        <motion.tr
+                          key={rowIndex}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3, delay: rowIndex * 0.05 }}
+                          className={`border-b border-card-border ${
+                            row.isNetProfit
+                              ? 'bg-yellow-100 dark:bg-yellow-900/20 font-bold'
+                              : 'hover:bg-primary/5'
+                          } transition-colors`}
+                        >
+                          <td
+                            className={`py-3 px-4 text-sm font-semibold border-r border-card-border ${
+                              row.isNetProfit
+                                ? 'text-gray-900 dark:text-white'
+                                : 'text-foreground-primary'
+                            }`}
+                          >
+                            {row.metric}
+                          </td>
+                          {row.values.map((value, colIndex) => (
+                            <td
+                              key={colIndex}
+                              className={`text-center py-3 px-4 text-sm border-r border-card-border ${
+                                row.isNetProfit
+                                  ? 'text-gray-900 dark:text-white font-bold'
+                                  : 'text-foreground-primary'
+                              }`}
+                            >
+                              {row.metric === 'Net Profit' ? `$${formatNumber(value)}` : formatNumber(value)}
+                            </td>
+                          ))}
+                          <td
+                            className={`text-center py-3 px-4 text-sm font-semibold ${
+                              row.isNetProfit
+                                ? 'text-gray-900 dark:text-white font-bold'
+                                : 'text-foreground-primary'
+                            }`}
+                          >
+                            {row.metric === 'Net Profit' ? `$${formatNumber(row.total)}` : formatNumber(row.total)}
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

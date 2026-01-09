@@ -211,6 +211,7 @@ export interface Translations {
     leading: string;
     behind: string;
     squadRanking: string;
+    squadDepositAmount: string;
     depositAmountPerUser: string;
     averageDepositPerUser: string;
     trendChange: string;
@@ -354,7 +355,7 @@ export const translations: Record<Language, Translations> = {
       weekly: 'Weekly',
       monthly: 'Monthly',
       custom: 'Custom',
-      squadVsSquad: 'Squad vs Squad',
+      squadVsSquad: 'Squad → Personal',
       squadToBrand: 'Squad → Brand',
       brandToPersonal: 'Brand → Personal',
     },
@@ -459,6 +460,7 @@ export const translations: Record<Language, Translations> = {
       leading: 'Leading',
       behind: 'Behind',
       squadRanking: 'Squad Ranking',
+      squadDepositAmount: 'Squad Deposit Amount',
       depositAmountPerUser: 'Deposit Amount per User',
       averageDepositPerUser: 'Average deposit per user',
       trendChange: 'Trend Change',
@@ -600,7 +602,7 @@ export const translations: Record<Language, Translations> = {
       weekly: '每周',
       monthly: '每月',
       custom: '自定义',
-      squadVsSquad: '小队 vs 小队',
+      squadVsSquad: '小队 → 个人',
       squadToBrand: '小队 → 品牌',
       brandToPersonal: '品牌 → 个人',
     },
@@ -706,6 +708,7 @@ export const translations: Record<Language, Translations> = {
       leading: '领先',
       behind: '落后',
       squadRanking: '小队排名',
+      squadDepositAmount: '小队存款金额',
       depositAmountPerUser: '每用户存款金额',
       averageDepositPerUser: '每用户平均存款',
       trendChange: '趋势变化',

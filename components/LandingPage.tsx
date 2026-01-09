@@ -1,15 +1,20 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Trophy, Zap, Users, Target, Award, TrendingUp, X } from 'lucide-react';
+import { ArrowRight, Trophy, Zap, Users, Target, Award, TrendingUp, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { Loading } from '@/components/Loading';
 
 export function LandingPage() {
   const router = useRouter();
+  const { loginRankOperator } = useAuth();
   const [showRankModal, setShowRankModal] = useState(false);
-  const [rankUsername, setRankUsername] = useState('admin8899');
+  const [rankUsername, setRankUsername] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const features = [
     {
@@ -214,23 +219,58 @@ export function LandingPage() {
                         autoFocus
                       />
                     </div>
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex items-center gap-2"
+                      >
+                        <AlertCircle className="w-5 h-5 text-red-400" />
+                        <span className="text-sm text-red-400">{error}</span>
+                      </motion.div>
+                    )}
                     <Button
                       size="lg"
                       variant="default"
-                      onClick={() => {
-                        if (rankUsername.trim()) {
-                          // Store username and limited access flag
-                          localStorage.setItem('x-arena-rank-username', rankUsername.trim());
-                          localStorage.setItem('x-arena-limited-access', 'true');
-                          localStorage.setItem('x-arena-auth', 'authenticated');
-                          // Reload to trigger auth context update
-                          window.location.href = '/';
+                      onClick={async () => {
+                        if (!rankUsername.trim()) {
+                          setError('Please enter your username');
+                          return;
+                        }
+                        
+                        setError('');
+                        setIsLoading(true);
+                        
+                        try {
+                          const success = await loginRankOperator(rankUsername.trim());
+                          
+                          if (success) {
+                            // Redirect to dashboard
+                            router.push('/');
+                          } else {
+                            setError('Invalid username. Only rank operators can access this feature.');
+                            setIsLoading(false);
+                          }
+                        } catch (err) {
+                          console.error('Login error:', err);
+                          setError('An error occurred. Please try again.');
+                          setIsLoading(false);
                         }
                       }}
                       className="w-full flex items-center justify-center gap-2"
+                      disabled={isLoading}
                     >
-                      <Trophy className="w-5 h-5" />
-                      View Rank
+                      {isLoading ? (
+                        <>
+                          <Loading size="sm" variant="minimal" />
+                          <span>Checking...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="w-5 h-5" />
+                          View Rank
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

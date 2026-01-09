@@ -45,7 +45,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
             {/* Circular Progress */}
             <div className="flex flex-col items-center justify-center">
-              <div className="w-48 h-48 mb-4">
+              <div className="w-64 h-64 mb-4">
                 <CircularProgressbar
                   value={target.completion}
                   text={`${target.completion.toFixed(0)}%`}
@@ -53,7 +53,8 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                     pathColor: progressColor,
                     textColor: textColor,
                     trailColor: trailColor,
-                    textSize: '20px',
+                    textSize: '16px',
+                    strokeWidth: 20,
                   })}
                 />
               </div>
@@ -67,16 +68,18 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
 
             {/* Stats */}
             <div className="space-y-4">
+              {/* Net Profit Squad */}
               <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted">{translations.overview.completionRate}</span>
+                  <span className="text-sm text-muted">Net Profit Squad</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
                 <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
-                  {target.completion.toFixed(1)}%
+                  {formatNumber(target.netProfitSquad || 0)}
                 </p>
               </div>
 
+              {/* Remaining Gap */}
               <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-muted">{translations.overview.remainingGap}</span>
@@ -87,26 +90,15 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                 </p>
               </div>
 
-              {/* Execution Pace Assessment */}
+              {/* Completion Rate */}
               <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted">{translations.overview.executionPace}</span>
+                  <span className="text-sm text-muted">{translations.overview.completionRate}</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant="default"
-                    className={`text-base px-3 py-1 ${
-                      target.pace === 'Fast'
-                        ? 'bg-green-500/20 text-green-400 border-green-500/50'
-                        : target.pace === 'Medium'
-                        ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
-                        : 'bg-red-500/20 text-red-400 border-red-500/50'
-                    }`}
-                  >
-                    {target.pace === 'Fast' ? translations.overview.onTrack : target.pace === 'Medium' ? translations.overview.atRisk : translations.overview.behindSchedule}
-                  </Badge>
-                </div>
+                <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
+                  {target.completion.toFixed(1)}%
+                </p>
               </div>
             </div>
           </div>

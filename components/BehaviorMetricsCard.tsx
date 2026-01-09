@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { UserPlus, UserCheck, Users, DollarSign, Target } from 'lucide-react';
+import { UserPlus, UserCheck, Users, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BehaviorResultMetrics } from '@/types';
 import { formatNumber } from '@/lib/utils';
@@ -37,16 +37,9 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
     },
     {
       key: 'depositAmountPerUser' as const,
-      label: translations.overview.depositPerUser,
+      label: translations.overview.depositAmount,
       icon: DollarSign,
       color: 'text-yellow-400',
-    },
-    {
-      key: 'targetGapActiveMemberGrossProfit' as const,
-      label: translations.overview.targetGapAMGP,
-      icon: Target,
-      color: 'text-primary',
-      format: (value: number) => value.toFixed(4),
     },
   ];
   return (
@@ -62,12 +55,11 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
         <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
         <CardHeader className="relative z-10">
           <CardTitle className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
             {translations.overview.behaviorResultMetrics}
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {metricConfig.map((config, index) => {
               const Icon = config.icon;
               const value = behaviorMetrics[config.key];
