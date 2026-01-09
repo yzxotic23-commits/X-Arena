@@ -1161,9 +1161,6 @@ export function ReportsPage() {
 
       setSquadADetailedMetrics(squadAResults);
       setSquadBDetailedMetrics(squadBResults);
-
-      setSquadADetailedMetrics(squadAMetrics);
-      setSquadBDetailedMetrics(squadBMetrics);
     } catch (error) {
       console.error('Error fetching detailed metrics', error);
     }
