@@ -409,12 +409,57 @@ export function TargetsPage() {
     }).format(num);
   };
   
-  // Squad-level GGR targets (editable)
+  // Squad-level GGR targets (fetch from database)
   const [squadGgrTargets, setSquadGgrTargets] = useState<number[]>([
     DEFAULT_GGR_TARGETS[0].value,
     DEFAULT_GGR_TARGETS[1].value,
     DEFAULT_GGR_TARGETS[2].value,
   ]);
+  const [loadingSquadTargets, setLoadingSquadTargets] = useState(true);
+
+  // Fetch squad GGR targets from database
+  const fetchSquadGgrTargets = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('target_settings')
+        .select('*')
+        .eq('month', selectedMonth)
+        .single();
+
+      if (error) {
+        console.error('Failed to fetch squad GGR targets', error);
+        // Use default values if fetch fails
+        setSquadGgrTargets([
+          DEFAULT_GGR_TARGETS[0].value,
+          DEFAULT_GGR_TARGETS[1].value,
+          DEFAULT_GGR_TARGETS[2].value,
+        ]);
+      } else if (data) {
+        // Load squad GGR targets based on active squad
+        if (activeSquad === 'squad-a') {
+          const option1 = parseFloat(data.squad_a_ggr_option1 || '0') || DEFAULT_GGR_TARGETS[0].value;
+          const option2 = parseFloat(data.squad_a_ggr_option2 || '0') || DEFAULT_GGR_TARGETS[1].value;
+          const option3 = parseFloat(data.squad_a_ggr_option3 || '0') || DEFAULT_GGR_TARGETS[2].value;
+          setSquadGgrTargets([option1, option2, option3]);
+        } else {
+          const option1 = parseFloat(data.squad_b_ggr_option1 || '0') || DEFAULT_GGR_TARGETS[0].value;
+          const option2 = parseFloat(data.squad_b_ggr_option2 || '0') || DEFAULT_GGR_TARGETS[1].value;
+          const option3 = parseFloat(data.squad_b_ggr_option3 || '0') || DEFAULT_GGR_TARGETS[2].value;
+          setSquadGgrTargets([option1, option2, option3]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching squad GGR targets', error);
+      // Use default values if error
+      setSquadGgrTargets([
+        DEFAULT_GGR_TARGETS[0].value,
+        DEFAULT_GGR_TARGETS[1].value,
+        DEFAULT_GGR_TARGETS[2].value,
+      ]);
+    } finally {
+      setLoadingSquadTargets(false);
+    }
+  }, [selectedMonth, activeSquad]);
 
   // Get cycle data - prioritize database data, fallback to mock data
   const getCycleDataWithBrands = useCallback(() => {
