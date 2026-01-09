@@ -618,9 +618,9 @@ export function CustomerListingPage() {
             .single();
           
           if (!error && data) {
-            const username = data[cols.usernameCol] || '';
+            const username = (data as any)[cols.usernameCol] || '';
             if (username) {
-              return username;
+              return String(username);
             }
           }
         } catch (err) {
