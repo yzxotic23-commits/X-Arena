@@ -103,7 +103,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10 pt-0">
-          <div className="h-80">
+          <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -112,7 +112,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
                   cy="50%"
                   labelLine={false}
                   label={CustomLabel}
-                  outerRadius={100}
+                  outerRadius={140}
                   fill="#8884d8"
                   dataKey="value"
                   animationBegin={0}
@@ -134,7 +134,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
             {allData.map((item, index) => {
               // Find index in filtered data for color mapping
               const filteredIndex = data.findIndex(d => d.name === item.name);
@@ -142,17 +142,17 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
               return (
                 <div
                   key={item.name}
-                  className="bg-card-inner rounded-lg p-3 border border-card-border transition-colors h-full flex flex-col min-h-[100px]"
+                  className="bg-card-inner rounded-lg p-2 border border-card-border transition-colors h-full flex flex-col min-h-[70px]"
                 >
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-1.5 mb-0.5">
                     <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
                     />
-                    <span className="text-xs text-muted">{item.name}</span>
+                    <span className="text-[10px] text-muted">{item.name}</span>
                   </div>
-                  <p className="text-lg font-bold text-foreground-primary">{formatNumber(item.value)}</p>
-                  <p className="text-xs text-muted">
+                  <p className="text-sm font-bold text-foreground-primary">{formatNumber(item.value)}</p>
+                  <p className="text-[10px] text-muted">
                     {total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0'}%
                   </p>
                 </div>
