@@ -44,9 +44,6 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   const { language } = useLanguage();
   const translations = t(language);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
-  
-  // Debug: Log isLimitedAccess value
-  console.log('[Sidebar] isLimitedAccess:', isLimitedAccess);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [clickedMenu, setClickedMenu] = useState<string | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null);
@@ -86,11 +83,6 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
         return allowedIds.includes(item.id);
       })
     : menuItems;
-  
-  // Debug: Log filtered menu items for limited access users
-  if (isLimitedAccess) {
-    console.log('[Sidebar] Limited access user - filtered menu items:', filteredMenuItems.map(item => item.id));
-  }
 
   // Close dropdown when sidebar is collapsed
   useEffect(() => {
