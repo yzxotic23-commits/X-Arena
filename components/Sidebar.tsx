@@ -44,6 +44,9 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   const { language } = useLanguage();
   const translations = t(language);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+  
+  // Debug: Log isLimitedAccess value
+  console.log('[Sidebar] isLimitedAccess:', isLimitedAccess);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [clickedMenu, setClickedMenu] = useState<string | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null);
