@@ -4,6 +4,9 @@ import { supabase2 } from '@/lib/supabase-client-2';
 import { calculateMemberScore, TargetPersonal } from '@/lib/calculate-member-score';
 import { DashboardData, Contribution, Squad, Target, ContributionMetrics, BehaviorResultMetrics, TrafficSource } from '@/types';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 // Helper function to get current month
 function getCurrentMonth(): string {
   const now = new Date();
