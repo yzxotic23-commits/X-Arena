@@ -1556,7 +1556,7 @@ export function ReportsPage() {
                           <>
                             <div className="flex items-center justify-center gap-2 mb-1">
                               <h3 className="text-xl font-heading font-bold text-foreground-primary">
-                                {topMember?.username || 'N/A'}
+                                {(topMember as { username: string; score: number; brand: string } | null)?.username || 'N/A'}
                               </h3>
                               <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
                                 #{globalRank || 'N/A'}
@@ -1566,7 +1566,7 @@ export function ReportsPage() {
                               {translations.overview.contribution}: {contribution.toFixed(1)}%
                             </p>
                             <p className="text-2xl font-heading font-bold text-gray-900 dark:text-white">
-                              {formatNumber(topMember?.score || 0)} {translations.overview.points}
+                              {formatNumber((topMember as { username: string; score: number; brand: string } | null)?.score || 0)} {translations.overview.points}
                             </p>
                           </>
                         );
