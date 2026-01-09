@@ -78,14 +78,16 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   // Filter menu items based on limited access
   // Limited access users can see: dashboard, leaderboard, targets (Target Summary), reports, and customer-listing
   const filteredMenuItems = isLimitedAccess
-    ? menuItems.filter((item: MenuItem) => 
-        item.id === 'dashboard' || 
-        item.id === 'leaderboard' || 
-        item.id === 'targets' || 
-        item.id === 'reports' ||
-        item.id === 'customer-listing'
-      )
+    ? menuItems.filter((item: MenuItem) => {
+        const allowedIds = ['dashboard', 'leaderboard', 'targets', 'reports', 'customer-listing'];
+        return allowedIds.includes(item.id);
+      })
     : menuItems;
+  
+  // Debug: Log filtered menu items for limited access users
+  if (isLimitedAccess) {
+    console.log('[Sidebar] Limited access user - filtered menu items:', filteredMenuItems.map(item => item.id));
+  }
 
   // Close dropdown when sidebar is collapsed
   useEffect(() => {
