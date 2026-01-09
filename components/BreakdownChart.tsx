@@ -103,7 +103,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10 pt-0 flex-1 flex flex-col justify-between">
-          <div className="flex-1 flex items-center justify-center min-h-0">
+          <div className="h-80 flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -112,7 +112,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
                   cy="50%"
                   labelLine={false}
                   label={CustomLabel}
-                  outerRadius={140}
+                  outerRadius={120}
                   fill="#8884d8"
                   dataKey="value"
                   animationBegin={0}
