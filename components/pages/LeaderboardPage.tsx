@@ -972,30 +972,53 @@ export function LeaderboardPage() {
         }));
       topPerformers.push(...mostReferrals);
 
-      // 5. Highest Repeat Customers - aggregate from all members in brand
-      const brandRepeatCounts = new Map<string, number>();
-      getFilteredSquadMappings()
-        .filter(m => m.status === 'active')
-        .forEach(mapping => {
-          const repeatCount = repeatCustomersCount.get(mapping.username) || 0;
-          const existing = brandRepeatCounts.get(mapping.brand) || 0;
-          brandRepeatCounts.set(mapping.brand, existing + repeatCount);
-        });
-
-      const highestRepeatCustomers = [...allBrandsWithScores]
-        .map(item => ({
-          ...item,
-          repeatCount: brandRepeatCounts.get(item.brand) || 0,
-        }))
-        .sort((a, b) => b.repeatCount - a.repeatCount)
+      // 5. Repeat 4 - 7 Days
+      const repeat4_7Days = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.days_4_7 - a.scoreData.days_4_7)
         .slice(0, 3)
         .map((item, index) => ({
           rank: index + 1,
           name: item.brand,
-          value: item.repeatCount,
-          category: 'Highest Repeat Customers' as TopPerformer['category'],
+          value: item.scoreData.days_4_7,
+          category: 'Repeat 4 - 7 Days' as TopPerformer['category'],
         }));
-      topPerformers.push(...highestRepeatCustomers);
+      topPerformers.push(...repeat4_7Days);
+
+      // 6. Repeat 8 - 11 Days
+      const repeat8_11Days = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.days_8_11 - a.scoreData.days_8_11)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.scoreData.days_8_11,
+          category: 'Repeat 8 - 11 Days' as TopPerformer['category'],
+        }));
+      topPerformers.push(...repeat8_11Days);
+
+      // 7. Repeat 12 - 15 Days
+      const repeat12_15Days = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.days_12_15 - a.scoreData.days_12_15)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.scoreData.days_12_15,
+          category: 'Repeat 12 - 15 Days' as TopPerformer['category'],
+        }));
+      topPerformers.push(...repeat12_15Days);
+
+      // 8. Repeat 20 Days & Above
+      const repeat20DaysAbove = [...allBrandsWithScores]
+        .sort((a, b) => b.scoreData.days_20_plus - a.scoreData.days_20_plus)
+        .slice(0, 3)
+        .map((item, index) => ({
+          rank: index + 1,
+          name: item.brand,
+          value: item.scoreData.days_20_plus,
+          category: 'Repeat 20 Days & Above' as TopPerformer['category'],
+        }));
+      topPerformers.push(...repeat20DaysAbove);
 
       return topPerformers;
     }
@@ -1074,21 +1097,53 @@ export function LeaderboardPage() {
       }));
     topPerformers.push(...mostReferrals);
 
-    // 5. Highest Repeat Customers - customers with deposit_cases > 2
-    const highestRepeatCustomers = [...allMembersWithScores]
-      .map(member => ({
-        ...member,
-        repeatCount: repeatCustomersCount.get(member.mapping.username) || 0,
-      }))
-      .sort((a, b) => b.repeatCount - a.repeatCount)
+    // 5. Repeat 4 - 7 Days
+    const repeat4_7Days = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.days_4_7 - a.scoreData.days_4_7)
       .slice(0, 3)
       .map((member, index) => ({
         rank: index + 1,
         name: member.mapping.username,
-        value: member.repeatCount,
-        category: 'Highest Repeat Customers' as TopPerformer['category'],
+        value: member.scoreData.days_4_7,
+        category: 'Repeat 4 - 7 Days' as TopPerformer['category'],
       }));
-    topPerformers.push(...highestRepeatCustomers);
+    topPerformers.push(...repeat4_7Days);
+
+    // 6. Repeat 8 - 11 Days
+    const repeat8_11Days = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.days_8_11 - a.scoreData.days_8_11)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.scoreData.days_8_11,
+        category: 'Repeat 8 - 11 Days' as TopPerformer['category'],
+      }));
+    topPerformers.push(...repeat8_11Days);
+
+    // 7. Repeat 12 - 15 Days
+    const repeat12_15Days = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.days_12_15 - a.scoreData.days_12_15)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.scoreData.days_12_15,
+        category: 'Repeat 12 - 15 Days' as TopPerformer['category'],
+      }));
+    topPerformers.push(...repeat12_15Days);
+
+    // 8. Repeat 20 Days & Above
+    const repeat20DaysAbove = [...allMembersWithScores]
+      .sort((a, b) => b.scoreData.days_20_plus - a.scoreData.days_20_plus)
+      .slice(0, 3)
+      .map((member, index) => ({
+        rank: index + 1,
+        name: member.mapping.username,
+        value: member.scoreData.days_20_plus,
+        category: 'Repeat 20 Days & Above' as TopPerformer['category'],
+      }));
+    topPerformers.push(...repeat20DaysAbove);
 
     return topPerformers;
   };
@@ -1107,7 +1162,10 @@ export function LeaderboardPage() {
         return <RefreshCw className="w-5 h-5" />;
       case 'Most Referrals':
         return <UserPlus className="w-5 h-5" />;
-      case 'Highest Repeat Customers':
+      case 'Repeat 4 - 7 Days':
+      case 'Repeat 8 - 11 Days':
+      case 'Repeat 12 - 15 Days':
+      case 'Repeat 20 Days & Above':
         return <TrendingUp className="w-5 h-5" />;
       default:
         return <Trophy className="w-5 h-5" />;
@@ -1529,7 +1587,7 @@ export function LeaderboardPage() {
               <Card className="bg-card-glass">
                 <CardContent className="p-6">
                   <div className="space-y-8">
-                    {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Highest Repeat Customers'] as TopPerformer['category'][]).map((category, categoryIndex) => {
+                    {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Repeat 4 - 7 Days', 'Repeat 8 - 11 Days', 'Repeat 12 - 15 Days', 'Repeat 20 Days & Above'] as TopPerformer['category'][]).map((category, categoryIndex) => {
                       const performers = getTopPerformersByCategory(category);
                       const reorderedPerformers = [
                         performers.find(p => p.rank === 2),
@@ -1579,9 +1637,9 @@ export function LeaderboardPage() {
                                   </div>
                                   <div className="flex items-center justify-center gap-1">
                                     <p className={`text-base font-heading font-bold ${style.color}`}>
-                                      {category === 'Highest Retention' || category === 'Most Activated Customers' || category === 'Most Referrals' || category === 'Highest Repeat Customers'
-                                        ? formatNumber(performer.value)
-                                        : `$${formatNumber(performer.value)}`}
+                                      {category === 'Highest Deposit'
+                                        ? `$${formatNumber(performer.value)}`
+                                        : formatNumber(performer.value)}
                                     </p>
                                   </div>
                                 </div>

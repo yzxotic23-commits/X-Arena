@@ -58,7 +58,7 @@ export interface TopPerformer {
   rank: number;
   name: string;
   value: number;
-  category: 'Highest Deposit' | 'Highest Retention' | 'Most Activated Customers' | 'Most Referrals' | 'Highest Repeat Customers';
+  category: 'Highest Deposit' | 'Highest Retention' | 'Most Activated Customers' | 'Most Referrals' | 'Repeat 4 - 7 Days' | 'Repeat 8 - 11 Days' | 'Repeat 12 - 15 Days' | 'Repeat 20 Days & Above';
 }
 
 export interface TrafficSource {
