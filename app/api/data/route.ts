@@ -254,6 +254,10 @@ export async function GET(request: NextRequest) {
         retention: Math.round(memberScore.retention * targetPersonal.retention),
         activation: Math.round(memberScore.dormant * targetPersonal.reactivation),
         referral: Math.round(memberScore.referrals * targetPersonal.recommend),
+        days_4_7: Math.round(memberScore.days_4_7 * targetPersonal.days_4_7),
+        days_8_11: Math.round(memberScore.days_8_11 * targetPersonal.days_8_11),
+        days_12_15: Math.round(memberScore.days_12_15 * targetPersonal.days_12_15),
+        days_20_plus: Math.round(memberScore.days_20_plus * targetPersonal.days_20_more),
       },
     };
 

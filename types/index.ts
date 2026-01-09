@@ -17,6 +17,10 @@ export interface Contribution {
     retention: number;
     activation: number;
     referral: number;
+    days_4_7?: number;
+    days_8_11?: number;
+    days_12_15?: number;
+    days_20_plus?: number;
   };
 }
 

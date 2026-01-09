@@ -17,7 +17,8 @@ interface BreakdownChartProps {
 // Pilih salah satu opsi di bawah ini:
 
 // OPSI 1: Red Gradient (Variasi merah dengan kontras jelas) - RECOMMENDED
-const COLORS = ['#FF0000', '#DC2626', '#EF4444', '#F87171']; // Bright Red, Primary Red, Light Red, Pink-Red
+// Extended colors for 8 categories: Deposit, Retention, Activation, Referral, 4-7 Days, 8-11 Days, 12-15 Days, 20+ Days
+const COLORS = ['#FF0000', '#DC2626', '#EF4444', '#F87171', '#B91C1C', '#991B1B', '#7F1D1D', '#DC143C']; // Bright Red, Primary Red, Light Red, Pink-Red, Dark Red, Darker Red, Darkest Red, Crimson
 
 // OPSI 2: Red + Orange/Amber Accents (Red dengan accent orange)
 // const COLORS = ['#FF0000', '#DC2626', '#F59E0B', '#EF4444']; // Bright Red, Primary Red, Amber, Light Red
@@ -37,6 +38,10 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
     { name: 'Retention', value: contribution.breakdown.retention },
     { name: 'Activation', value: contribution.breakdown.activation },
     { name: 'Referral', value: contribution.breakdown.referral },
+    { name: '4 - 7 Days', value: contribution.breakdown.days_4_7 || 0 },
+    { name: '8 - 11 Days', value: contribution.breakdown.days_8_11 || 0 },
+    { name: '12 - 15 Days', value: contribution.breakdown.days_12_15 || 0 },
+    { name: '20+ Days', value: contribution.breakdown.days_20_plus || 0 },
   ];
   
   // Filter data for pie chart (exclude 0 values)
