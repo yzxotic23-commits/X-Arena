@@ -52,7 +52,7 @@ export function SquadGapChart({ squad }: SquadGapChartProps) {
       className="w-full"
       style={{ minWidth: 0, maxWidth: '100%' }}
     >
-      <Card className="relative overflow-hidden group w-full shadow-none" style={{ maxWidth: '100%', boxShadow: 'none !important' }}>
+      <Card className="relative overflow-hidden group w-full shadow-none flex flex-col" style={{ maxWidth: '100%', boxShadow: 'none !important', minHeight: '600px' }}>
         <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
         <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
         <CardHeader className="relative z-10">
@@ -60,7 +60,7 @@ export function SquadGapChart({ squad }: SquadGapChartProps) {
             {translations.overview.gapBetweenSquads}
           </CardTitle>
         </CardHeader>
-        <CardContent className="relative z-10 pt-0">
+        <CardContent className="relative z-10 pt-0 flex-1 flex flex-col">
           <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
