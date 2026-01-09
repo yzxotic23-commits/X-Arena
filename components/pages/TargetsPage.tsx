@@ -400,6 +400,10 @@ export function TargetsPage() {
     }
   }, [fetchCycleData]);
 
+  useEffect(() => {
+    fetchSquadGgrTargets();
+  }, [fetchSquadGgrTargets]);
+
   const formatCurrency = (num: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
