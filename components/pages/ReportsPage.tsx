@@ -1544,7 +1544,7 @@ export function ReportsPage() {
                           });
                         });
                         
-                        const topMemberScore = topMember?.score || 0;
+                        const topMemberScore = (topMember as { username: string; score: number; brand: string } | null)?.score ?? 0;
                         const contribution = totalSquadScore > 0
                           ? (topMemberScore / totalSquadScore) * 100 
                           : 0;
