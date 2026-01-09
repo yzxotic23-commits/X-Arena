@@ -159,9 +159,6 @@ function generateMockBehaviorMetrics(baseMetrics: BaseBusinessMetrics, target: T
     numberOfReactivatedDormantCustomers: randomInt(5, 150),
     numberOfRetentionCustomers: randomInt(20, 300),
     depositAmountPerUser: target.depositPerUser,
-    targetGapActiveMemberGrossProfit: baseMetrics.grossProfit > 0 
-      ? baseMetrics.activeMember / baseMetrics.grossProfit 
-      : 0,
   };
 }
 
