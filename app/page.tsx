@@ -487,7 +487,7 @@ function DashboardContent() {
                 </div>
 
                 {/* 3. Chart Section - Grid Layout 2x2 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-stretch">
                   <BreakdownChart contribution={data.personal} />
                   <SquadGapChart squad={data.squad} />
                 </div>
