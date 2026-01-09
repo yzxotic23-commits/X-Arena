@@ -804,6 +804,11 @@ export function LeaderboardPage() {
             retention: scoreData.retention,
             activation: scoreData.dormant,
             referral: scoreData.referrals,
+            days_4_7: scoreData.days_4_7,
+            days_8_11: scoreData.days_8_11,
+            days_12_15: scoreData.days_12_15,
+            days_16_19: scoreData.days_16_19,
+            days_20_plus: scoreData.days_20_plus,
           },
         };
       });
@@ -934,6 +939,11 @@ export function LeaderboardPage() {
         retention: scoreData?.retention || 0,
         activation: scoreData?.dormant || 0,
         referral: scoreData?.referrals || 0,
+        days_4_7: scoreData?.days_4_7 || 0,
+        days_8_11: scoreData?.days_8_11 || 0,
+        days_12_15: scoreData?.days_12_15 || 0,
+        days_16_19: scoreData?.days_16_19 || 0,
+        days_20_plus: scoreData?.days_20_plus || 0,
       },
     };
     handleMemberClick(entry);
@@ -1811,6 +1821,40 @@ export function LeaderboardPage() {
                           <div className="text-xs text-muted mb-1">Referral</div>
                           <div className="text-lg font-heading font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.referral)}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Days Categories */}
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">4 - 7 Days</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_4_7 || 0)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">8 - 11 Days</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_8_11 || 0)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">12 - 15 Days</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_12_15 || 0)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">16 - 19 Days</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_16_19 || 0)}
+                          </div>
+                        </div>
+                        <div className="bg-card-inner rounded-lg p-3 border border-card-border">
+                          <div className="text-xs text-muted mb-1">20 Days & Above</div>
+                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                            {formatNumber(selectedMember.breakdown.days_20_plus || 0)}
                           </div>
                         </div>
                       </div>
