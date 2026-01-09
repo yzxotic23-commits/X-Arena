@@ -17,8 +17,8 @@ interface BreakdownChartProps {
 // Pilih salah satu opsi di bawah ini:
 
 // OPSI 1: Red Gradient (Variasi merah dengan kontras jelas) - RECOMMENDED
-// Extended colors for 8 categories: Deposit, Retention, Activation, Referral, 4-7 Days, 8-11 Days, 12-15 Days, 20+ Days
-const COLORS = ['#FF0000', '#DC2626', '#EF4444', '#F87171', '#B91C1C', '#991B1B', '#7F1D1D', '#DC143C']; // Bright Red, Primary Red, Light Red, Pink-Red, Dark Red, Darker Red, Darkest Red, Crimson
+// Extended colors for 9 categories: Deposit, Retention, Reactivation, Referral, 4-7 Days, 8-11 Days, 12-15 Days, 16-19 Days, 20+ Days
+const COLORS = ['#FF0000', '#DC2626', '#EF4444', '#F87171', '#B91C1C', '#991B1B', '#7F1D1D', '#DC143C', '#A91D1D']; // Bright Red, Primary Red, Light Red, Pink-Red, Dark Red, Darker Red, Darkest Red, Crimson, Dark Crimson
 
 // OPSI 2: Red + Orange/Amber Accents (Red dengan accent orange)
 // const COLORS = ['#FF0000', '#DC2626', '#F59E0B', '#EF4444']; // Bright Red, Primary Red, Amber, Light Red
@@ -33,16 +33,25 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
   const { language } = useLanguage();
   const translations = t(language);
   // Filter out items with 0 value for pie chart
-  const allData = [
+  // Main categories (row 1)
+  const mainCategories = [
     { name: 'Deposit', value: contribution.breakdown.deposit },
     { name: 'Retention', value: contribution.breakdown.retention },
     { name: 'Reactivation', value: contribution.breakdown.activation },
     { name: 'Referral', value: contribution.breakdown.referral },
+  ];
+  
+  // Days categories (row 2)
+  const daysCategories = [
     { name: '4 - 7 Days', value: contribution.breakdown.days_4_7 || 0 },
     { name: '8 - 11 Days', value: contribution.breakdown.days_8_11 || 0 },
     { name: '12 - 15 Days', value: contribution.breakdown.days_12_15 || 0 },
+    { name: '16 - 19 Days', value: contribution.breakdown.days_16_19 || 0 },
     { name: '20+ Days', value: contribution.breakdown.days_20_plus || 0 },
   ];
+  
+  // All data for pie chart
+  const allData = [...mainCategories, ...daysCategories];
   
   // Filter data for pie chart (exclude 0 values)
   const data = allData.filter(item => item.value > 0);
@@ -134,8 +143,9 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4 flex-shrink-0">
-            {allData.map((item, index) => {
+          {/* Main Categories - 4 columns */}
+          <div className="grid grid-cols-4 gap-2 mt-4 flex-shrink-0">
+            {mainCategories.map((item, index) => {
               // Find index in filtered data for color mapping
               const filteredIndex = data.findIndex(d => d.name === item.name);
               const colorIndex = filteredIndex >= 0 ? filteredIndex : index;
@@ -148,6 +158,34 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="text-[10px] text-muted">{item.name}</span>
+                  </div>
+                  <p className="text-sm font-bold text-foreground-primary">{formatNumber(item.value)}</p>
+                  <p className="text-[10px] text-muted">
+                    {total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0'}%
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Days Categories - 5 columns, smaller size */}
+          <div className="grid grid-cols-5 gap-2 mt-2 flex-shrink-0">
+            {daysCategories.map((item, index) => {
+              // Find index in allData for color mapping (offset by 4 for main categories)
+              const allDataIndex = mainCategories.length + index;
+              const filteredIndex = data.findIndex(d => d.name === item.name);
+              const colorIndex = filteredIndex >= 0 ? filteredIndex : allDataIndex;
+              return (
+                <div
+                  key={item.name}
+                  className="bg-card-inner rounded-lg p-2 border border-card-border transition-colors h-full flex flex-col min-h-[70px]"
+                >
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <div
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: COLORS[allDataIndex % COLORS.length] }}
                     />
                     <span className="text-[10px] text-muted">{item.name}</span>
                   </div>
