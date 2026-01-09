@@ -82,6 +82,7 @@ export function LeaderboardPage() {
   const { language } = useLanguage();
   const translations = t(language);
   const [activeViewFilter, setActiveViewFilter] = useState<'Squad → Personal' | 'Squad → Brand'>('Squad → Personal');
+  const [selectedSquad, setSelectedSquad] = useState<'All' | 'Squad A' | 'Squad B'>('All');
   const [currentUserRank] = useState(23141);
   const [currentUserEarned] = useState(5);
   const [totalUsers] = useState(23141);
@@ -105,8 +106,10 @@ export function LeaderboardPage() {
   const [selectedCycle, setSelectedCycle] = useState<string>('All');
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showCycleDropdown, setShowCycleDropdown] = useState(false);
+  const [showSquadDropdown, setShowSquadDropdown] = useState(false);
   const monthDropdownRef = useRef<HTMLDivElement>(null);
   const cycleDropdownRef = useRef<HTMLDivElement>(null);
+  const squadDropdownRef = useRef<HTMLDivElement>(null);
   
   // Get current year
   const currentYear = new Date().getFullYear();
@@ -119,6 +122,9 @@ export function LeaderboardPage() {
   
   // Generate cycles list
   const cycles = ['All', 'Cycle 1', 'Cycle 2', 'Cycle 3', 'Cycle 4'];
+  
+  // Squad filter options
+  const squadOptions: Array<'All' | 'Squad A' | 'Squad B'> = ['All', 'Squad A', 'Squad B'];
   
   // Get month name from selectedMonth (format: YYYY-MM)
   const getMonthName = (monthStr: string): string => {
@@ -181,16 +187,28 @@ export function LeaderboardPage() {
       if (cycleDropdownRef.current && !cycleDropdownRef.current.contains(event.target as Node)) {
         setShowCycleDropdown(false);
       }
+      if (squadDropdownRef.current && !squadDropdownRef.current.contains(event.target as Node)) {
+        setShowSquadDropdown(false);
+      }
     }
 
-    if (showMonthDropdown || showCycleDropdown) {
+    if (showMonthDropdown || showCycleDropdown || showSquadDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showMonthDropdown, showCycleDropdown]);
+  }, [showMonthDropdown, showCycleDropdown, showSquadDropdown]);
+  
+  // Helper function to filter squad mappings by selected squad
+  const getFilteredSquadMappings = (): SquadMappingData[] => {
+    if (selectedSquad === 'All') {
+      return squadMappings;
+    }
+    const shiftFilter = selectedSquad === 'Squad A' ? 'Shift A' : 'Shift B';
+    return squadMappings.filter(m => m.shift === shiftFilter);
+  };
 
   // Fetch squad mappings from database
   const fetchSquadMappings = useCallback(async () => {
@@ -575,7 +593,7 @@ export function LeaderboardPage() {
     }
 
     // Group members by brand and aggregate scores
-    squadMappings
+    getFilteredSquadMappings()
       .filter(m => m.status === 'active')
       .forEach(mapping => {
         const scoreData = memberScores.get(mapping.username);
@@ -646,7 +664,7 @@ export function LeaderboardPage() {
     }
 
     // Default: Show members (Squad → Personal)
-    const membersWithScores = squadMappings
+    const membersWithScores = getFilteredSquadMappings()
       .filter(m => m.status === 'active')
       .map(mapping => {
         const scoreData = memberScores.get(mapping.username);
@@ -746,7 +764,7 @@ export function LeaderboardPage() {
     }
 
     // Default: Show members (Squad → Personal)
-    const allMembersWithScores = squadMappings
+    const allMembersWithScores = getFilteredSquadMappings()
       .filter(m => m.status === 'active')
       .map(mapping => {
         const scoreData = memberScores.get(mapping.username);
@@ -956,7 +974,7 @@ export function LeaderboardPage() {
 
       // 5. Highest Repeat Customers - aggregate from all members in brand
       const brandRepeatCounts = new Map<string, number>();
-      squadMappings
+      getFilteredSquadMappings()
         .filter(m => m.status === 'active')
         .forEach(mapping => {
           const repeatCount = repeatCustomersCount.get(mapping.username) || 0;
@@ -983,7 +1001,7 @@ export function LeaderboardPage() {
     }
 
     // Default: Get all members with scores (Squad → Personal)
-    const allMembersWithScores = squadMappings
+    const allMembersWithScores = getFilteredSquadMappings()
       .filter(m => m.status === 'active')
       .map(mapping => {
         const scoreData = memberScores.get(mapping.username);
@@ -1119,6 +1137,48 @@ export function LeaderboardPage() {
 
         {/* Date Filters - Right */}
         <div className="flex items-center gap-4">
+          {/* Squad Filter */}
+          <div className="relative" ref={squadDropdownRef}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowSquadDropdown(!showSquadDropdown);
+                setShowMonthDropdown(false);
+                setShowCycleDropdown(false);
+              }}
+              className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[140px] justify-between"
+            >
+              <span className="text-sm font-medium">{selectedSquad}</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </Button>
+            {showSquadDropdown && (
+              <div className="absolute top-full right-0 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[140px] overflow-hidden">
+                {squadOptions.map((squad) => {
+                  const isSelected = selectedSquad === squad;
+                  return (
+                    <button
+                      key={squad}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedSquad(squad);
+                        setShowSquadDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
+                        isSelected ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground-primary'
+                      }`}
+                    >
+                      {squad}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          
           {/* Month Slicer */}
           <div className="relative" ref={monthDropdownRef}>
           <Button
