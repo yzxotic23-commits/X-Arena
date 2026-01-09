@@ -1699,7 +1699,7 @@ export function ReportsPage() {
                           return (
                             <>
                               <h3 className="text-xl font-heading font-bold text-foreground-primary">
-                                {topMember?.username || 'N/A'}
+                                {(topMember as { username: string; score: number; brand: string } | null)?.username || 'N/A'}
                               </h3>
                               <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
                                 #{globalRank || 'N/A'}
