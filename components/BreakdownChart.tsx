@@ -36,7 +36,7 @@ export function BreakdownChart({ contribution }: BreakdownChartProps) {
   const allData = [
     { name: 'Deposit', value: contribution.breakdown.deposit },
     { name: 'Retention', value: contribution.breakdown.retention },
-    { name: 'Activation', value: contribution.breakdown.activation },
+    { name: 'Reactivation', value: contribution.breakdown.activation },
     { name: 'Referral', value: contribution.breakdown.referral },
     { name: '4 - 7 Days', value: contribution.breakdown.days_4_7 || 0 },
     { name: '8 - 11 Days', value: contribution.breakdown.days_8_11 || 0 },
