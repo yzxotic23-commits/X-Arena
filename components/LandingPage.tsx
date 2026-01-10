@@ -1,18 +1,21 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Trophy, Zap, Users, Target, Award, TrendingUp, X, AlertCircle } from 'lucide-react';
+import { ArrowRight, Trophy, Zap, Users, Target, Award, TrendingUp, X, AlertCircle, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Loading } from '@/components/Loading';
 import { useToast } from '@/lib/toast-context';
+import { useTheme } from '@/lib/theme-context';
 
 export function LandingPage() {
   const router = useRouter();
   const { loginRankOperator } = useAuth();
   const { showToast } = useToast();
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
   const [showRankModal, setShowRankModal] = useState(false);
   const [rankUsername, setRankUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +56,21 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Theme Toggle - Top Right */}
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50">
+        <button
+          onClick={toggleTheme}
+          className="relative p-2 text-gray-900 dark:text-white hover:text-primary dark:hover:text-primary transition-colors"
+          aria-label="Toggle theme"
+        >
+          {isDark ? (
+            <Moon className="w-5 h-5" />
+          ) : (
+            <Sun className="w-5 h-5" />
+          )}
+        </button>
+      </div>
+
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
@@ -62,35 +80,35 @@ export function LandingPage() {
 
       {/* Hero Section */}
       <main className="relative z-10">
-        <div className="container mx-auto px-4 py-20 sm:py-28 lg:py-36">
+        <div className="container mx-auto px-4 pt-8 sm:pt-12 lg:pt-16 pb-4">
           <div className="text-center max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-heading font-bold mb-8 sm:mb-10 lg:mb-12 leading-tight">
-                <span className="text-glow-red block mb-2 sm:mb-3">X ARENA</span>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold mb-3 sm:mb-4 lg:mb-5 leading-tight">
+                <span className="text-glow-red block mb-1 sm:mb-1.5">X ARENA</span>
                 <span className="text-foreground-primary block">Gamified Dashboard</span>
               </h1>
-              <p className="text-xl sm:text-2xl text-muted mb-12 sm:mb-14 lg:mb-16 max-w-2xl mx-auto leading-relaxed px-4">
+              <p className="text-sm sm:text-base text-muted mb-6 sm:mb-7 max-w-3xl mx-auto leading-tight px-4">
                 Compete, Contribute, and Conquer. Track your performance, compete with your squad, and climb the leaderboard.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4 mt-2 sm:mt-3">
                 <Button
-                  size="lg"
+                  size="default"
                   variant="default"
                   onClick={() => router.push('/login')}
-                  className="text-lg px-8 py-6 flex items-center gap-2 group"
+                  className="text-base px-6 py-4 flex items-center gap-2 group"
                 >
                   Enter Arena
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
                 <Button
-                  size="lg"
+                  size="default"
                   variant="outline"
                   onClick={() => setShowRankModal(true)}
-                  className="text-lg px-8 py-6"
+                  className="text-base px-6 py-4"
                 >
                   Your Rank
                 </Button>
@@ -100,22 +118,22 @@ export function LandingPage() {
         </div>
 
         {/* Features Grid */}
-        <div className="container mx-auto px-4 py-16 sm:py-24">
+        <div className="container mx-auto px-4 pt-4 pb-12 sm:pb-16">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-10"
           >
-            <h2 className="text-4xl sm:text-5xl font-heading font-bold text-foreground-primary mb-4">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-foreground-primary mb-2 sm:mb-3">
               Powerful Features
             </h2>
-            <p className="text-lg text-muted max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-muted max-w-2xl mx-auto">
               Everything you need to track, compete, and excel in your contributions
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
@@ -124,15 +142,17 @@ export function LandingPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-                  className="bg-card-glass rounded-xl border border-card-border p-6 hover:border-primary/50 transition-all duration-300 group"
+                  className="bg-card-glass rounded-xl border border-card-border p-3 sm:p-4 hover:border-primary/50 transition-all duration-300 group"
                 >
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center mb-4 dark:group-hover:scale-100 group-hover:scale-110 transition-transform">
-                    <Icon className="w-6 h-6 text-primary" />
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center flex-shrink-0 dark:group-hover:scale-100 group-hover:scale-110 transition-transform">
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                    </div>
+                    <h3 className="text-sm sm:text-base font-heading font-bold text-foreground-primary flex-1">
+                      {feature.title}
+                    </h3>
                   </div>
-                  <h3 className="text-xl font-heading font-bold text-foreground-primary mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-muted">
+                  <p className="text-xs sm:text-sm text-muted leading-relaxed">
                     {feature.description}
                   </p>
                 </motion.div>
@@ -141,35 +161,6 @@ export function LandingPage() {
           </div>
         </div>
 
-        {/* CTA Section */}
-        <div className="container mx-auto px-4 py-16 sm:py-24">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className="bg-card-glass rounded-2xl border-2 border-primary/50 p-8 sm:p-12 text-center max-w-4xl mx-auto relative overflow-hidden group"
-          >
-            <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-            <div className="absolute top-0 right-0 w-64 h-64 card-gradient-blur rounded-full blur-3xl" />
-            <div className="relative z-10">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold text-foreground-primary mb-4">
-                Ready to Compete?
-              </h2>
-              <p className="text-lg text-muted mb-8 max-w-2xl mx-auto">
-                Join thousands of players competing for the top spot. Track your progress, activate boosts, and claim your rewards.
-              </p>
-              <Button
-                size="lg"
-                variant="default"
-                onClick={() => router.push('/login')}
-                className="text-lg px-8 py-6 flex items-center gap-2 mx-auto group"
-              >
-                Start Your Journey
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
-          </motion.div>
-        </div>
       </main>
 
       {/* Your Rank Modal */}
@@ -192,24 +183,24 @@ export function LandingPage() {
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-card-glass rounded-xl border border-card-border p-6 sm:p-8 w-full max-w-md relative overflow-hidden group">
+              <div className="bg-card-glass rounded-xl border border-card-border p-5 sm:p-6 w-full max-w-md relative overflow-hidden group">
                 <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
                 <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-heading font-bold text-foreground-primary">
+                  <div className="flex items-center justify-between mb-4 sm:mb-5">
+                    <h2 className="text-xl sm:text-2xl font-heading font-bold text-foreground-primary">
                       Check Your Rank
                     </h2>
                     <button
                       onClick={() => setShowRankModal(false)}
                       className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-foreground-primary"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <label className="block text-sm font-semibold text-foreground-primary mb-2">
+                      <label className="block text-xs sm:text-sm font-semibold text-foreground-primary mb-1.5 sm:mb-2">
                         Username
                       </label>
                       <input
@@ -217,7 +208,7 @@ export function LandingPage() {
                         value={rankUsername}
                         onChange={(e) => setRankUsername(e.target.value)}
                         placeholder="Enter username"
-                        className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-sm sm:text-base text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                         autoFocus
                       />
                     </div>
@@ -225,14 +216,14 @@ export function LandingPage() {
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex items-center gap-2"
+                        className="bg-red-500/20 border border-red-500/50 rounded-lg p-2 sm:p-2.5 flex items-center gap-2"
                       >
-                        <AlertCircle className="w-5 h-5 text-red-400" />
-                        <span className="text-sm text-red-400">{error}</span>
+                        <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+                        <span className="text-xs sm:text-sm text-red-400">{error}</span>
                       </motion.div>
                     )}
                     <Button
-                      size="lg"
+                      size="default"
                       variant="default"
                       onClick={async () => {
                         if (!rankUsername.trim()) {
@@ -270,7 +261,7 @@ export function LandingPage() {
                           setIsLoading(false);
                         }
                       }}
-                      className="w-full flex items-center justify-center gap-2"
+                      className="w-full flex items-center justify-center gap-2 text-sm sm:text-base"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -280,7 +271,7 @@ export function LandingPage() {
                         </>
                       ) : (
                         <>
-                          <Trophy className="w-5 h-5" />
+                          <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
                           View Rank
                         </>
                       )}
@@ -294,14 +285,14 @@ export function LandingPage() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t-2 border-primary/40 bg-white/40 dark:bg-black/40 backdrop-blur-xl mt-16">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <h3 className="text-2xl font-heading font-bold text-glow-red">X ARENA</h3>
-              <span className="text-xs text-gray-600 dark:text-gray-400 font-mono">Gamified Dashboard</span>
+      <footer className="relative z-10 border-t-2 border-primary/40 bg-white/40 dark:bg-black/40 backdrop-blur-xl mt-6 sm:mt-8">
+        <div className="container mx-auto px-4 py-5 sm:py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-heading font-bold text-glow-red">X ARENA</h3>
+              <span className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 font-mono">Gamified Dashboard</span>
             </div>
-            <p className="text-sm text-muted">
+            <p className="text-xs sm:text-sm text-muted">
               © 2024 X Arena. All rights reserved.
             </p>
           </div>
