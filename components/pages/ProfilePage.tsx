@@ -518,10 +518,8 @@ export function ProfilePage() {
       {/* Left Column - Main Content (2/3 width) */}
       <div className="lg:col-span-2 space-y-6">
         {/* Profile Header Section */}
-        <Card className="relative overflow-hidden group">
-          <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-          <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-          <CardContent className="relative z-10 p-6 space-y-4">
+        <Card className="relative overflow-hidden">
+          <CardContent className="relative p-6 space-y-4">
             <div className="flex items-start gap-6">
               {/* Avatar */}
               <div className="relative">
@@ -561,16 +559,14 @@ export function ProfilePage() {
         </Card>
 
         {/* Personal Information Section */}
-        <Card className="relative overflow-hidden group">
-          <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-          <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-          <CardHeader className="relative z-10">
+        <Card className="relative overflow-hidden">
+          <CardHeader className="relative">
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5 text-primary" />
               Personal Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10">
+          <CardContent className="relative">
             <form 
               onSubmit={(e) => {
                 // Only allow form submission if in editing mode
@@ -712,16 +708,14 @@ export function ProfilePage() {
         </Card>
 
         {/* Security Section */}
-        <Card className="relative overflow-hidden group">
-          <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-          <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-          <CardHeader className="relative z-10">
+        <Card className="relative overflow-hidden">
+          <CardHeader className="relative">
             <CardTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />
               Security
             </CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10 space-y-4">
+          <CardContent className="relative space-y-4">
             {/* Change Password */}
             <div className="bg-card-inner rounded-lg p-4 border border-card-border">
               <button
@@ -912,13 +906,11 @@ export function ProfilePage() {
       {/* Right Column - Sidebar (1/3 width) */}
       <div className="space-y-6">
         {/* Account Information Card */}
-        <Card className="relative overflow-hidden group">
-          <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-          <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-          <CardHeader className="relative z-10">
+        <Card className="relative overflow-hidden">
+          <CardHeader className="relative">
             <CardTitle className="text-base">Account Information</CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10 space-y-3">
+          <CardContent className="relative space-y-3">
             <div>
               <p className="text-xs text-muted mb-1">Status</p>
               <p className={`text-sm font-semibold ${profileData.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
@@ -947,13 +939,11 @@ export function ProfilePage() {
         </Card>
 
         {/* Security Tips Card */}
-        <Card className="relative overflow-hidden group">
-          <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-          <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-          <CardHeader className="relative z-10">
+        <Card className="relative overflow-hidden">
+          <CardHeader className="relative">
             <CardTitle className="text-base">Security Tips</CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10 space-y-3">
+          <CardContent className="relative space-y-3">
             <div className="flex items-start gap-3">
               <Lightbulb className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">

@@ -189,21 +189,31 @@ export function ChangeAvatarModal({
         </div>
 
         {/* Footer Buttons */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-card-border">
+        <div className="flex items-center gap-3 p-4 sm:p-6 border-t border-card-border bg-card-inner/20">
           <Button
             type="button"
             variant="outline"
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             disabled={saving}
-            className="px-6"
+            size="default"
+            className="flex-1 h-10"
           >
             Cancel
           </Button>
           <Button
             type="button"
-            onClick={handleSave}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSave();
+            }}
             disabled={saving || !avatarUrl.trim()}
-            className="px-6"
+            size="default"
+            className="flex-1 h-10"
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>

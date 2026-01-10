@@ -184,8 +184,6 @@ export function LandingPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-card-glass rounded-xl border border-card-border p-5 sm:p-6 w-full max-w-md relative overflow-hidden group">
-                <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-                <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4 sm:mb-5">
                     <h2 className="text-xl sm:text-2xl font-heading font-bold text-foreground-primary">
