@@ -7,10 +7,12 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Loading } from '@/components/Loading';
+import { useToast } from '@/lib/toast-context';
 
 export function LandingPage() {
   const router = useRouter();
   const { loginRankOperator } = useAuth();
+  const { showToast } = useToast();
   const [showRankModal, setShowRankModal] = useState(false);
   const [rankUsername, setRankUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -235,6 +237,7 @@ export function LandingPage() {
                       onClick={async () => {
                         if (!rankUsername.trim()) {
                           setError('Please enter your username');
+                          showToast('Please enter your username', 'warning', 3000);
                           return;
                         }
                         
@@ -245,15 +248,25 @@ export function LandingPage() {
                           const success = await loginRankOperator(rankUsername.trim());
                           
                           if (success) {
-                            // Redirect to dashboard
-                            router.push('/');
+                            // Show success toast
+                            showToast(`Login successful! Welcome, ${rankUsername.trim()}`, 'success', 3000);
+                            // Close modal
+                            setShowRankModal(false);
+                            // Delay navigation to show toast
+                            setTimeout(() => {
+                              router.push('/');
+                            }, 500);
                           } else {
-                            setError('Invalid username. Only rank operators can access this feature.');
+                            const errorMsg = 'Invalid username. Only rank operators can access this feature.';
+                            setError(errorMsg);
+                            showToast(errorMsg, 'error', 4000);
                             setIsLoading(false);
                           }
                         } catch (err) {
                           console.error('Login error:', err);
-                          setError('An error occurred. Please try again.');
+                          const errorMsg = 'An error occurred. Please try again.';
+                          setError(errorMsg);
+                          showToast(errorMsg, 'error', 4000);
                           setIsLoading(false);
                         }
                       }}

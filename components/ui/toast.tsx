@@ -41,8 +41,8 @@ const getToastStyles = (isDark: boolean) => ({
       ? 'text-white dark:text-white'
       : 'text-gray-800',
     glow: isDark
-      ? 'shadow-[0_0_20px_rgba(34,197,94,0.3)] dark:shadow-[0_0_20px_rgba(34,197,94,0.4)]'
-      : 'shadow-[0_0_15px_rgba(34,197,94,0.2)]',
+      ? 'shadow-[0_0_12px_rgba(34,197,94,0.15)] dark:shadow-[0_0_12px_rgba(34,197,94,0.2)]'
+      : 'shadow-[0_0_10px_rgba(34,197,94,0.12)]',
   },
   error: {
     bg: isDark
@@ -58,8 +58,8 @@ const getToastStyles = (isDark: boolean) => ({
       ? 'text-white dark:text-white'
       : 'text-gray-900',
     glow: isDark
-      ? 'shadow-[0_0_20px_rgba(239,68,68,0.4)] dark:shadow-[0_0_20px_rgba(239,68,68,0.5)]'
-      : 'shadow-[0_0_20px_rgba(239,68,68,0.3)]',
+      ? 'shadow-[0_0_12px_rgba(239,68,68,0.2)] dark:shadow-[0_0_12px_rgba(239,68,68,0.25)]'
+      : 'shadow-[0_0_10px_rgba(239,68,68,0.15)]',
   },
   info: {
     bg: isDark
@@ -75,8 +75,8 @@ const getToastStyles = (isDark: boolean) => ({
       ? 'text-white dark:text-white'
       : 'text-gray-900',
     glow: isDark
-      ? 'shadow-[0_0_20px_rgba(59,130,246,0.4)] dark:shadow-[0_0_20px_rgba(59,130,246,0.5)]'
-      : 'shadow-[0_0_20px_rgba(59,130,246,0.3)]',
+      ? 'shadow-[0_0_12px_rgba(59,130,246,0.2)] dark:shadow-[0_0_12px_rgba(59,130,246,0.25)]'
+      : 'shadow-[0_0_10px_rgba(59,130,246,0.15)]',
   },
   warning: {
     bg: isDark
@@ -92,8 +92,8 @@ const getToastStyles = (isDark: boolean) => ({
       ? 'text-white dark:text-white'
       : 'text-gray-900',
     glow: isDark
-      ? 'shadow-[0_0_20px_rgba(234,179,8,0.4)] dark:shadow-[0_0_20px_rgba(234,179,8,0.5)]'
-      : 'shadow-[0_0_20px_rgba(234,179,8,0.3)]',
+      ? 'shadow-[0_0_12px_rgba(234,179,8,0.2)] dark:shadow-[0_0_12px_rgba(234,179,8,0.25)]'
+      : 'shadow-[0_0_10px_rgba(234,179,8,0.15)]',
   },
 });
 

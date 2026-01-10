@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 import { Trophy, User, Crown, Medal, X, TrendingUp, TrendingDown, DollarSign, RefreshCw, UserPlus, Repeat, Users, Award, Eye, Pencil, Trash2, UserCircle2, ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FilterButtons } from '@/components/FilterButtons';
@@ -16,6 +15,8 @@ import { t } from '@/lib/translations';
 import { supabase } from '@/lib/supabase-client';
 import { supabase2 } from '@/lib/supabase-client-2';
 import { Loading } from '@/components/Loading';
+import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/lib/toast-context';
 
 interface PodiumUser {
   rank: number;
@@ -25,22 +26,8 @@ interface PodiumUser {
   prize: number;
 }
 
-// All available avatars for mix and match
-const allAvatars = [
-  '/pictures/GabrielGamer14_en_youtube__1_-removebg-preview.png',
-  '/pictures/GabrielGamer14_en_youtube-removebg-preview.png',
-  '/pictures/Create_Eye-Catching_Twitch_Emotes__Ideas_and_Inspiration-removebg-preview.png',
-  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyart__1_-removebg-preview.png',
-  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyart-removebg-preview.png',
-  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyartists-removebg-preview.png',
-];
-
-// Squad B avatars (3 gambar terbaru)
-const squadBAvatars = [
-  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyart__1_-removebg-preview.png',
-  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyart-removebg-preview.png',
-  '/pictures/_画像生成ai__原作とは全く関係ありません__オリジナルキャラクター__aiカツ__paratii__artist__aiphotography__aifantasyartists-removebg-preview.png',
-];
+// Avatars are now fetched from users_management table (avatar_url column) for all users
+// Brands also use default User icon if no avatar is set
 
 // Removed all mock data - using real data only
 
@@ -50,6 +37,7 @@ interface SquadMappingData {
   brand: string;
   shift: string;
   status: 'active' | 'inactive';
+  avatar_url?: string;
 }
 
 interface MemberScoreData {
@@ -83,6 +71,8 @@ interface TargetPersonal {
 export function LeaderboardPage() {
   const { language } = useLanguage();
   const translations = t(language);
+  const { userInfo } = useAuth();
+  const { showToast } = useToast();
   const [activeViewFilter, setActiveViewFilter] = useState<'Squad → Personal' | 'Squad → Brand'>('Squad → Personal');
   const [selectedSquad, setSelectedSquad] = useState<'All' | 'Squad A' | 'Squad B'>('All');
   const [currentUserRank] = useState(23141);
@@ -97,6 +87,7 @@ export function LeaderboardPage() {
   const [loadingScores, setLoadingScores] = useState(true);
   const [repeatCustomersCount, setRepeatCustomersCount] = useState<Map<string, number>>(new Map());
   const [brandToSquadMap, setBrandToSquadMap] = useState<Map<string, string>>(new Map());
+  const [userAvatars, setUserAvatars] = useState<Map<string, string>>(new Map());
 
   // Get current month for data fetching
   const getCurrentMonth = () => {
@@ -242,6 +233,32 @@ export function LeaderboardPage() {
       return brandSquad === selectedSquad;
     });
   };
+
+  // Fetch user avatars from users_management
+  const fetchUserAvatars = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users_management')
+        .select('username, avatar_url');
+
+      if (error) {
+        console.error('Failed to fetch user avatars', error);
+        setUserAvatars(new Map());
+      } else {
+        const avatarMap = new Map<string, string>();
+        (data ?? []).forEach((user: any) => {
+          if (user.username && user.avatar_url && typeof user.avatar_url === 'string' && user.avatar_url.trim() !== '') {
+            avatarMap.set(user.username, user.avatar_url.trim());
+          }
+        });
+        setUserAvatars(avatarMap);
+        console.log('[Leaderboard] Loaded user avatars:', avatarMap.size);
+      }
+    } catch (error) {
+      console.error('Error fetching user avatars', error);
+      setUserAvatars(new Map());
+    }
+  }, []);
 
   // Fetch squad mappings from database
   const fetchSquadMappings = useCallback(async () => {
@@ -617,6 +634,20 @@ export function LeaderboardPage() {
   }, [squadMappings, targetPersonal, loadingSquadMappings, calculateMemberScore, selectedMonth, selectedCycle]);
 
   useEffect(() => {
+    fetchUserAvatars();
+    
+    // Listen for avatar updates from profile page
+    const handleAvatarUpdate = () => {
+      fetchUserAvatars();
+    };
+    window.addEventListener('avatar-updated', handleAvatarUpdate);
+
+    return () => {
+      window.removeEventListener('avatar-updated', handleAvatarUpdate);
+    };
+  }, [fetchUserAvatars]);
+
+  useEffect(() => {
     fetchSquadMappings();
     fetchTargetPersonal();
     fetchBrandMapping();
@@ -694,7 +725,6 @@ export function LeaderboardPage() {
       }
 
       const prizes = [100000, 50000, 20000];
-      const avatarIndices = [0, 1, 2];
 
       return brandsWithScores.map((item, index) => {
         const rank = index + 1;
@@ -703,7 +733,7 @@ export function LeaderboardPage() {
           name: item.brand,
           points: item.score,
           prize: prizes[index],
-          avatar: rank === 2 ? '/pictures/juara 2.png' : allAvatars[avatarIndices[index]],
+          avatar: undefined, // No hardcoded avatars for brands - use default User icon
         };
       });
     }
@@ -739,16 +769,18 @@ export function LeaderboardPage() {
     }
 
     const prizes = [100000, 50000, 20000]; // Rank 1, 2, 3
-    const avatarIndices = [0, 1, 2];
 
     return membersWithScores.map((member, index) => {
       const rank = index + 1;
+      const username = member.mapping.username;
+      const profileAvatar = userAvatars.get(username);
+      
       return {
         rank,
-        name: member.mapping.username,
+        name: username,
         points: member.score,
         prize: prizes[index],
-        avatar: rank === 2 ? '/pictures/juara 2.png' : allAvatars[avatarIndices[index]],
+        avatar: profileAvatar || undefined, // Only use profile avatar, no default fallback
       };
     });
   };
@@ -798,7 +830,7 @@ export function LeaderboardPage() {
           score: item.score,
           categoryTops: categoryTops,
           isCurrentUser: false,
-          avatar: allAvatars[index % allAvatars.length],
+          avatar: undefined, // No hardcoded avatars for brands - use default User icon
           breakdown: {
             deposit: scoreData.deposits,
             retention: scoreData.retention,
@@ -843,6 +875,8 @@ export function LeaderboardPage() {
     return allMembersWithScores.slice(3).map((member, index) => {
       const rank = index + 4; // Start from rank 4
       const scoreData = member.scoreData;
+      const username = member.mapping.username;
+      const profileAvatar = userAvatars.get(username);
 
       // Determine category tops based on which score component is highest
       const categoryTops: string[] = [];
@@ -863,11 +897,11 @@ export function LeaderboardPage() {
 
       return {
         rank,
-        name: member.mapping.username,
+        name: username,
         score: member.score,
         categoryTops: categoryTops,
         isCurrentUser: false,
-        avatar: allAvatars[index % allAvatars.length],
+        avatar: profileAvatar || undefined, // Only use profile avatar, no default fallback
         breakdown: {
           deposit: scoreData.deposits,
           retention: scoreData.retention,
@@ -902,6 +936,26 @@ export function LeaderboardPage() {
     setShowMemberModal(true);
   };
 
+  const handleYourRankClick = () => {
+    if (!userInfo) {
+      showToast('Please login to view your profile', 'warning', 3000);
+      return;
+    }
+    
+    // Show info toast
+    showToast('Redirecting to your profile...', 'info', 2000);
+    
+    // Navigate to profile page
+    const event = new CustomEvent('navigate', { detail: 'profile' });
+    window.dispatchEvent(event);
+    
+    // Also try direct navigation as fallback
+    if (typeof window !== 'undefined') {
+      // Scroll to top to ensure page change is visible
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handlePodiumClick = (user: PodiumUser) => {
     // Convert PodiumUser to LeaderboardEntry format using real data
     let scoreData: MemberScoreData | undefined;
@@ -928,12 +982,18 @@ export function LeaderboardPage() {
     if (recommendScore === maxScore && recommendScore > 0) categoryTops.push('Referral');
     if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
 
+    // Get avatar from profile - all users (personal and brand) use profile avatar or default icon
+    const entryAvatar = activeViewFilter === 'Squad → Personal' 
+      ? (userAvatars.get(user.name) || undefined)
+      : undefined; // Brand view uses default User icon
+
     const entry: LeaderboardEntry = {
       rank: user.rank,
       name: user.name,
       score: user.points,
       categoryTops: categoryTops.length > 0 ? categoryTops : (user.rank === 1 ? ['Top Performer'] : user.rank === 2 ? ['Silver Medal'] : ['Bronze Medal']),
       isCurrentUser: false,
+      avatar: entryAvatar,
       breakdown: {
         deposit: scoreData?.deposits || 0,
         retention: scoreData?.retention || 0,
@@ -1276,6 +1336,17 @@ export function LeaderboardPage() {
             onFilterChange={setActiveViewFilter}
           />
           
+          {/* Your Rank Button */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleYourRankClick}
+            className="flex items-center gap-2 px-4 py-2 h-9 cursor-pointer select-none bg-primary text-white border-primary shadow-sm hover:bg-primary-dark"
+          >
+            <Trophy className="w-4 h-4" />
+            <span className="text-sm font-medium">Your Rank</span>
+          </Button>
+          
           {/* Squad vs Squad Dropdown */}
           <div className="relative inline-flex items-center gap-1" ref={squadDropdownRef}>
             <button
@@ -1463,15 +1534,28 @@ export function LeaderboardPage() {
               {/* Avatar */}
               <div className="relative mb-4 z-10">
                 <div className={`${user.rank === 1 ? 'w-28 h-28 md:w-32 md:h-32 lg:w-36 lg:h-36' : 'w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28'} rounded-lg overflow-hidden relative bg-transparent ${user.rank === 1 ? 'border-2 border-yellow-400' : user.rank === 2 ? 'border border-gray-300' : 'border border-amber-600'}`}>
-                  {user.avatar ? (
-                    <Image 
-                      src={user.avatar} 
-                      alt={user.name}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
+                  {user.avatar && (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) ? (
+                    <>
+                      <img 
+                        src={user.avatar} 
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to icon User on error
+                          e.currentTarget.style.display = 'none';
+                          const container = e.currentTarget.parentElement;
+                          if (container) {
+                            const fallback = container.querySelector('.avatar-fallback') as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }
+                        }}
+                      />
+                      <div className="w-full h-full bg-transparent flex items-center justify-center absolute inset-0 avatar-fallback hidden">
+                        <User className={`${user.rank === 1 ? 'w-14 h-14 md:w-16 md:h-16 lg:w-18 lg:h-18' : 'w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14'} text-gray-400`} />
+                      </div>
+                    </>
                   ) : (
+                    // No avatar - show User icon (default for all users including brands)
                     <div className="w-full h-full bg-transparent flex items-center justify-center">
                       <User className={`${user.rank === 1 ? 'w-14 h-14 md:w-16 md:h-16 lg:w-18 lg:h-18' : 'w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14'} text-gray-400`} />
                     </div>
@@ -1594,15 +1678,28 @@ export function LeaderboardPage() {
                             >
                               {/* Avatar */}
                               <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-card-inner border border-card-border flex-shrink-0">
-                                {entry.avatar ? (
-                                  <Image 
-                                    src={entry.avatar} 
-                                    alt={entry.name}
-                                    fill
-                                    className="object-cover"
-                                    unoptimized
-                                  />
+                                {entry.avatar && (entry.avatar.startsWith('http://') || entry.avatar.startsWith('https://')) ? (
+                                  <>
+                                    <img 
+                                      src={entry.avatar} 
+                                      alt={entry.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        // Fallback to icon User on error
+                                        e.currentTarget.style.display = 'none';
+                                        const container = e.currentTarget.parentElement;
+                                        if (container) {
+                                          const fallback = container.querySelector('.entry-avatar-fallback') as HTMLElement;
+                                          if (fallback) fallback.style.display = 'flex';
+                                        }
+                                      }}
+                                    />
+                                    <div className="w-full h-full flex items-center justify-center absolute inset-0 entry-avatar-fallback hidden">
+                                      <User className="w-5 h-5 text-muted" />
+                                    </div>
+                                  </>
                                 ) : (
+                                  // No avatar - show User icon (default for all users including brands)
                                   <div className="w-full h-full flex items-center justify-center">
                                     <User className="w-5 h-5 text-muted" />
                                   </div>

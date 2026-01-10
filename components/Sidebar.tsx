@@ -18,6 +18,7 @@ import {
       FileText,
       Map,
       Building2,
+      User,
     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme-context';
@@ -61,6 +62,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     { id: 'customer-listing', label: translations.nav.customerListing, icon: List },
     { id: 'targets', label: translations.nav.targetSummary, icon: BarChart3 },
     { id: 'reports', label: translations.nav.reports, icon: FileText },
+    { id: 'profile', label: 'Profile', icon: User },
     { 
       id: 'settings', 
       label: translations.nav.settings, 
@@ -76,7 +78,8 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   ];
 
   // Filter menu items based on limited access
-  // Limited access users can see: dashboard, leaderboard, targets (Target Summary), reports, and customer-listing
+  // Limited access users can see: dashboard, leaderboard, targets (Target Summary), reports, customer-listing
+  // Profile menu is hidden for limited access users as it's available via account button in header
   const filteredMenuItems = isLimitedAccess
     ? menuItems.filter((item: MenuItem) => {
         const allowedIds = ['dashboard', 'leaderboard', 'targets', 'reports', 'customer-listing'];
@@ -259,12 +262,12 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     <aside 
       ref={sidebarRef}
       className={cn(
-        "fixed left-0 top-0 h-screen bg-[#F7F6F3] dark:bg-gradient-to-b dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-gray-200 dark:border-primary/40 z-40 flex flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
+        "fixed left-0 top-0 h-screen bg-gradient-to-t from-[#E8E6E0] via-[#F0EDE5] to-[#F7F6F3] dark:bg-gradient-to-b dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-red-500/20 dark:border-primary/40 z-40 flex flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
       {/* Logo Section */}
-      <div className="px-4 py-4 border-b-2 border-gray-200 dark:border-primary/40 flex items-center justify-between min-h-[88px]">
+      <div className="px-4 py-4 border-b-2 border-red-500/20 dark:border-primary/40 flex items-center justify-between min-h-[88px]">
         {!isCollapsed && (
           <div className="flex flex-col gap-1 flex-1">
             <h1 className="text-3xl font-heading font-bold text-glow-red">
@@ -560,7 +563,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
 
       {/* Collapse Button (when collapsed) */}
       {isCollapsed && onToggleCollapse && (
-        <div className="border-t-2 border-gray-200 dark:border-primary/40 px-4 py-4">
+        <div className="border-t-2 border-red-500/20 dark:border-primary/40 px-4 py-4">
           <button
             onClick={onToggleCollapse}
             className="w-full p-2 rounded-lg hover:bg-primary/10 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors flex items-center justify-center"

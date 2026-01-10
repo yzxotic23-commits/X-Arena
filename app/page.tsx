@@ -316,6 +316,7 @@ function DashboardContent() {
           showAppearanceHeader={activeMenu === 'appearance-settings'}
           showTargetSettingsHeader={activeMenu === 'target-settings'}
           showReportsHeader={activeMenu === 'reports'}
+          showProfileHeader={activeMenu === 'profile'}
         />
 
         <main className="flex-1 w-full mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 overflow-y-auto" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
@@ -505,7 +506,7 @@ function DashboardContent() {
           {!isLimitedAccess && activeMenu === 'squad-mapping' && <SquadMappingPage />}
           {!isLimitedAccess && activeMenu === 'brand-mapping' && <BrandMappingPage />}
           {!isLimitedAccess && activeMenu === 'appearance-settings' && <AppearanceSettingsPage />}
-          {!isLimitedAccess && activeMenu === 'profile' && <ProfilePage />}
+          {activeMenu === 'profile' && <ProfilePage />}
         </main>
       </div>
     </div>

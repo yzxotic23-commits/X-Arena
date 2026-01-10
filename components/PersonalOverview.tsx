@@ -324,7 +324,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercentage}%` }}
                 transition={{ duration: 1, ease: 'easeOut' }}
-                className="h-full bg-gradient-to-r from-primary to-primary-dark rounded-full shadow-glow-red"
+                className="h-full bg-gradient-to-r from-primary to-primary-dark rounded-full"
               />
             </div>
           </div>
