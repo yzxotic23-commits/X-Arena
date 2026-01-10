@@ -18,7 +18,6 @@ import {
       FileText,
       Map,
       Building2,
-      User,
     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme-context';
@@ -62,7 +61,6 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     { id: 'customer-listing', label: translations.nav.customerListing, icon: List },
     { id: 'targets', label: translations.nav.targetSummary, icon: BarChart3 },
     { id: 'reports', label: translations.nav.reports, icon: FileText },
-    { id: 'profile', label: 'Profile', icon: User },
     { 
       id: 'settings', 
       label: translations.nav.settings, 
@@ -79,9 +77,10 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
 
   // Filter menu items based on limited access
   // Limited access users can see: dashboard, leaderboard, targets (Target Summary), reports, customer-listing
-  // Profile menu is hidden for limited access users as it's available via account button in header
+  // Profile menu is removed for all users (admin and limited access) as it's available via account button in header
   const filteredMenuItems = isLimitedAccess
     ? menuItems.filter((item: MenuItem) => {
+        // Only allow specific menu items for limited access users
         const allowedIds = ['dashboard', 'leaderboard', 'targets', 'reports', 'customer-listing'];
         return allowedIds.includes(item.id);
       })

@@ -71,7 +71,7 @@ interface TargetPersonal {
 export function LeaderboardPage() {
   const { language } = useLanguage();
   const translations = t(language);
-  const { userInfo } = useAuth();
+  const { userInfo, rankUsername } = useAuth();
   const { showToast } = useToast();
   const [activeViewFilter, setActiveViewFilter] = useState<'Squad → Personal' | 'Squad → Brand'>('Squad → Personal');
   const [selectedSquad, setSelectedSquad] = useState<'All' | 'Squad A' | 'Squad B'>('All');
@@ -895,12 +895,15 @@ export function LeaderboardPage() {
       if (recommendScore === maxScore && recommendScore > 0) categoryTops.push('Referral');
       if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
 
+      // Check if this entry is the current user
+      const isCurrentUserEntry = (userInfo?.username === username) || (rankUsername === username);
+
       return {
         rank,
         name: username,
         score: member.score,
         categoryTops: categoryTops,
-        isCurrentUser: false,
+        isCurrentUser: isCurrentUserEntry,
         avatar: profileAvatar || undefined, // Only use profile avatar, no default fallback
         breakdown: {
           deposit: scoreData.deposits,
@@ -934,26 +937,6 @@ export function LeaderboardPage() {
   const handleMemberClick = (entry: LeaderboardEntry) => {
     setSelectedMember(entry);
     setShowMemberModal(true);
-  };
-
-  const handleYourRankClick = () => {
-    if (!userInfo) {
-      showToast('Please login to view your profile', 'warning', 3000);
-      return;
-    }
-    
-    // Show info toast
-    showToast('Redirecting to your profile...', 'info', 2000);
-    
-    // Navigate to profile page
-    const event = new CustomEvent('navigate', { detail: 'profile' });
-    window.dispatchEvent(event);
-    
-    // Also try direct navigation as fallback
-    if (typeof window !== 'undefined') {
-      // Scroll to top to ensure page change is visible
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
   };
 
   const handlePodiumClick = (user: PodiumUser) => {
@@ -1336,17 +1319,6 @@ export function LeaderboardPage() {
             onFilterChange={setActiveViewFilter}
           />
           
-          {/* Your Rank Button */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleYourRankClick}
-            className="flex items-center gap-2 px-4 py-2 h-9 cursor-pointer select-none bg-primary text-white border-primary shadow-sm hover:bg-primary-dark"
-          >
-            <Trophy className="w-4 h-4" />
-            <span className="text-sm font-medium">Your Rank</span>
-          </Button>
-          
           {/* Squad vs Squad Dropdown */}
           <div className="relative inline-flex items-center gap-1" ref={squadDropdownRef}>
             <button
@@ -1564,9 +1536,16 @@ export function LeaderboardPage() {
               </div>
 
               {/* Name */}
-              <h3 className="text-base md:text-lg font-heading font-bold text-foreground-primary mb-2 text-center z-10">
-                {user.name}
-              </h3>
+              <div className="flex items-center justify-center gap-2 mb-2 z-10">
+                <h3 className="text-base md:text-lg font-heading font-bold text-foreground-primary text-center">
+                  {user.name}
+                </h3>
+                {((userInfo?.username === user.name) || (rankUsername === user.name)) && (
+                  <Badge variant="default" className="text-xs bg-primary text-white font-semibold px-2 py-0.5">
+                    You
+                  </Badge>
+                )}
+              </div>
 
               {/* Score */}
               <div className="flex items-center justify-center mb-4 z-10">
@@ -1661,14 +1640,20 @@ export function LeaderboardPage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className={`border-b border-card-border hover:bg-primary/5 transition-colors cursor-pointer select-none ${
-                            entry.isCurrentUser ? 'bg-primary/10' : ''
+                          className={`border-b border-card-border transition-colors cursor-pointer select-none ${
+                            entry.isCurrentUser 
+                              ? 'bg-primary/15 dark:bg-primary/20 border-l-4 border-l-primary shadow-md' 
+                              : 'hover:bg-primary/5'
                           }`}
                         >
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-2">
                               {getRankIcon(entry.rank)}
-                              <span className="font-heading font-bold text-foreground-primary">#{entry.rank}</span>
+                              <span className={`font-heading font-bold ${
+                                entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'
+                              }`}>
+                                #{entry.rank}
+                              </span>
                             </div>
                           </td>
                           <td className="py-4 px-4">
@@ -1713,14 +1698,16 @@ export function LeaderboardPage() {
                                 {entry.name}
                               </span>
                               {entry.isCurrentUser && (
-                                <Badge variant="default" className="text-xs">
+                                <Badge variant="default" className="text-xs bg-primary text-white font-semibold px-2 py-0.5">
                                   You
                                 </Badge>
                               )}
                             </button>
                           </td>
                           <td className="py-4 px-4 text-right">
-                            <span className="font-body font-bold text-foreground-primary" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                            <span className={`font-body font-bold ${
+                              entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'
+                            }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
                               {formatNumber(entry.score)}
                             </span>
                           </td>

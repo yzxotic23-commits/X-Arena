@@ -173,9 +173,10 @@ function DashboardContent() {
     };
   }, [showUserDropdown, showMonthDropdown, showCycleDropdown, showDateRangePicker]);
 
-  // Set userId from rankUsername if limited access, or from first squad user if not limited access
+  // Set userId from rankUsername if limited access (locked to their own data), or from first squad user if not limited access
   useEffect(() => {
     if (isLimitedAccess && rankUsername) {
+      // Lock userId to rankUsername for limited access users - they can only see their own data
       setUserId(rankUsername);
     } else if (!isLimitedAccess && !userId && squadUsers.length > 0 && !loadingSquadUsers) {
       // Set first user as default if not limited access and no userId set
@@ -327,57 +328,59 @@ function DashboardContent() {
               <div className="flex flex-col items-center gap-4 mb-6 select-none -mt-4">
                 {/* User, Month, and Cycle Selectors - Aligned in a row */}
                 <div className="flex items-center gap-4">
-                  {/* User Selector */}
-                  <div className="relative" ref={userDropdownRef}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowUserDropdown(!showUserDropdown);
-                        setShowMonthDropdown(false);
-                        setShowCycleDropdown(false);
-                      }}
-                      className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
-                    >
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span className="text-sm font-medium">{translations.overview.user}: {selectedUser?.username || userId}</span>
+                  {/* User Selector - Hidden for limited access (operator) users */}
+                  {!isLimitedAccess && (
+                    <div className="relative" ref={userDropdownRef}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowUserDropdown(!showUserDropdown);
+                          setShowMonthDropdown(false);
+                          setShowCycleDropdown(false);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 h-9 cursor-pointer select-none min-w-[160px] justify-between bg-primary text-white border-primary shadow-sm hover:bg-primary hover:border-primary"
+                      >
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          <span className="text-sm font-medium">{translations.overview.user}: {selectedUser?.username || userId}</span>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </Button>
+                    {showUserDropdown && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[160px] overflow-hidden max-h-[300px] overflow-y-auto">
+                        {loadingSquadUsers ? (
+                          <div className="px-3 py-2 text-sm text-muted text-center">
+                            Loading...
+                          </div>
+                        ) : users.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-muted text-center">
+                            No users found
+                          </div>
+                        ) : (
+                          users.map((user) => (
+                            <button
+                              key={user.id}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setUserId(user.id);
+                                setShowUserDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
+                                userId === user.id ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground-primary'
+                              }`}
+                            >
+                              {user.username}
+                            </button>
+                          ))
+                        )}
                       </div>
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </Button>
-                  {showUserDropdown && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 bg-card-inner border border-card-border rounded-md shadow-lg z-50 min-w-[160px] overflow-hidden max-h-[300px] overflow-y-auto">
-                      {loadingSquadUsers ? (
-                        <div className="px-3 py-2 text-sm text-muted text-center">
-                          Loading...
-                        </div>
-                      ) : users.length === 0 ? (
-                        <div className="px-3 py-2 text-sm text-muted text-center">
-                          No users found
-                        </div>
-                      ) : (
-                        users.map((user) => (
-                          <button
-                            key={user.id}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setUserId(user.id);
-                              setShowUserDropdown(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors select-none ${
-                              userId === user.id ? 'bg-primary/20 text-primary font-semibold' : 'text-foreground-primary'
-                            }`}
-                          >
-                            {user.username}
-                          </button>
-                        ))
-                      )}
+                    )}
                     </div>
                   )}
-                  </div>
 
                   {/* Month Slicer */}
                   <div className="relative" ref={monthDropdownRef}>
