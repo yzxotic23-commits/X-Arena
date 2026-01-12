@@ -14,7 +14,7 @@ import { Loading } from '@/components/Loading';
 import { useAuth } from '@/lib/auth-context';
 import * as XLSX from 'xlsx';
 
-type TabType = 'reactivation' | 'retention' | 'recommend';
+type TabType = 'reactivation' | 'retention' | 'recommend' | 'extra';
 
 interface Customer {
   id: string;
@@ -31,7 +31,7 @@ interface Customer {
 export function CustomerListingPage() {
   const { language } = useLanguage();
   const translations = t(language);
-  const { isLimitedAccess, rankUsername } = useAuth();
+  const { isLimitedAccess, rankUsername, rankFullName } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('reactivation');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showImportSidebar, setShowImportSidebar] = useState(false);
@@ -82,35 +82,65 @@ export function CustomerListingPage() {
   };
 
   // Fetch user shift and brand from squad_mapping for limited access users
+  // For operator: convert full_name to username first, then query squad_mapping
   const fetchUserShiftAndBrand = useCallback(async () => {
-    if (!isLimitedAccess || !rankUsername) {
+    if (!isLimitedAccess || (!rankUsername && !rankFullName)) {
       setUserShift(null);
       setUserBrand(null);
       return;
     }
 
     try {
+      let usernameToQuery = rankUsername;
+      
+      // If we have full_name but not username, convert full_name to username
+      if (rankFullName && !rankUsername) {
+        const { data: userData } = await supabase
+          .from('users_management')
+          .select('username')
+          .eq('full_name', rankFullName)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        if (userData) {
+          usernameToQuery = userData.username;
+        }
+      } else if (rankFullName && rankUsername) {
+        // Prefer using rankUsername if available (more direct)
+        usernameToQuery = rankUsername;
+      }
+
+      if (!usernameToQuery) {
+        setUserShift(null);
+        setUserBrand(null);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('squad_mapping')
         .select('shift, brand')
-        .eq('username', rankUsername)
+        .eq('username', usernameToQuery)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Failed to fetch user shift and brand', error);
         setUserShift(null);
         setUserBrand(null);
+      } else if (data) {
+        setUserShift(data.shift || null);
+        setUserBrand(data.brand || null);
       } else {
-        setUserShift(data?.shift || null);
-        setUserBrand(data?.brand || null);
+        console.warn('User not found in squad_mapping:', usernameToQuery);
+        setUserShift(null);
+        setUserBrand(null);
       }
     } catch (error) {
       console.error('Error fetching user shift and brand', error);
       setUserShift(null);
       setUserBrand(null);
     }
-  }, [isLimitedAccess, rankUsername]);
+  }, [isLimitedAccess, rankUsername, rankFullName]);
 
   useEffect(() => {
     fetchUserShiftAndBrand();
@@ -827,6 +857,8 @@ export function CustomerListingPage() {
         ? 'customer_reactivation' 
         : activeTab === 'retention' 
         ? 'customer_retention' 
+        : activeTab === 'extra'
+        ? 'customer_extra'
         : 'customer_recommend';
       
       // Build query with filters for limited access users
@@ -854,15 +886,15 @@ export function CustomerListingPage() {
           username: (activeTab === 'recommend') ? (row.username ?? '') : '', // Only recommend uses username
           brand: row.brand ?? '',
           handler: row.handler ?? '',
-          label: activeTab === 'recommend' ? (row.label ?? 'New') : 'non active', // Default, will be updated below
+          label: activeTab === 'recommend' ? (row.label ?? 'New') : 'non active', // Default, will be updated below (extra, reactivation, retention use 'non active')
           month: row.month ?? getCurrentMonth(),
         }));
 
         // Note: Filter by shift and brand is now done directly in the Supabase query above
         // This ensures only data matching the user's shift and brand is fetched
 
-        // For reactivation, retention, and recommend, check active status directly from Supabase 2
-        if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'recommend') && mappedData.length > 0) {
+        // For reactivation, retention, extra, and recommend, check active status directly from Supabase 2
+        if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra' || activeTab === 'recommend') && mappedData.length > 0) {
           console.log('[Fetch] Checking active status from Supabase 2...');
           const activeMap = await checkCustomersActiveStatus(mappedData);
           
@@ -972,6 +1004,8 @@ export function CustomerListingPage() {
         ? 'customer_reactivation' 
         : activeTab === 'retention' 
         ? 'customer_retention' 
+        : activeTab === 'extra'
+        ? 'customer_extra'
         : 'customer_recommend';
 
       const { error } = await supabase
@@ -1026,6 +1060,8 @@ export function CustomerListingPage() {
         ? 'customer_reactivation' 
         : activeTab === 'retention' 
         ? 'customer_retention' 
+        : activeTab === 'extra'
+        ? 'customer_extra'
         : 'customer_recommend';
 
       // Validasi Handler
@@ -1088,6 +1124,8 @@ export function CustomerListingPage() {
         ? 'customer_reactivation' 
         : activeTab === 'retention' 
         ? 'customer_retention' 
+        : activeTab === 'extra'
+        ? 'customer_extra'
         : 'customer_recommend';
 
       const { error } = await supabase
@@ -1322,6 +1360,8 @@ export function CustomerListingPage() {
         ? 'customer_reactivation' 
         : activeTab === 'retention' 
         ? 'customer_retention' 
+        : activeTab === 'extra'
+        ? 'customer_extra'
         : 'customer_recommend';
 
       // Insert data to Supabase
@@ -1423,6 +1463,8 @@ export function CustomerListingPage() {
         ? 'customer_reactivation' 
         : activeTab === 'retention' 
         ? 'customer_retention' 
+        : activeTab === 'extra'
+        ? 'customer_extra'
         : 'customer_recommend';
 
       // Build insert data object based on active tab
@@ -1466,8 +1508,8 @@ export function CustomerListingPage() {
       });
       setShowAddUserModal(false);
       
-      // After adding user, update labels based on deposit_cases > 0 for reactivation/retention
-      if (activeTab === 'reactivation' || activeTab === 'retention') {
+      // After adding user, update labels based on deposit_cases > 0 for reactivation/retention/extra
+      if (activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra') {
         console.log('[Add User] User added, refreshing data...');
         // Fetch customers - labels will be checked directly from Supabase 2
         await fetchCustomers();
@@ -1528,6 +1570,17 @@ export function CustomerListingPage() {
             <UserPlus className="w-3.5 h-3.5" />
             {translations.customerListing.recommend}
           </button>
+          <button
+            onClick={() => setActiveTab('extra')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
+              activeTab === 'extra'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-foreground-primary hover:bg-primary/10'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            {translations.customerListing.extra}
+          </button>
         </div>
       </div>
 
@@ -1538,7 +1591,8 @@ export function CustomerListingPage() {
             <Users className="w-5 h-5 text-primary" />
             {activeTab === 'reactivation' && translations.customerListing.reactivation} 
             {activeTab === 'retention' && translations.customerListing.retention} 
-            {activeTab === 'recommend' && translations.customerListing.recommend} {translations.customerListing.customerList}
+            {activeTab === 'recommend' && translations.customerListing.recommend}
+            {activeTab === 'extra' && translations.customerListing.extra} {translations.customerListing.customerList}
           </CardTitle>
           <div className="flex items-center gap-2">
             {selectedCustomers.length > 0 && (
@@ -1553,7 +1607,7 @@ export function CustomerListingPage() {
                 Delete Selected ({selectedCustomers.length})
               </Button>
             )}
-            {(activeTab === 'reactivation' || activeTab === 'retention') && (
+            {(activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -1569,15 +1623,18 @@ export function CustomerListingPage() {
                 Refresh Labels
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleImport}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              {translations.customerListing.importCustomers}
-            </Button>
+            {/* Hide Import Customer button for Operator role on reactivation, retention, and extra tabs */}
+            {!(isLimitedAccess && (activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra')) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleImport}
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                {translations.customerListing.importCustomers}
+              </Button>
+            )}
             {activeTab === 'recommend' && (
               <Button
                 variant="default"

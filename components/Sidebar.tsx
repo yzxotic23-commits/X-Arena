@@ -38,9 +38,10 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   isLimitedAccess?: boolean;
+  userRole?: string;
 }
 
-export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = false, onToggleCollapse, isLimitedAccess = false }: SidebarProps) {
+export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = false, onToggleCollapse, isLimitedAccess = false, userRole }: SidebarProps) {
   const { language } = useLanguage();
   const translations = t(language);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
@@ -67,7 +68,8 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
       icon: Settings,
       submenu: [
         { id: 'target-settings', label: translations.nav.targetSettings, icon: Target },
-        { id: 'user-management', label: translations.nav.userManagement, icon: UserPlus },
+        // Hide user-management submenu for manager role
+        ...(userRole !== 'manager' ? [{ id: 'user-management', label: translations.nav.userManagement, icon: UserPlus }] : []),
         { id: 'squad-mapping', label: 'Squad Mapping', icon: Map },
         { id: 'brand-mapping', label: 'Brand Mapping', icon: Building2 },
         { id: 'appearance-settings', label: translations.nav.appearance, icon: Palette },

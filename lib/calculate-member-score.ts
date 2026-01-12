@@ -84,21 +84,25 @@ export async function calculateMemberScore(
     const endDateStr = formatDateLocal(endDate);
 
     // 1. Get customers from customer listing that belong to this member (handler = shift AND brand = brand)
-    const [retentionCustomers, reactivationCustomers, recommendCustomers] = await Promise.all([
+    const [retentionCustomers, reactivationCustomers, recommendCustomers, extraCustomers] = await Promise.all([
       supabase.from('customer_retention').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
       supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
       supabase.from('customer_recommend').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
+      supabase.from('customer_extra').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
     ]);
 
     const retentionUniqueCodes = (retentionCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
     const reactivationUniqueCodes = (reactivationCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
     const recommendUniqueCodes = (recommendCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
+    const extraUniqueCodes = (extraCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
 
-    // 2. Get ALL unique codes to check active status
+    // 2. Get ALL unique codes to check active status (including extra)
+    // Extra customers will contribute to deposit amount and days categories, but not to count scores
     const allUniqueCodes = Array.from(new Set([
       ...retentionUniqueCodes,
       ...reactivationUniqueCodes,
       ...recommendUniqueCodes,
+      ...extraUniqueCodes, // Extra customers included for deposit and days calculation
     ]));
 
     // 3. OPTIMIZED: Single query to get all active customer data (deposit_cases > 0) with dates and deposit_amount

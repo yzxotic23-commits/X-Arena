@@ -151,19 +151,121 @@ export async function GET(request: NextRequest) {
       days_20_more: 5,
     };
 
-    // 2. Fetch user info from squad_mapping
-    const { data: userData, error: userError } = await supabase
-      .from('squad_mapping')
-      .select('username, brand, shift')
-      .eq('username', userId)
+    // 2. userId can be either full_name or username (for backward compatibility)
+    // Strategy: Try as full_name first, if username from users_management not found in squad_mapping, try userId as username directly
+    let username: string | null = null;
+    let foundByFullName = false;
+    let userData: any = null;
+    
+    // First, try to find username from users_management using full_name
+    const { data: userManagementData, error: userManagementError } = await supabase
+      .from('users_management')
+      .select('username, full_name')
+      .eq('full_name', userId)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
-    if (userError || !userData) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!userManagementError && userManagementData && userManagementData.username) {
+      // Found by full_name, try to find in squad_mapping
+      username = userManagementData.username;
+      foundByFullName = true;
+      console.log('[API] Found username from full_name:', { full_name: userId, username });
+      
+      const { data: squadData, error: squadError } = await supabase
+        .from('squad_mapping')
+        .select('username, brand, shift')
+        .eq('username', username)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (!squadError && squadData) {
+        userData = squadData;
+      } else {
+        console.warn('[API] Username from users_management not found in squad_mapping, trying userId as username:', { 
+          usernameFromUsersManagement: username,
+          userId 
+        });
+        // Reset to try userId as username
+        username = null;
+        foundByFullName = false;
+      }
+    }
+    
+    // If not found by full_name or username from users_management not in squad_mapping, try userId as username directly
+    if (!userData) {
+      console.log('[API] Trying userId as username directly:', userId);
+      username = userId;
+      
+      const { data: squadData, error: squadError } = await supabase
+        .from('squad_mapping')
+        .select('username, brand, shift')
+        .eq('username', username)
+        .eq('status', 'active')
+        .maybeSingle();
+      
+      if (squadError) {
+        console.error('[API] Error fetching user from squad_mapping:', squadError);
+        return NextResponse.json({ 
+          error: 'Failed to fetch user data', 
+          details: squadError.message,
+          userId,
+          username 
+        }, { status: 500 });
+      }
+      
+      userData = squadData;
     }
 
-    const { username, brand, shift } = userData;
+    if (!userData) {
+      console.error('[API] User not found in squad_mapping:', { 
+        userId, 
+        username, 
+        foundByFullName,
+        status: 'active' 
+      });
+      
+      // Check if user exists but with different status
+      const { data: inactiveUser } = await supabase
+        .from('squad_mapping')
+        .select('username, brand, shift, status')
+        .eq('username', username || userId)
+        .maybeSingle();
+      
+      if (inactiveUser) {
+        return NextResponse.json({ 
+          error: 'User found but status is not active', 
+          message: `User "${inactiveUser.username}" exists in squad_mapping but status is "${inactiveUser.status}" instead of "active"`,
+          userId,
+          username: inactiveUser.username,
+          foundByFullName,
+          currentStatus: inactiveUser.status 
+        }, { status: 404 });
+      }
+      
+      // If found by full_name but username mismatch
+      if (foundByFullName && userManagementData) {
+        return NextResponse.json({ 
+          error: 'Username mismatch between users_management and squad_mapping', 
+          message: `Full name "${userId}" found in users_management with username "${userManagementData.username}", but this username not found in squad_mapping. Also tried "${userId}" as username directly, but not found.`,
+          userId,
+          usernameFromUsersManagement: userManagementData.username,
+          triedAsUsername: userId,
+          suggestion: 'Please check if username in squad_mapping matches username in users_management, or if userId should be used as username directly'
+        }, { status: 404 });
+      }
+      
+      // If not found at all
+      return NextResponse.json({ 
+        error: 'User not found', 
+        message: `User "${userId}" not found in squad_mapping with status "active". Tried as full_name and as username directly.`,
+        userId,
+        username,
+        foundByFullName,
+        triedAs: foundByFullName ? 'full_name -> username -> direct username' : 'username directly'
+      }, { status: 404 });
+    }
+
+    const { username: squadUsername, brand, shift } = userData;
 
     // 2.1. Fetch brand_mapping to determine squad
     const { data: brandMapping } = await supabase
@@ -177,8 +279,9 @@ export async function GET(request: NextRequest) {
 
     // 3. Calculate member score - USING CYCLE FILTER ✅
     // This filters all data (deposits, retention, reactivation, recommend, days) based on selected cycle
+    // Use squadUsername (from squad_mapping) for calculateMemberScore
     console.log('[API] Calculating member score with cycle:', normalizedCycle);
-    const memberScore = await calculateMemberScore(username, shift, brand, targetPersonal, selectedMonth, normalizedCycle);
+    const memberScore = await calculateMemberScore(squadUsername, shift, brand, targetPersonal, selectedMonth, normalizedCycle);
 
     // 4. Fetch all active members and brand mappings to calculate ranking
     const [allMembersResult, allBrandMappingsResult] = await Promise.all([
@@ -220,13 +323,13 @@ export async function GET(request: NextRequest) {
 
     // 6. Sort by score to get ranking
     allMemberScores.sort((a, b) => b.score - a.score);
-    const userRank = allMemberScores.findIndex(m => m.username === username) + 1;
+    const userRank = allMemberScores.findIndex(m => m.username === squadUsername) + 1;
     const totalUsers = allMemberScores.length;
 
     // 7. Calculate squad ranking
     const squadMembers = allMemberScores.filter(m => m.squad === userSquad);
     squadMembers.sort((a, b) => b.score - a.score);
-    const squadRank = squadMembers.findIndex(m => m.username === username) + 1;
+    const squadRank = squadMembers.findIndex(m => m.username === squadUsername) + 1;
     const squadTotalMembers = squadMembers.length;
     const squadTotalScore = squadMembers.reduce((sum, m) => sum + m.score, 0);
     // Calculate squad total deposit amount from cycle-filtered data

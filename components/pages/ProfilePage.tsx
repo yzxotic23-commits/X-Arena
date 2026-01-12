@@ -59,6 +59,7 @@ export function ProfilePage() {
   const [saving2FA, setSaving2FA] = useState(false);
 
   // Fetch user profile data
+  // Use full_name for mapping (consistent with overview/dashboard), fallback to username if full_name not available
   const fetchProfile = useCallback(async () => {
     if (!userInfo) {
       setLoading(false);
@@ -66,42 +67,81 @@ export function ProfilePage() {
       return;
     }
     
-    if (!userInfo.username) {
+    if (!userInfo.fullName && !userInfo.username) {
       setLoading(false);
-      showToast('Username not found. Please login again.', 'error', 4000);
+      showToast('User information incomplete. Please login again.', 'error', 4000);
       return;
     }
     
     setLoading(true);
     
     try {
-      console.log('[ProfilePage] Fetching profile for user:', userInfo.username, 'id:', userInfo.id);
+      console.log('[ProfilePage] Fetching profile for user:', { 
+        fullName: userInfo.fullName, 
+        username: userInfo.username, 
+        id: userInfo.id 
+      });
       
-      // Try to query by username first (more reliable)
-      let { data, error } = await supabase
-        .from('users_management')
-        .select('*')
-        .eq('username', userInfo.username)
-        .single();
-
-      // If query by username fails and we have an id, try by id
-      if (error && userInfo.id) {
-        console.log('[ProfilePage] Query by username failed, trying by id:', userInfo.id);
+      let data: any = null;
+      let error: any = null;
+      
+      // Strategy: Try full_name first (for mapping consistency), then username, then id
+      // 1. Try by full_name first (preferred for mapping)
+      if (userInfo.fullName) {
+        console.log('[ProfilePage] Trying to fetch by full_name:', userInfo.fullName);
+        const { data: fullNameData, error: fullNameError } = await supabase
+          .from('users_management')
+          .select('*')
+          .eq('full_name', userInfo.fullName)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        if (!fullNameError && fullNameData) {
+          data = fullNameData;
+          console.log('[ProfilePage] Found profile by full_name');
+        } else {
+          console.log('[ProfilePage] Not found by full_name, trying username');
+        }
+      }
+      
+      // 2. If not found by full_name, try by username
+      if (!data && userInfo.username) {
+        console.log('[ProfilePage] Trying to fetch by username:', userInfo.username);
+        const { data: usernameData, error: usernameError } = await supabase
+          .from('users_management')
+          .select('*')
+          .eq('username', userInfo.username)
+          .maybeSingle();
+        
+        if (!usernameError && usernameData) {
+          data = usernameData;
+          error = null;
+          console.log('[ProfilePage] Found profile by username');
+        } else {
+          console.log('[ProfilePage] Not found by username, trying id');
+        }
+      }
+      
+      // 3. If still not found, try by id (last resort)
+      if (!data && userInfo.id) {
+        console.log('[ProfilePage] Trying to fetch by id:', userInfo.id);
         const { data: idData, error: idError } = await supabase
           .from('users_management')
           .select('*')
           .eq('id', userInfo.id)
-          .single();
+          .maybeSingle();
         
         if (!idError && idData) {
           data = idData;
           error = null;
+          console.log('[ProfilePage] Found profile by id');
         } else {
           console.error('[ProfilePage] Query by id also failed:', idError);
+          error = idError;
         }
       }
 
-      if (error) {
+      if (error && !data) {
         console.error('[ProfilePage] Supabase error:', error);
         throw error;
       }
@@ -160,8 +200,8 @@ export function ProfilePage() {
       return;
     }
     
-    // Fetch profile if we have userInfo
-    if (userInfo.username || userInfo.id) {
+    // Fetch profile if we have userInfo (fullName, username, or id)
+    if (userInfo.fullName || userInfo.username || userInfo.id) {
       fetchProfile();
     } else {
       setLoading(false);

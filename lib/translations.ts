@@ -105,6 +105,7 @@ export interface Translations {
     reactivation: string;
     retention: string;
     recommend: string;
+    extra: string;
     customerList: string;
     uniqueCode: string;
     username: string;
@@ -363,6 +364,7 @@ export const translations: Record<Language, Translations> = {
           reactivation: 'Reactivation',
           retention: 'Retention',
           recommend: 'Recommend',
+          extra: 'Extra',
           customerList: 'Customer List',
           uniqueCode: 'Unique Code',
       username: 'Username',
@@ -610,6 +612,7 @@ export const translations: Record<Language, Translations> = {
       reactivation: '重新激活',
       retention: '留存',
       recommend: '推荐',
+      extra: '额外',
       customerList: '客户列表',
       uniqueCode: '唯一代码',
       username: '用户名',

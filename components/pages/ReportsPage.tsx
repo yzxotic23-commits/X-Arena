@@ -372,21 +372,24 @@ export function ReportsPage() {
       const endDateStr = formatDateLocal(endDate);
 
       // 1. Get customers from customer listing that belong to this member (handler = shift AND brand = brand)
-      const [retentionCustomers, reactivationCustomers, recommendCustomers] = await Promise.all([
+      const [retentionCustomers, reactivationCustomers, recommendCustomers, extraCustomers] = await Promise.all([
         supabase.from('customer_retention').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
         supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
         supabase.from('customer_recommend').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
+        supabase.from('customer_extra').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
       ]);
 
       const retentionUniqueCodes = (retentionCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
       const reactivationUniqueCodes = (reactivationCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
       const recommendUniqueCodes = (recommendCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
+      const extraUniqueCodes = (extraCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
 
-      // 2. Get ALL unique codes to check active status
+      // 2. Get ALL unique codes to check active status (including extra)
       const allUniqueCodes = Array.from(new Set([
         ...retentionUniqueCodes,
         ...reactivationUniqueCodes,
         ...recommendUniqueCodes,
+        ...extraUniqueCodes, // Extra customers included for deposit and days calculation
       ]));
 
       // 3. OPTIMIZED: Single query to get all active customer data (deposit_cases > 0) with dates and deposit_amount
@@ -1035,10 +1038,11 @@ export function ReportsPage() {
       }
 
       // Fetch all customer listing data for active status check
-      const [retentionCustomers, reactivationCustomers, recommendCustomers] = await Promise.all([
+      const [retentionCustomers, reactivationCustomers, recommendCustomers, extraCustomers] = await Promise.all([
         supabase.from('customer_retention').select('unique_code, brand'),
         supabase.from('customer_reactivation').select('unique_code, brand'),
         supabase.from('customer_recommend').select('unique_code, brand'),
+        supabase.from('customer_extra').select('unique_code, brand'),
       ]);
 
       // Process Squad A brands - PARALLEL PROCESSING
@@ -1050,12 +1054,14 @@ export function ReportsPage() {
         const brandRetentionCustomers = (retentionCustomers.data || []).filter((c: any) => c.brand === brand);
         const brandReactivationCustomers = (reactivationCustomers.data || []).filter((c: any) => c.brand === brand);
         const brandRecommendCustomers = (recommendCustomers.data || []).filter((c: any) => c.brand === brand);
+        const brandExtraCustomers = (extraCustomers.data || []).filter((c: any) => c.brand === brand);
 
         const retentionCodes = brandRetentionCustomers.map((c: any) => c.unique_code).filter(Boolean);
         const reactivationCodes = brandReactivationCustomers.map((c: any) => c.unique_code).filter(Boolean);
         const recommendCodes = brandRecommendCustomers.map((c: any) => c.unique_code).filter(Boolean);
+        const extraCodes = brandExtraCustomers.map((c: any) => c.unique_code).filter(Boolean);
 
-        const allBrandCodes = Array.from(new Set([...retentionCodes, ...reactivationCodes, ...recommendCodes]));
+        const allBrandCodes = Array.from(new Set([...retentionCodes, ...reactivationCodes, ...recommendCodes, ...extraCodes]));
 
         // Check which customers are ACTIVE (deposit_cases > 0) in current month
         let activeSet = new Set<string>();

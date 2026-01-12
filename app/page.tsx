@@ -49,8 +49,9 @@ const queryClient = new QueryClient({
 });
 
 interface SquadMappingUser {
-  id: string;
-  username: string;
+  id: string; // full_name for overview
+  username: string; // username for login/reference
+  fullName: string; // full_name for display
   brand: string;
   shift: string;
 }
@@ -58,7 +59,7 @@ interface SquadMappingUser {
 function DashboardContent() {
   const { language } = useLanguage();
   const translations = t(language);
-  const { isAuthenticated, isLoading: authLoading, isLimitedAccess, rankUsername, userInfo } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, isLimitedAccess, rankUsername, rankFullName, userInfo } = useAuth();
   const router = useRouter();
   const [userId, setUserId] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -118,28 +119,87 @@ function DashboardContent() {
   };
 
   // Fetch squad mappings to populate user dropdown
+  // Use full_name from users_management as identifier for overview (username is only for login)
   const fetchSquadUsers = useCallback(async () => {
     setLoadingSquadUsers(true);
-    const { data, error } = await supabase
+    
+    // Fetch squad_mapping and join with users_management to get full_name
+    const { data: squadData, error: squadError } = await supabase
       .from('squad_mapping')
-      .select('*')
+      .select('username, brand, shift')
       .eq('status', 'active')
       .order('username', { ascending: true });
 
-    if (error) {
-      console.error('Failed to fetch squad users', error);
+    if (squadError) {
+      console.error('Failed to fetch squad users', squadError);
       setSquadUsers([]);
-    } else {
-      const users = (data ?? []).map((row) => ({
-        id: row.username ?? row.id.toString(),
+      setLoadingSquadUsers(false);
+      return;
+    }
+
+    // Get all usernames to fetch full_name from users_management
+    const usernames = (squadData ?? []).map((row: any) => row.username).filter(Boolean);
+    
+    if (usernames.length === 0) {
+      setSquadUsers([]);
+      setLoadingSquadUsers(false);
+      return;
+    }
+
+    // Fetch full_name from users_management
+    const { data: usersData, error: usersError } = await supabase
+      .from('users_management')
+      .select('username, full_name')
+      .in('username', usernames)
+      .eq('status', 'active');
+
+    if (usersError) {
+      console.error('Failed to fetch user full names', usersError);
+      // Fallback: use username if full_name fetch fails
+      const users = (squadData ?? []).map((row: any) => ({
+        id: row.username ?? row.username ?? 'Unknown',
         username: row.username ?? 'Unknown',
+        fullName: row.username ?? 'Unknown', // Fallback to username
         brand: row.brand ?? 'Unknown',
         shift: row.shift ?? 'Unknown',
       }));
       setSquadUsers(users);
-      // Set first user as default if no userId is set and not limited access
-      // Note: userId setting is now handled in separate useEffect to avoid race conditions
+      setLoadingSquadUsers(false);
+      return;
     }
+
+    // Create map of username -> full_name
+    const fullNameMap = new Map<string, string>();
+    (usersData ?? []).forEach((user: any) => {
+      if (user.username && user.full_name) {
+        fullNameMap.set(user.username, user.full_name);
+      }
+    });
+
+    // Combine squad_mapping with full_name from users_management
+    // If full_name not found, use username as id (backward compatibility)
+    const users = (squadData ?? []).map((row: any) => {
+      const fullName = fullNameMap.get(row.username);
+      // If full_name found, use it as id. Otherwise, use username as id (backward compatibility)
+      const userId = fullName || row.username || 'Unknown';
+      
+      // Log if full_name not found for debugging
+      if (!fullName) {
+        console.warn('[Frontend] Full name not found for username:', row.username, 'using username as id for mapping');
+      }
+      
+      return {
+        id: userId, // Use full_name if available, otherwise username
+        username: row.username ?? 'Unknown', // Keep username for reference
+        fullName: fullName || row.username || 'Unknown', // Use full_name if available, otherwise username
+        brand: row.brand ?? 'Unknown',
+        shift: row.shift ?? 'Unknown',
+      };
+    });
+    
+    console.log('[Frontend] Loaded squad users:', users.length, 'users');
+    console.log('[Frontend] Users with full_name:', users.filter(u => u.fullName !== u.username).length, 'users');
+    setSquadUsers(users);
     setLoadingSquadUsers(false);
   }, []);
 
@@ -173,20 +233,30 @@ function DashboardContent() {
     };
   }, [showUserDropdown, showMonthDropdown, showCycleDropdown, showDateRangePicker]);
 
-  // Set userId from rankUsername if limited access (locked to their own data), or from first squad user if not limited access
+  // Set userId from rankFullName if limited access (locked to their own data), or from first squad user if not limited access
+  // For limited access (operator), use full_name directly for mapping
   useEffect(() => {
-    if (isLimitedAccess && rankUsername) {
-      // Lock userId to rankUsername for limited access users - they can only see their own data
-      setUserId(rankUsername);
+    if (isLimitedAccess && rankFullName) {
+      // For operator: use full_name directly for mapping
+      setUserId(rankFullName);
+    } else if (isLimitedAccess && rankUsername && !rankFullName) {
+      // Fallback: if full_name not available, find matching full_name from squadUsers
+      const operatorUser = squadUsers.find(u => u.username === rankUsername);
+      if (operatorUser) {
+        setUserId(operatorUser.id); // Use full_name as id
+      } else if (squadUsers.length > 0 && !loadingSquadUsers) {
+        // Fallback: if not found, use first user (should not happen)
+        setUserId(squadUsers[0].id);
+      }
     } else if (!isLimitedAccess && !userId && squadUsers.length > 0 && !loadingSquadUsers) {
       // Set first user as default if not limited access and no userId set
-      setUserId(squadUsers[0].id);
+      setUserId(squadUsers[0].id); // full_name
     }
-  }, [isLimitedAccess, rankUsername, squadUsers, userId, loadingSquadUsers]);
+  }, [isLimitedAccess, rankUsername, rankFullName, squadUsers, userId, loadingSquadUsers]);
 
   // Get users list - use squad users if available
   const users = squadUsers.length > 0 ? squadUsers : [];
-  const selectedUser = users.find(u => u.id === userId) || users[0] || { id: userId, username: userId, brand: '', shift: '' };
+  const selectedUser = users.find(u => u.id === userId) || users[0] || { id: userId, username: userId, fullName: userId, brand: '', shift: '' };
 
   const { data, isLoading: dataLoading, refetch, isFetching } = useQuery<DashboardData>({
     queryKey: ['dashboard', userId, timeFilter, selectedMonth, selectedCycle, refreshKey],
@@ -204,7 +274,14 @@ function DashboardContent() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('[Frontend] API Error:', response.status, errorData);
-        throw new Error(`Failed to fetch data: ${response.status} - ${errorData.error || 'Unknown error'}`);
+        // Log detailed error for debugging
+        if (errorData.message) {
+          console.error('[Frontend] Error details:', errorData.message);
+        }
+        if (errorData.suggestion) {
+          console.error('[Frontend] Suggestion:', errorData.suggestion);
+        }
+        throw new Error(errorData.message || errorData.error || `Failed to fetch data: ${response.status}`);
       }
       return response.json();
     },
@@ -283,7 +360,8 @@ function DashboardContent() {
         onMenuChange={setActiveMenu}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            isLimitedAccess={isLimitedAccess}
+        isLimitedAccess={isLimitedAccess}
+        userRole={userInfo?.role}
       />
       
       <div className={isSidebarCollapsed ? "flex-1 lg:ml-20" : "flex-1 lg:ml-64"} style={{ minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -345,7 +423,7 @@ function DashboardContent() {
                       >
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          <span className="text-sm font-medium">{translations.overview.user}: {selectedUser?.username || userId}</span>
+                          <span className="text-sm font-medium">{translations.overview.user}: {selectedUser?.fullName || selectedUser?.username || userId}</span>
                         </div>
                         <ChevronDown className="w-3.5 h-3.5" />
                       </Button>
@@ -473,7 +551,7 @@ function DashboardContent() {
                 <PersonalOverview 
                   contribution={data.personal} 
                   contributionMetrics={data.contributionMetrics}
-                  staffName={selectedUser?.username}
+                  staffName={selectedUser?.fullName || selectedUser?.username}
                   brand={selectedUser?.brand}
                 />
 
@@ -505,7 +583,7 @@ function DashboardContent() {
           {activeMenu === 'customer-listing' && <CustomerListingPage />}
           {activeMenu === 'reports' && <ReportsPage />}
           {!isLimitedAccess && activeMenu === 'settings' && <SettingsPage />}
-          {!isLimitedAccess && activeMenu === 'user-management' && <UserManagementPage />}
+          {!isLimitedAccess && userInfo?.role !== 'manager' && activeMenu === 'user-management' && <UserManagementPage />}
           {!isLimitedAccess && activeMenu === 'squad-mapping' && <SquadMappingPage />}
           {!isLimitedAccess && activeMenu === 'brand-mapping' && <BrandMappingPage />}
           {!isLimitedAccess && activeMenu === 'appearance-settings' && <AppearanceSettingsPage />}

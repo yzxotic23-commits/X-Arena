@@ -19,7 +19,8 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   isLimitedAccess: boolean;
-  rankUsername: string | null;
+  rankUsername: string | null; // For backward compatibility, but now stores full_name for operator
+  rankFullName: string | null; // Full name for operator mapping
   userInfo: UserInfo | null;
 }
 
@@ -32,7 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLimitedAccess, setIsLimitedAccess] = useState(false);
-  const [rankUsername, setRankUsername] = useState<string | null>(null);
+  const [rankUsername, setRankUsername] = useState<string | null>(null); // Keep for backward compatibility
+  const [rankFullName, setRankFullName] = useState<string | null>(null); // Full name for operator mapping
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const router = useRouter();
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,11 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(false);
     setIsLimitedAccess(false);
     setRankUsername(null);
+    setRankFullName(null);
     setUserInfo(null);
     localStorage.removeItem('x-arena-auth');
     localStorage.removeItem('x-arena-user-info');
     localStorage.removeItem('x-arena-limited-access');
     localStorage.removeItem('x-arena-rank-username');
+    localStorage.removeItem('x-arena-rank-full-name');
     router.push('/landing');
   }, [router]);
 
@@ -75,17 +79,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const authStatus = localStorage.getItem('x-arena-auth');
     const limitedAccess = localStorage.getItem('x-arena-limited-access') === 'true';
     const username = localStorage.getItem('x-arena-rank-username');
+    const fullName = localStorage.getItem('x-arena-rank-full-name');
     const storedUserInfo = localStorage.getItem('x-arena-user-info');
     
     if (authStatus === 'authenticated') {
       setIsAuthenticated(true);
       setIsLimitedAccess(limitedAccess);
-      setRankUsername(username);
+      setRankUsername(username); // Keep for backward compatibility
+      setRankFullName(fullName); // Restore full_name for operator mapping
       
       // Restore user info from localStorage
       if (storedUserInfo) {
         try {
-          setUserInfo(JSON.parse(storedUserInfo));
+          const parsedInfo = JSON.parse(storedUserInfo);
+          setUserInfo(parsedInfo);
+          // If full_name not in localStorage but in userInfo, set it
+          if (!fullName && parsedInfo.fullName) {
+            setRankFullName(parsedInfo.fullName);
+            localStorage.setItem('x-arena-rank-full-name', parsedInfo.fullName);
+          }
         } catch (e) {
           console.error('Failed to parse stored user info', e);
         }
@@ -212,12 +224,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!error && data) {
         // Set limited access for rank operator
+        const fullName = data.full_name || data.username;
         setIsAuthenticated(true);
         setIsLimitedAccess(true);
-        setRankUsername(data.username);
+        setRankUsername(data.username); // Keep for backward compatibility
+        setRankFullName(fullName); // Store full_name for mapping
         setUserInfo({
           id: data.id.toString(),
-          fullName: data.full_name || data.username,
+          fullName: fullName,
           username: data.username,
           email: data.email || '',
           role: data.role,
@@ -225,10 +239,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         localStorage.setItem('x-arena-auth', 'authenticated');
         localStorage.setItem('x-arena-limited-access', 'true');
-        localStorage.setItem('x-arena-rank-username', data.username);
+        localStorage.setItem('x-arena-rank-username', data.username); // Keep for backward compatibility
+        localStorage.setItem('x-arena-rank-full-name', fullName); // Store full_name
         localStorage.setItem('x-arena-user-info', JSON.stringify({
           id: data.id.toString(),
-          fullName: data.full_name || data.username,
+          fullName: fullName,
           username: data.username,
           email: data.email || '',
           role: data.role,
@@ -248,15 +263,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthenticated(false);
     setIsLimitedAccess(false);
     setRankUsername(null);
+    setRankFullName(null);
     setUserInfo(null);
     localStorage.removeItem('x-arena-auth');
     localStorage.removeItem('x-arena-user-info');
     localStorage.removeItem('x-arena-limited-access');
     localStorage.removeItem('x-arena-rank-username');
+    localStorage.removeItem('x-arena-rank-full-name');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, loginRankOperator, logout, isLoading, isLimitedAccess, rankUsername, userInfo }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, loginRankOperator, logout, isLoading, isLimitedAccess, rankUsername, rankFullName, userInfo }}>
       {children}
     </AuthContext.Provider>
   );

@@ -34,6 +34,7 @@ interface PodiumUser {
 interface SquadMappingData {
   id: string;
   username: string;
+  fullName: string; // Full name for display and mapping
   brand: string;
   shift: string;
   status: 'active' | 'inactive';
@@ -71,7 +72,7 @@ interface TargetPersonal {
 export function LeaderboardPage() {
   const { language } = useLanguage();
   const translations = t(language);
-  const { userInfo, rankUsername } = useAuth();
+  const { userInfo, rankUsername, rankFullName } = useAuth();
   const { showToast } = useToast();
   const [activeViewFilter, setActiveViewFilter] = useState<'Squad → Personal' | 'Squad → Brand'>('Squad → Personal');
   const [selectedSquad, setSelectedSquad] = useState<'All' | 'Squad A' | 'Squad B'>('All');
@@ -235,11 +236,13 @@ export function LeaderboardPage() {
   };
 
   // Fetch user avatars from users_management
+  // Map with both full_name (primary) and username (fallback) for backward compatibility
   const fetchUserAvatars = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('users_management')
-        .select('username, avatar_url');
+        .select('username, full_name, avatar_url')
+        .eq('status', 'active');
 
       if (error) {
         console.error('Failed to fetch user avatars', error);
@@ -247,12 +250,20 @@ export function LeaderboardPage() {
       } else {
         const avatarMap = new Map<string, string>();
         (data ?? []).forEach((user: any) => {
-          if (user.username && user.avatar_url && typeof user.avatar_url === 'string' && user.avatar_url.trim() !== '') {
-            avatarMap.set(user.username, user.avatar_url.trim());
+          if (user.avatar_url && typeof user.avatar_url === 'string' && user.avatar_url.trim() !== '') {
+            const avatarUrl = user.avatar_url.trim();
+            // Map with full_name (primary for display)
+            if (user.full_name) {
+              avatarMap.set(user.full_name, avatarUrl);
+            }
+            // Also map with username (fallback for backward compatibility)
+            if (user.username) {
+              avatarMap.set(user.username, avatarUrl);
+            }
           }
         });
         setUserAvatars(avatarMap);
-        console.log('[Leaderboard] Loaded user avatars:', avatarMap.size);
+        console.log('[Leaderboard] Loaded user avatars:', avatarMap.size, 'entries (mapped by full_name and username)');
       }
     } catch (error) {
       console.error('Error fetching user avatars', error);
@@ -261,6 +272,7 @@ export function LeaderboardPage() {
   }, []);
 
   // Fetch squad mappings from database
+  // Join with users_management to get full_name for display and mapping
   const fetchSquadMappings = useCallback(async () => {
     setLoadingSquadMappings(true);
     const { data, error } = await supabase
@@ -272,15 +284,51 @@ export function LeaderboardPage() {
     if (error) {
       console.error('Failed to fetch squad mappings', error);
       setSquadMappings([]);
-    } else {
-      setSquadMappings((data ?? []).map((row) => ({
+      setLoadingSquadMappings(false);
+      return;
+    }
+
+    // Get all usernames to fetch full_name from users_management
+    const usernames = (data ?? []).map((row: any) => row.username).filter(Boolean);
+    
+    if (usernames.length === 0) {
+      setSquadMappings([]);
+      setLoadingSquadMappings(false);
+      return;
+    }
+
+    // Fetch full_name from users_management
+    const { data: usersData, error: usersError } = await supabase
+      .from('users_management')
+      .select('username, full_name')
+      .in('username', usernames)
+      .eq('status', 'active');
+
+    // Create map of username -> full_name
+    const fullNameMap = new Map<string, string>();
+    if (!usersError && usersData) {
+      (usersData ?? []).forEach((user: any) => {
+        if (user.username && user.full_name) {
+          fullNameMap.set(user.username, user.full_name);
+        }
+      });
+    }
+
+    // Combine squad_mapping with full_name from users_management
+    const mappings = (data ?? []).map((row) => {
+      const fullName = fullNameMap.get(row.username) || row.username || 'Unknown';
+      return {
         id: row.id.toString(),
         username: row.username ?? 'Unknown',
+        fullName: fullName, // Use full_name for display and mapping
         brand: row.brand ?? 'Unknown',
         shift: row.shift ?? 'Unknown',
         status: row.status === 'inactive' ? 'inactive' : 'active',
-      })));
-    }
+      };
+    });
+
+    setSquadMappings(mappings);
+    console.log('[Leaderboard] Loaded squad mappings:', mappings.length, 'users with full_name');
     setLoadingSquadMappings(false);
   }, []);
 
@@ -375,21 +423,25 @@ export function LeaderboardPage() {
       const startDateStr = formatDateLocal(startDate);
       const endDateStr = formatDateLocal(endDate);
 
-      // Get customers from customer listing
-      const [retentionCustomers, reactivationCustomers, recommendCustomers] = await Promise.all([
+      // Get customers from customer listing (including extra)
+      const [retentionCustomers, reactivationCustomers, recommendCustomers, extraCustomers] = await Promise.all([
         supabase.from('customer_retention').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
         supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
         supabase.from('customer_recommend').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
+        supabase.from('customer_extra').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
       ]);
 
       const retentionUniqueCodes = (retentionCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
       const reactivationUniqueCodes = (reactivationCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
       const recommendUniqueCodes = (recommendCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
+      const extraUniqueCodes = (extraCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
 
+      // Include extra customers for deposit and days calculation
       const allUniqueCodes = Array.from(new Set([
         ...retentionUniqueCodes,
         ...reactivationUniqueCodes,
         ...recommendUniqueCodes,
+        ...extraUniqueCodes, // Extra customers included for deposit and days calculation
       ]));
 
       // OPTIMIZED: Single query to get all active customer data (deposit_cases > 0) with dates and deposit_amount
@@ -772,12 +824,13 @@ export function LeaderboardPage() {
 
     return membersWithScores.map((member, index) => {
       const rank = index + 1;
-      const username = member.mapping.username;
-      const profileAvatar = userAvatars.get(username);
+      const fullName = member.mapping.fullName || member.mapping.username;
+      // Try full_name first, then username for avatar lookup
+      const profileAvatar = userAvatars.get(fullName) || userAvatars.get(member.mapping.username);
       
       return {
         rank,
-        name: username,
+        name: fullName, // Use full_name for display
         points: member.score,
         prize: prizes[index],
         avatar: profileAvatar || undefined, // Only use profile avatar, no default fallback
@@ -875,8 +928,9 @@ export function LeaderboardPage() {
     return allMembersWithScores.slice(3).map((member, index) => {
       const rank = index + 4; // Start from rank 4
       const scoreData = member.scoreData;
-      const username = member.mapping.username;
-      const profileAvatar = userAvatars.get(username);
+      const fullName = member.mapping.fullName || member.mapping.username;
+      // Try full_name first, then username for avatar lookup
+      const profileAvatar = userAvatars.get(fullName) || userAvatars.get(member.mapping.username);
 
       // Determine category tops based on which score component is highest
       const categoryTops: string[] = [];
@@ -895,12 +949,13 @@ export function LeaderboardPage() {
       if (recommendScore === maxScore && recommendScore > 0) categoryTops.push('Referral');
       if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
 
-      // Check if this entry is the current user
-      const isCurrentUserEntry = (userInfo?.username === username) || (rankUsername === username);
+      // Check if this entry is the current user (using full_name and username for comparison)
+      const isCurrentUserEntry = (userInfo?.fullName === fullName) || (userInfo?.username === member.mapping.username) || 
+                                  (rankFullName === fullName) || (rankUsername === member.mapping.username);
 
       return {
         rank,
-        name: username,
+        name: fullName, // Use full_name for display
         score: member.score,
         categoryTops: categoryTops,
         isCurrentUser: isCurrentUserEntry,
@@ -941,13 +996,17 @@ export function LeaderboardPage() {
 
   const handlePodiumClick = (user: PodiumUser) => {
     // Convert PodiumUser to LeaderboardEntry format using real data
+    // user.name is now full_name, need to find username for memberScores lookup
     let scoreData: MemberScoreData | undefined;
     
     if (activeViewFilter === 'Squad → Brand') {
       const brandScores = getBrandScores();
       scoreData = brandScores.get(user.name);
     } else {
-      scoreData = memberScores.get(user.name);
+      // Find username from squadMappings using full_name
+      const mapping = squadMappings.find(m => m.fullName === user.name);
+      const usernameForLookup = mapping?.username || user.name; // Fallback to name if not found
+      scoreData = memberScores.get(usernameForLookup);
     }
 
     const depositScore = (scoreData?.deposits || 0) * (targetPersonal?.deposit_amount || 0.001);
@@ -966,8 +1025,11 @@ export function LeaderboardPage() {
     if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
 
     // Get avatar from profile - all users (personal and brand) use profile avatar or default icon
+    // user.name is now full_name, try full_name first, then username
+    const mapping = squadMappings.find(m => m.fullName === user.name);
+    const usernameForAvatar = mapping?.username;
     const entryAvatar = activeViewFilter === 'Squad → Personal' 
-      ? (userAvatars.get(user.name) || undefined)
+      ? (userAvatars.get(user.name) || (usernameForAvatar ? userAvatars.get(usernameForAvatar) : undefined))
       : undefined; // Brand view uses default User icon
 
     const entry: LeaderboardEntry = {
@@ -1540,7 +1602,7 @@ export function LeaderboardPage() {
                 <h3 className="text-base md:text-lg font-heading font-bold text-foreground-primary text-center">
                   {user.name}
                 </h3>
-                {((userInfo?.username === user.name) || (rankUsername === user.name)) && (
+                {((userInfo?.fullName === user.name) || (userInfo?.username === user.name) || (rankFullName === user.name) || (rankUsername === user.name)) && (
                   <Badge variant="default" className="text-xs bg-primary text-white font-semibold px-2 py-0.5">
                     You
                   </Badge>
