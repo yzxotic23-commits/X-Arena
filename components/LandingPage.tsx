@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Trophy, Zap, Users, Target, Award, TrendingUp, X, AlertCircle, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Loading } from '@/components/Loading';
 import { useToast } from '@/lib/toast-context';
@@ -20,6 +20,18 @@ export function LandingPage() {
   const [rankUsername, setRankUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Hide scrollbar on landing page
+  useEffect(() => {
+    document.body.style.overflow = 'auto';
+    document.body.classList.add('hide-scrollbar');
+    document.documentElement.classList.add('hide-scrollbar');
+    
+    return () => {
+      document.body.classList.remove('hide-scrollbar');
+      document.documentElement.classList.remove('hide-scrollbar');
+    };
+  }, []);
 
   const features = [
     {
@@ -55,7 +67,7 @@ export function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       {/* Theme Toggle - Top Right */}
       <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50">
         <button
@@ -79,7 +91,7 @@ export function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <main className="relative z-10">
+      <main className="relative z-10 flex-1">
         <div className="container mx-auto px-4 pt-8 sm:pt-12 lg:pt-16 pb-4">
           <div className="text-center max-w-4xl mx-auto">
             <motion.div
@@ -283,15 +295,16 @@ export function LandingPage() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t-2 border-primary/40 bg-white/40 dark:bg-black/40 backdrop-blur-xl mt-8 sm:mt-12">
-        <div className="container mx-auto px-4 py-5 sm:py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="w-full border-t-2 border-primary/40 bg-white/40 dark:bg-black/40 backdrop-blur-xl mt-auto">
+        <div className="w-full px-4 py-5 sm:py-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
             <div className="flex items-center gap-2">
               <h3 className="text-lg sm:text-xl font-heading font-bold text-glow-red">X ARENA</h3>
               <span className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 font-mono">Gamified Dashboard</span>
             </div>
+            <span className="hidden sm:block text-muted">|</span>
             <p className="text-xs sm:text-sm text-muted">
-              © 2024 X Arena. All rights reserved.
+              © 2026 X Arena. All rights reserved.
             </p>
           </div>
         </div>
