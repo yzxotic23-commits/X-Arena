@@ -315,7 +315,7 @@ export function LeaderboardPage() {
     }
 
     // Combine squad_mapping with full_name from users_management
-    const mappings = (data ?? []).map((row) => {
+    const mappings: SquadMappingData[] = (data ?? []).map((row) => {
       const fullName = fullNameMap.get(row.username) || row.username || 'Unknown';
       return {
         id: row.id.toString(),
@@ -323,7 +323,7 @@ export function LeaderboardPage() {
         fullName: fullName, // Use full_name for display and mapping
         brand: row.brand ?? 'Unknown',
         shift: row.shift ?? 'Unknown',
-        status: row.status === 'inactive' ? 'inactive' : 'active',
+        status: (row.status === 'inactive' ? 'inactive' : 'active') as 'active' | 'inactive',
       };
     });
 
