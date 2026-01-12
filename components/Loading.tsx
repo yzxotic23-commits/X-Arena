@@ -6,10 +6,10 @@ import { useTheme } from '@/lib/theme-context';
 interface LoadingProps {
   size?: 'sm' | 'md' | 'lg';
   text?: string;
-  variant?: 'default' | 'gaming' | 'minimal';
+  variant?: 'default' | 'gaming' | 'gaming-coin' | 'minimal';
 }
 
-export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps) {
+export function Loading({ size = 'md', text, variant = 'gaming-coin' }: LoadingProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -22,6 +22,77 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
           'h-12 w-12 border-t-2'
         } ${isDark ? 'border-t-primary' : 'border-t-gray-400'}`} />
         {text && <span className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} text-muted`}>{text}</span>}
+      </div>
+    );
+  }
+
+  if (variant === 'gaming-coin') {
+    // Coin only loading animation (no Mario Bros)
+    return (
+      <div className="flex flex-col items-center justify-center gap-3">
+        {/* Loading Text */}
+        {text && (
+          <motion.p
+            className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} font-semibold text-gray-900 dark:text-white`}
+            animate={{
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          >
+            {text}
+          </motion.p>
+        )}
+
+        {/* Coin Animation */}
+        <div className="flex items-center gap-2">
+          {[0, 1, 2].map((index) => (
+            <motion.div
+              key={index}
+              className="relative"
+              style={{
+                width: size === 'sm' ? '16px' : size === 'md' ? '20px' : '24px',
+                height: size === 'sm' ? '16px' : size === 'md' ? '20px' : '24px',
+              }}
+              animate={{
+                y: [0, -10, 0],
+                rotate: [0, 360],
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: index * 0.2,
+              }}
+            >
+              {/* Coin */}
+              <div 
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: isDark 
+                    ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' 
+                    : 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                  border: `2px solid ${isDark ? '#FFA500' : '#D97706'}`,
+                  boxShadow: `0 2px 4px ${isDark ? 'rgba(255, 215, 0, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
+                }}
+              />
+              <div 
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  fontSize: size === 'sm' ? '8px' : size === 'md' ? '10px' : '12px',
+                  fontWeight: 'bold',
+                  color: isDark ? '#8B4513' : '#92400E',
+                }}
+              >
+                $
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -239,7 +310,7 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
         {/* Loading Text */}
         {text && (
           <motion.p
-            className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} font-semibold text-foreground-primary`}
+            className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} font-semibold text-gray-900 dark:text-white`}
             animate={{
               opacity: [0.5, 1, 0.5],
             }}

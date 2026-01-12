@@ -1194,7 +1194,7 @@ export function ReportsPage() {
   if (loading) {
     return (
       <div className="w-full flex items-center justify-center min-h-[60vh]">
-        <Loading size="lg" variant="gaming" />
+        <Loading size="lg" text={`Loading ${translations.nav.reports}...`} variant="gaming-coin" />
       </div>
     );
   }

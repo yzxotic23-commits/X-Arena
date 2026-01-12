@@ -173,8 +173,8 @@ export function BrandPage() {
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="py-8 px-4">
-                      <div className="flex justify-center">
-                        <Loading size="md" text="Loading..." variant="gaming" />
+                      <div className="flex items-center justify-center min-h-[200px]">
+                        <Loading size="md" text="Loading..." variant="gaming-coin" />
                       </div>
                     </td>
                   </tr>
