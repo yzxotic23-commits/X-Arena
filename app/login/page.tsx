@@ -53,43 +53,43 @@ export default function LoginPage() {
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-sm">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Back to Landing */}
+          {/* Back to Home */}
           <Link
             href="/landing"
             className="inline-flex items-center gap-2 text-muted hover:text-primary transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Landing</span>
+            <span>Back to Home</span>
           </Link>
 
           <Card className="relative overflow-hidden group">
             <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
             <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
             
-            <CardHeader className="relative z-10 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
-                  <LogIn className="w-8 h-8 text-white" />
+            <CardHeader className="relative z-10 text-center pb-6">
+              <div className="flex justify-center mb-5">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
+                  <LogIn className="w-7 h-7 text-white" />
                 </div>
               </div>
-              <CardTitle className="text-3xl font-heading font-bold text-foreground-primary">
+              <CardTitle className="text-xl font-heading font-bold text-foreground-primary">
                 Welcome Back
               </CardTitle>
-              <CardDescription className="text-base mt-2">
+              <CardDescription className="text-sm mt-3">
                 Sign in to access X Arena Dashboard
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="relative z-10">
+            <CardContent className="relative z-10 px-5 pb-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Username Field */}
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label htmlFor="username" className="text-sm font-semibold text-foreground-primary flex items-center gap-2">
                     <User className="w-4 h-4" />
                     Username
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Password Field */}
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <label htmlFor="password" className="text-sm font-semibold text-foreground-primary flex items-center gap-2">
                     <Lock className="w-4 h-4" />
                     Password
@@ -141,7 +141,7 @@ export default function LoginPage() {
                   type="submit"
                   variant="default"
                   size="lg"
-                  className="w-full flex items-center justify-center gap-2"
+                  className="w-full flex items-center justify-center gap-2 mt-4"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -156,13 +156,6 @@ export default function LoginPage() {
                     </>
                   )}
                 </Button>
-
-                {/* Default Credentials Hint */}
-                <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                  <p className="text-xs text-muted text-center">
-                    Default credentials: <span className="font-semibold text-foreground-primary">admin / admin</span>
-                  </p>
-                </div>
               </form>
             </CardContent>
           </Card>

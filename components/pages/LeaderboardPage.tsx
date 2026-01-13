@@ -1365,7 +1365,7 @@ export function LeaderboardPage() {
   if (loadingScores || loadingSquadMappings || memberScores.size === 0) {
     return (
       <div className="w-full flex items-center justify-center min-h-[60vh]">
-        <Loading size="lg" text={translations.common.loading} variant="gaming" />
+        <Loading size="lg" text={`Loading ${translations.nav.leaderboard}...`} variant="gaming-coin" />
       </div>
     );
   }

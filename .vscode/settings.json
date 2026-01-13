@@ -3,6 +3,10 @@
   "css.validate": true,
   "tailwindCSS.experimental.classRegex": [
     ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^\"'`]*)(?:'|\"|`)"]
+  ],
+  "cSpell.words": [
+    "contenteditable",
+    "supabase"
   ]
 }
 
