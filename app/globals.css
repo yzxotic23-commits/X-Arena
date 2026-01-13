@@ -284,7 +284,7 @@
   
   /* Ensure bg-background class uses custom image in dark mode */
   .dark .bg-background {
-    background-image: url('/background-layout/dark.jpg') !important;
+    background-image: url('/background-layout/dark-5.jpg') !important;
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;

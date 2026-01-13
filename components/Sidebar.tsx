@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
       LayoutDashboard,
@@ -56,7 +56,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const menuItems: MenuItem[] = [
+  const menuItems: MenuItem[] = useMemo(() => [
     { id: 'leaderboard', label: translations.nav.leaderboard, icon: Award },
     { id: 'dashboard', label: translations.nav.overview, icon: LayoutDashboard },
     { id: 'customer-listing', label: translations.nav.customerListing, icon: List },
@@ -75,18 +75,20 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
         { id: 'appearance-settings', label: translations.nav.appearance, icon: Palette },
       ]
     },
-  ];
+  ], [translations, userRole]);
 
   // Filter menu items based on limited access
   // Limited access users can see: dashboard, leaderboard, targets (Target Summary), reports, customer-listing
   // Profile menu is removed for all users (admin and limited access) as it's available via account button in header
-  const filteredMenuItems = isLimitedAccess
-    ? menuItems.filter((item: MenuItem) => {
-        // Only allow specific menu items for limited access users
-        const allowedIds = ['dashboard', 'leaderboard', 'targets', 'reports', 'customer-listing'];
-        return allowedIds.includes(item.id);
-      })
-    : menuItems;
+  const filteredMenuItems = useMemo(() => {
+    return isLimitedAccess
+      ? menuItems.filter((item: MenuItem) => {
+          // Only allow specific menu items for limited access users
+          const allowedIds = ['dashboard', 'leaderboard', 'targets', 'reports', 'customer-listing'];
+          return allowedIds.includes(item.id);
+        })
+      : menuItems;
+  }, [menuItems, isLimitedAccess]);
 
   // Close dropdown when sidebar is collapsed
   useEffect(() => {
@@ -125,7 +127,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
       window.removeEventListener('scroll', updatePosition, true);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [isCollapsed, popoverPosition, hoveredMenu]);
+  }, [isCollapsed, popoverPosition, hoveredMenu, menuItems]);
 
   // Close popover when clicking outside (on hover mode, clicking anywhere closes it)
   useEffect(() => {
