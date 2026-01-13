@@ -5,7 +5,7 @@ import { Target, Gauge } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Target as TargetType } from '@/types';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, formatCurrency } from '@/lib/utils';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { useTheme } from '@/lib/theme-context';
@@ -61,7 +61,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
               <div className="text-center">
                 <p className="text-sm text-muted mb-1">{translations.overview.targetValue}</p>
                 <p className="text-2xl font-heading font-bold text-foreground-primary">
-                  {formatNumber(target.value)}
+                  {formatCurrency(target.value)}
                 </p>
               </div>
             </div>
@@ -75,7 +75,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
                 <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
-                  {formatNumber(target.netProfitSquad || 0)}
+                  {formatCurrency(target.netProfitSquad || 0)}
                 </p>
               </div>
 
@@ -86,7 +86,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                   <Target className="w-5 h-5 text-primary" />
                 </div>
                 <p className="text-2xl font-heading font-bold text-foreground-primary">
-                  {formatNumber(target.gap)}
+                  {formatCurrency(target.gap)}
                 </p>
               </div>
 

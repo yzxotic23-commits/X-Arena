@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { UserPlus, UserCheck, Users, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BehaviorResultMetrics } from '@/types';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, formatCurrency } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
 
@@ -78,8 +78,35 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
                   </div>
                   <p className="text-lg sm:text-xl font-heading font-bold text-foreground-primary break-words overflow-wrap-anywhere">
                     {config.key === 'depositAmountPerUser'
-                      ? `$${formatNumber(value)}`
+                      ? `$${formatCurrency(value)}`
                       : formatNumber(value)}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Days Section */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5 mt-4 sm:mt-6">
+            {[
+              { key: 'days_4_7' as const, label: '4 - 7 Days' },
+              { key: 'days_8_11' as const, label: '8 - 11 Days' },
+              { key: 'days_12_15' as const, label: '12 - 15 Days' },
+              { key: 'days_16_19' as const, label: '16 - 19 Days' },
+              { key: 'days_20_plus' as const, label: '20 Days & Above' },
+            ].map((dayConfig, index) => {
+              const value = behaviorMetrics[dayConfig.key] || 0;
+              return (
+                <motion.div
+                  key={dayConfig.key}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.1 * (metricConfig.length + index) }}
+                  className="bg-card-inner rounded-lg p-4 sm:p-5 border border-card-border transition-colors text-center min-w-0"
+                >
+                  <p className="text-xs sm:text-sm text-muted mb-2 truncate">{dayConfig.label}</p>
+                  <p className="text-lg sm:text-xl font-heading font-bold text-foreground-primary">
+                    {formatNumber(value)}
                   </p>
                 </motion.div>
               );

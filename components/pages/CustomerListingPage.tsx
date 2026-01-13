@@ -82,65 +82,96 @@ export function CustomerListingPage() {
   };
 
   // Fetch user shift and brand from squad_mapping for limited access users
-  // For operator: convert full_name to username first, then query squad_mapping
+  // Mapping: full_name (dari login/users_management) → username (users_management) → username (squad_mapping)
+  // Squad_mapping menggunakan username, bukan full_name, jadi perlu convert dulu
   const fetchUserShiftAndBrand = useCallback(async () => {
-    if (!isLimitedAccess || (!rankUsername && !rankFullName)) {
+    if (!isLimitedAccess || !rankFullName) {
       setUserShift(null);
       setUserBrand(null);
       return;
     }
 
     try {
-      let usernameToQuery = rankUsername;
-      
-      // If we have full_name but not username, convert full_name to username
-      if (rankFullName && !rankUsername) {
-        const { data: userData } = await supabase
-          .from('users_management')
-          .select('username')
-          .eq('full_name', rankFullName)
-          .eq('status', 'active')
-          .maybeSingle();
-        
-        if (userData) {
-          usernameToQuery = userData.username;
-        }
-      } else if (rankFullName && rankUsername) {
-        // Prefer using rankUsername if available (more direct)
-        usernameToQuery = rankUsername;
-      }
+      // Step 1: Match full_name (dari login) dengan full_name di users_management untuk mendapatkan username
+      const { data: userData, error: userError } = await supabase
+        .from('users_management')
+        .select('username')
+        .eq('full_name', rankFullName) // Match full_name dari login dengan full_name di users_management
+        .eq('status', 'active')
+        .maybeSingle();
 
-      if (!usernameToQuery) {
+      if (userError) {
+        console.error('Failed to fetch username from users_management:', userError);
         setUserShift(null);
         setUserBrand(null);
         return;
       }
 
-      const { data, error } = await supabase
+      if (!userData || !userData.username) {
+        console.warn('Could not find username for full_name in users_management:', rankFullName);
+        setUserShift(null);
+        setUserBrand(null);
+        return;
+      }
+
+      const usernameToQuery = userData.username;
+
+      // Step 2: Match username (dari users_management) dengan username di squad_mapping
+      // Squad_mapping menggunakan field username, bukan full_name
+      let { data, error } = await supabase
         .from('squad_mapping')
         .select('shift, brand')
-        .eq('username', usernameToQuery)
+        .eq('username', usernameToQuery) // Match username dari users_management dengan username di squad_mapping
         .eq('status', 'active')
         .maybeSingle();
 
+      // Fallback: Jika username dari users_management tidak ditemukan di squad_mapping,
+      // coba menggunakan full_name sebagai username di squad_mapping
+      if (error || !data) {
+        console.warn('Username from users_management not found in squad_mapping, trying full_name as username:', { 
+          usernameFromUsersManagement: usernameToQuery, 
+          full_name: rankFullName 
+        });
+        
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('squad_mapping')
+          .select('shift, brand')
+          .eq('username', rankFullName) // Try full_name as username in squad_mapping
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        if (!fallbackError && fallbackData) {
+          data = fallbackData;
+          error = null;
+        } else {
+          error = fallbackError || error;
+        }
+      }
+
       if (error) {
-        console.error('Failed to fetch user shift and brand', error);
+        console.error('Failed to fetch user shift and brand from squad_mapping:', error);
         setUserShift(null);
         setUserBrand(null);
       } else if (data) {
         setUserShift(data.shift || null);
         setUserBrand(data.brand || null);
+        console.log('[CustomerListing] Loaded shift and brand for operator:', { 
+          full_name: rankFullName, 
+          username: usernameToQuery,
+          shift: data.shift, 
+          brand: data.brand 
+        });
       } else {
-        console.warn('User not found in squad_mapping:', usernameToQuery);
+        console.warn('User not found in squad_mapping:', { full_name: rankFullName, username: usernameToQuery });
         setUserShift(null);
         setUserBrand(null);
       }
     } catch (error) {
-      console.error('Error fetching user shift and brand', error);
+      console.error('Error fetching user shift and brand:', error);
       setUserShift(null);
       setUserBrand(null);
     }
-  }, [isLimitedAccess, rankUsername, rankFullName]);
+  }, [isLimitedAccess, rankFullName]);
 
   useEffect(() => {
     fetchUserShiftAndBrand();
@@ -851,6 +882,12 @@ export function CustomerListingPage() {
 
   // Fetch customers from Supabase
   const fetchCustomers = useCallback(async () => {
+    // For limited access users, wait until userShift and userBrand are loaded
+    if (isLimitedAccess && (!userShift || !userBrand)) {
+      console.log('[CustomerListing] Waiting for user shift and brand to be loaded...');
+      return;
+    }
+
     setLoading(true);
     try {
       const tableName = activeTab === 'reactivation' 
@@ -867,7 +904,9 @@ export function CustomerListingPage() {
         .select('*');
       
       // Filter by shift and brand for limited access users directly in query
+      // This ensures operator only sees customers matching their brand and shift
       if (isLimitedAccess && userShift && userBrand) {
+        console.log('[CustomerListing] Filtering customers for operator:', { shift: userShift, brand: userBrand });
         query = query
           .eq('handler', userShift)
           .eq('brand', userBrand);
@@ -893,38 +932,50 @@ export function CustomerListingPage() {
         // Note: Filter by shift and brand is now done directly in the Supabase query above
         // This ensures only data matching the user's shift and brand is fetched
 
-        // For reactivation, retention, extra, and recommend, check active status directly from Supabase 2
-        if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra' || activeTab === 'recommend') && mappedData.length > 0) {
-          console.log('[Fetch] Checking active status from Supabase 2...');
-          const activeMap = await checkCustomersActiveStatus(mappedData);
-          
-          // Update labels based on active status
-          mappedData = mappedData.map(customer => {
-            if (!customer.uniqueCode || !customer.brand) {
-              return { ...customer, label: activeTab === 'recommend' ? 'New' : 'non active' };
-            }
-            
-            const uniqueCode = String(customer.uniqueCode).trim().toLowerCase();
-            const brand = String(customer.brand).trim().toLowerCase();
-            const key = `${uniqueCode}|${brand}`;
-            const isActive = activeMap.has(key);
-            
-            return {
-              ...customer,
-              label: isActive ? 'active' : (activeTab === 'recommend' ? 'New' : 'non active')
-            };
-          });
-          
-          const activeCount = mappedData.filter(c => c.label === 'active').length;
-          console.log(`[Fetch] ${activeCount}/${mappedData.length} customers are active`);
-        }
-
-        // Display data
+        // Display data first (optimistic rendering for faster initial load)
         setAllCustomers(mappedData);
         // Apply pagination
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         setCustomers(mappedData.slice(startIndex, endIndex));
+
+        // Check active status in background (non-blocking)
+        // This improves initial load time significantly
+        if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra' || activeTab === 'recommend') && mappedData.length > 0) {
+          // Run active status check asynchronously without blocking UI
+          checkCustomersActiveStatus(mappedData).then((activeMap) => {
+            // Update labels based on active status
+            setAllCustomers(prevCustomers => {
+              const updated = prevCustomers.map(customer => {
+                if (!customer.uniqueCode || !customer.brand) {
+                  return { ...customer, label: activeTab === 'recommend' ? 'New' : 'non active' };
+                }
+                
+                const uniqueCode = String(customer.uniqueCode).trim().toLowerCase();
+                const brand = String(customer.brand).trim().toLowerCase();
+                const key = `${uniqueCode}|${brand}`;
+                const isActive = activeMap.has(key);
+                
+                return {
+                  ...customer,
+                  label: isActive ? 'active' : (activeTab === 'recommend' ? 'New' : 'non active')
+                };
+              });
+              
+              // Update paginated customers
+              const startIdx = (currentPage - 1) * itemsPerPage;
+              const endIdx = startIdx + itemsPerPage;
+              setCustomers(updated.slice(startIdx, endIdx));
+              
+              const activeCount = updated.filter(c => c.label === 'active').length;
+              console.log(`[Fetch] Updated labels: ${activeCount}/${updated.length} customers are active`);
+              
+              return updated;
+            });
+          }).catch((error) => {
+            console.error('[Fetch] Error checking active status:', error);
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching customers', error);

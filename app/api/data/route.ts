@@ -544,6 +544,11 @@ export async function GET(request: NextRequest) {
       numberOfReactivatedDormantCustomers: memberScore.dormant,
       numberOfRetentionCustomers: memberScore.retention,
       depositAmountPerUser: memberScore.deposits,
+      days_4_7: memberScore.days_4_7,
+      days_8_11: memberScore.days_8_11,
+      days_12_15: memberScore.days_12_15,
+      days_16_19: memberScore.days_16_19,
+      days_20_plus: memberScore.days_20_plus,
     };
 
     // 15. Build TrafficSource

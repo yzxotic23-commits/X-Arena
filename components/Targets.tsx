@@ -5,7 +5,7 @@ import { Target, Gauge, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Target as TargetType } from '@/types';
-import { formatNumber } from '@/lib/utils';
+import { formatNumber, formatCurrency } from '@/lib/utils';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { useTheme } from '@/lib/theme-context';
@@ -69,7 +69,7 @@ export function Targets({ target }: TargetsProps) {
               <div className="text-center">
                 <p className="text-sm text-muted mb-1">Target Value</p>
                 <p className="text-2xl font-heading font-bold text-foreground-primary">
-                  {formatNumber(target.value)}
+                  {formatCurrency(target.value)}
                 </p>
               </div>
             </div>
@@ -92,7 +92,7 @@ export function Targets({ target }: TargetsProps) {
                   <Target className="w-5 h-5 text-primary" />
                 </div>
                 <p className="text-2xl font-heading font-bold text-foreground-primary">
-                  {formatNumber(target.gap)}
+                  {formatCurrency(target.gap)}
                 </p>
               </div>
 
@@ -123,7 +123,7 @@ export function Targets({ target }: TargetsProps) {
         <CardContent className="relative z-10">
           <div className="bg-card-inner rounded-lg p-6 border border-card-border text-center transition-colors">
             <p className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2">
-              {formatNumber(target.depositPerUser)}
+              ${formatCurrency(target.depositPerUser)}
             </p>
             <p className="text-sm text-muted">Average deposit per user</p>
           </div>

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target as TargetType } from '@/types';
-import { formatNumber, formatPercentage } from '@/lib/utils';
+import { formatNumber, formatCurrency, formatPercentage } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
 
@@ -41,7 +41,7 @@ export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
           {/* Main Value */}
           <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors text-center">
             <p className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2">
-              ${formatNumber(target.depositPerUser)}
+              ${formatCurrency(target.depositPerUser)}
             </p>
             <p className="text-sm text-muted">{translations.overview.averageDepositPerUser}</p>
           </div>
