@@ -319,7 +319,7 @@ function DashboardContent() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
-        <Loading size="lg" text={translations.common.loading} variant="gaming-coin" />
+        <Loading size="lg" text={translations.common.loading} variant="gaming" />
       </div>
     );
   }
@@ -331,7 +331,7 @@ function DashboardContent() {
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
-        <Loading size="lg" text={`Loading ${translations.nav.overview}...`} variant="gaming-coin" />
+        <Loading size="lg" text={`Loading ${translations.nav.overview}...`} variant="gaming" />
       </div>
     );
   }

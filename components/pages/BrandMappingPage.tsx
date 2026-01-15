@@ -229,7 +229,7 @@ export function BrandMappingPage() {
                   <tr>
                     <td colSpan={4} className="py-12 px-4">
                       <div className="flex items-center justify-center min-h-[200px]">
-                        <Loading size="md" text="Loading Brand Mapping..." variant="gaming-coin" />
+                        <Loading size="md" text="Loading Brand Mapping..." variant="gaming" />
                       </div>
                     </td>
                   </tr>

@@ -9,7 +9,7 @@ interface LoadingProps {
   variant?: 'default' | 'gaming' | 'gaming-coin' | 'minimal';
 }
 
-export function Loading({ size = 'md', text, variant = 'gaming-coin' }: LoadingProps) {
+export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -103,9 +103,9 @@ export function Loading({ size = 'md', text, variant = 'gaming-coin' }: LoadingP
     const blockSize = size === 'sm' ? 20 : size === 'md' ? 30 : 40;
     
     return (
-      <div className="flex flex-col items-center justify-center gap-3">
+      <div className="flex flex-col items-center justify-center gap-2">
         {/* Mario Character Animation */}
-        <div className="relative mb-2" style={{ width: marioSize * 2, height: marioSize * 1.5 }}>
+        <div className="relative mb-0.5" style={{ width: marioSize * 2, height: marioSize * 1.5 }}>
           {/* Mario Character */}
           <motion.div
             className="relative"

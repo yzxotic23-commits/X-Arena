@@ -323,7 +323,7 @@ export function UserManagementPage() {
                   <tr>
                     <td colSpan={7} className="py-12 px-4">
                       <div className="flex items-center justify-center min-h-[200px]">
-                        <Loading size="md" text={`Loading ${translations.nav.userManagement}...`} variant="gaming-coin" />
+                        <Loading size="md" text={`Loading ${translations.nav.userManagement}...`} variant="gaming" />
                       </div>
                     </td>
                   </tr>
