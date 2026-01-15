@@ -637,7 +637,7 @@ export function TargetsPage() {
                   </tr>
                   
                   {/* Squad needed / Day */}
-                  <tr className="border-b border-card-border">
+                  <tr className="bg-yellow-500/10 border-b border-card-border">
                     <td className="py-3 px-4 text-sm font-semibold text-foreground-primary">
                       {new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} → Squad needed / Day
                     </td>
@@ -652,7 +652,7 @@ export function TargetsPage() {
                       const remainingDays = Math.max(1, lastDayOfMonth - currentDay + 1);
                       const squadNeededPerDay = balance > 0 ? balance / remainingDays : 0;
                       return (
-                        <td key={index} className="py-3 px-4 text-right text-sm text-foreground-primary">
+                        <td key={index} className="py-3 px-4 text-right text-sm font-bold text-yellow-600 dark:text-yellow-400">
                           {formatCurrency(squadNeededPerDay)}
                         </td>
                       );
@@ -901,23 +901,23 @@ export function TargetsPage() {
                           </td>
                         </tr>
                       ))}
-                      <tr className="border-b border-card-border">
+                      <tr className="bg-yellow-500/10 border-b border-card-border">
                         <td className="py-3 px-4 text-sm font-semibold text-foreground-primary">
                           {cycle.name} Team Required
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold">
                           <div className="flex justify-end">
-                            <span className="text-foreground-primary">{formatCurrency(Math.max(cycleTargets[0] - cycleTotal, 0))}</span>
+                            <span className="font-bold text-yellow-600 dark:text-yellow-400">{formatCurrency(Math.max(cycleTargets[0] - cycleTotal, 0))}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold">
                           <div className="flex justify-end">
-                            <span className="text-foreground-primary">{formatCurrency(Math.max(cycleTargets[1] - cycleTotal, 0))}</span>
+                            <span className="font-bold text-yellow-600 dark:text-yellow-400">{formatCurrency(Math.max(cycleTargets[1] - cycleTotal, 0))}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold">
                           <div className="flex justify-end">
-                            <span className="text-foreground-primary">{formatCurrency(Math.max(cycleTargets[2] - cycleTotal, 0))}</span>
+                            <span className="font-bold text-yellow-600 dark:text-yellow-400">{formatCurrency(Math.max(cycleTargets[2] - cycleTotal, 0))}</span>
                           </div>
                         </td>
                       </tr>
