@@ -68,9 +68,9 @@ export default function LoginPage() {
             <span>Back to Home</span>
           </Link>
 
-          <Card className="relative overflow-hidden group">
-            <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-            <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+          <Card className="relative overflow-hidden border-t-2 border-primary/40 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-card-border shadow-md dark:shadow-card-gaming hover:shadow-md dark:hover:shadow-card-gaming">
+            <div className="absolute inset-0 card-gradient-overlay transition-opacity opacity-0" />
+            <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl opacity-0" />
             
             <CardHeader className="relative z-10 text-center pb-6">
               <div className="flex justify-center mb-5">
@@ -100,7 +100,7 @@ export default function LoginPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Enter your username"
-                    className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                    className="w-full px-4 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-2 border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                     required
                     autoComplete="username"
                   />
@@ -118,7 +118,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full px-4 py-3 bg-white dark:bg-gray-900 border-2 border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                    className="w-full px-4 py-3 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-2 border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
                     required
                     autoComplete="current-password"
                   />

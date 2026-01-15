@@ -101,7 +101,7 @@ export function LandingPage() {
             >
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold mb-3 sm:mb-4 lg:mb-5 leading-tight">
                 <span className="text-glow-red block mb-1 sm:mb-1.5">X ARENA</span>
-                <span className="text-foreground-primary block">Gamified Dashboard</span>
+                <span className="text-gray-600 dark:text-gray-400 block font-mono text-xl sm:text-2xl lg:text-3xl">Gamified Dashboard</span>
               </h1>
               <p className="text-sm sm:text-base text-muted mb-6 sm:mb-7 max-w-3xl mx-auto leading-tight px-4">
                 Compete, Contribute, and Conquer. Track your performance, compete with your squad, and climb the leaderboard.
@@ -132,9 +132,9 @@ export function LandingPage() {
         {/* Features Grid */}
         <div className="container mx-auto px-4 pt-4 pb-12 sm:pb-16">
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
             className="text-center mb-8 sm:mb-10"
           >
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-bold text-foreground-primary mb-2 sm:mb-3">
@@ -151,10 +151,10 @@ export function LandingPage() {
               return (
                 <motion.div
                   key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ duration: 0.5, delay: 0.4 + index * 0.1 }}
-                  className="bg-card-glass rounded-xl border border-card-border p-3 sm:p-4 hover:border-primary/50 transition-all duration-300 group"
+                  className="border-t-2 border-primary/40 bg-white/40 dark:bg-black/40 backdrop-blur-xl rounded-xl p-3 sm:p-4 hover:border-primary/50 transition-all duration-300 group"
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center flex-shrink-0 dark:group-hover:scale-100 group-hover:scale-110 transition-transform">
@@ -295,7 +295,7 @@ export function LandingPage() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="w-full border-t-2 border-primary/40 bg-white/40 dark:bg-black/40 backdrop-blur-xl mt-auto">
+      <footer className="w-full border-t border-primary/40 mt-auto">
         <div className="w-full px-4 py-5 sm:py-6">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6">
             <div className="flex items-center gap-2">
