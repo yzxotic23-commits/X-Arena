@@ -104,7 +104,7 @@ export function LandingPage() {
                 <span className="text-gray-600 dark:text-gray-400 block font-mono text-xl sm:text-2xl lg:text-3xl">Gamified Dashboard</span>
               </h1>
               <p className="text-sm sm:text-base text-muted mb-6 sm:mb-7 max-w-3xl mx-auto leading-tight px-4">
-                Compete, Contribute, and Conquer. Track your performance, compete with your squad, and climb the leaderboard.
+                Track your performance, compete with your squad, and climb the leaderboard.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-3 sm:mb-4 mt-2 sm:mt-3">
                 <Button

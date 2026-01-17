@@ -607,9 +607,9 @@ export function TargetsPage() {
                       : 'border-blue-500/50 bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:bg-card-inner dark:border-blue-500/60'
                   }`}>
                     <th className="text-left py-3 px-4 text-sm font-bold text-foreground-primary">Target / Brand</th>
-                    <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">{translations.targetSettings.option1}</th>
-                    <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">{translations.targetSettings.option2}</th>
-                    <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">{translations.targetSettings.option3}</th>
+                    <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">CAP 1</th>
+                    <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">CAP 2</th>
+                    <th className="text-right py-3 px-4 text-sm font-bold text-foreground-primary">CAP 3</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -854,9 +854,9 @@ export function TargetsPage() {
                           : 'border-blue-500/50 bg-gradient-to-r from-blue-500/10 to-blue-500/5 dark:bg-card-inner dark:border-blue-500/60'
                       }`}>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.targets.target} / {translations.customerListing.brand}</th>
-                        <th className="text-right py-3 px-4 text-sm font-semibold text-foreground-primary">Option 1</th>
-                        <th className="text-right py-3 px-4 text-sm font-semibold text-foreground-primary">Option 2</th>
-                        <th className="text-right py-3 px-4 text-sm font-semibold text-foreground-primary">Option 3</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-foreground-primary">CAP 1</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-foreground-primary">CAP 2</th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-foreground-primary">CAP 3</th>
                       </tr>
                     </thead>
                     <tbody>

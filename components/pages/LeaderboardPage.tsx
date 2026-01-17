@@ -17,6 +17,7 @@ import { supabase2 } from '@/lib/supabase-client-2';
 import { Loading } from '@/components/Loading';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
+import Image from 'next/image';
 
 interface PodiumUser {
   rank: number;
@@ -1570,10 +1571,12 @@ export function LeaderboardPage() {
                 <div className={`${user.rank === 1 ? 'w-28 h-28 md:w-32 md:h-32 lg:w-36 lg:h-36' : 'w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28'} rounded-lg overflow-hidden relative bg-transparent ${user.rank === 1 ? 'border-2 border-yellow-400' : user.rank === 2 ? 'border border-gray-300' : 'border border-amber-600'}`}>
                   {user.avatar && (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) ? (
                     <>
-                      <img 
+                      <Image 
                         src={user.avatar} 
                         alt={user.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        unoptimized
                         onError={(e) => {
                           // Fallback to icon User on error
                           e.currentTarget.style.display = 'none';
@@ -1727,10 +1730,12 @@ export function LeaderboardPage() {
                               <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-card-inner border border-card-border flex-shrink-0">
                                 {entry.avatar && (entry.avatar.startsWith('http://') || entry.avatar.startsWith('https://')) ? (
                                   <>
-                                    <img 
+                                    <Image 
                                       src={entry.avatar} 
                                       alt={entry.name}
-                                      className="w-full h-full object-cover"
+                                      fill
+                                      className="object-cover"
+                                      unoptimized
                                       onError={(e) => {
                                         // Fallback to icon User on error
                                         e.currentTarget.style.display = 'none';
