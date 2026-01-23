@@ -809,19 +809,14 @@ export function CustomerListingPage() {
   }, [fetchUsernameFromSupabase2]);
 
   // Check if customers are active by querying Supabase 2 directly (no database update needed)
-  const checkCustomersActiveStatus = useCallback(async (customers: Array<{ uniqueCode: string; brand: string }>): Promise<Map<string, boolean>> => {
+  // Label 'active' jika customer ada di database untuk bulan yang sama dengan customer.month
+  // Label 'non active' jika customer tidak ada di database untuk bulan yang sama
+  const checkCustomersActiveStatus = useCallback(async (customers: Array<{ uniqueCode: string; brand: string; month?: string }>): Promise<Map<string, boolean>> => {
     const activeMap = new Map<string, boolean>();
     
     if (customers.length === 0) return activeMap;
     
     try {
-      // Get current month date range
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth();
-      const startOfMonth = new Date(year, month, 1);
-      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
-      
       const formatDateLocal = (date: Date) => {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -829,50 +824,71 @@ export function CustomerListingPage() {
         return `${y}-${m}-${d}`;
       };
       
-      const startDateStr = formatDateLocal(startOfMonth);
-      const endDateStr = formatDateLocal(endOfMonth);
+      // Group customers by month to query efficiently
+      const customersByMonth = new Map<string, Array<{ uniqueCode: string; brand: string }>>();
       
-      // Get unique codes and brands
-      const uniqueCodes = Array.from(new Set(customers.map(c => c.uniqueCode).filter(Boolean)));
-      const uniqueBrands = Array.from(new Set(customers.map(c => c.brand).filter(Boolean)));
+      customers.forEach(customer => {
+        // Use customer.month if available, otherwise use current month
+        const month = customer.month || getCurrentMonth();
+        if (!customersByMonth.has(month)) {
+          customersByMonth.set(month, []);
+        }
+        customersByMonth.get(month)!.push({ uniqueCode: customer.uniqueCode, brand: customer.brand });
+      });
       
-      if (uniqueCodes.length === 0 || uniqueBrands.length === 0) {
-        return activeMap;
-      }
-      
-      console.log(`[Label Check] Checking ${uniqueCodes.length} unique codes and ${uniqueBrands.length} brands for current month...`);
-      
-      // Query Supabase 2 for active customers (deposit_cases > 0 in current month)
-      const { data: monthData, error } = await supabase2
-        .from('blue_whale_sgd')
-        .select('update_unique_code, line, deposit_cases')
-        .in('update_unique_code', uniqueCodes)
-        .in('line', uniqueBrands)
-        .gte('date', startDateStr)
-        .lte('date', endDateStr)
-        .gt('deposit_cases', 0)
-        .limit(50000);
-      
-      if (error) {
-        console.error('[Label Check] Error querying Supabase 2:', error);
-        return activeMap;
-      }
-      
-      if (monthData && monthData.length > 0) {
-        // Create map of active customers (unique_code|brand)
-        monthData.forEach((row: any) => {
-          const uniqueCode = String(row.unique_code || '').trim().toLowerCase();
-          const brand = String(row.line || '').trim().toLowerCase();
-          if (uniqueCode && brand) {
-            const key = `${uniqueCode}|${brand}`;
-            activeMap.set(key, true);
-          }
-        });
+      // Query for each month separately
+      const queryPromises = Array.from(customersByMonth.entries()).map(async ([month, monthCustomers]) => {
+        // Parse month (format: YYYY-MM)
+        const [year, monthNum] = month.split('-').map(Number);
+        const startOfMonth = new Date(year, monthNum - 1, 1);
+        const endOfMonth = new Date(year, monthNum, 0, 23, 59, 59, 999);
         
-        console.log(`[Label Check] Found ${activeMap.size} active customer combinations`);
-      } else {
-        console.log('[Label Check] No active customers found in current month');
-      }
+        const startDateStr = formatDateLocal(startOfMonth);
+        const endDateStr = formatDateLocal(endOfMonth);
+        
+        // Get unique codes and brands for this month
+        const uniqueCodes = Array.from(new Set(monthCustomers.map(c => c.uniqueCode).filter(Boolean)));
+        const uniqueBrands = Array.from(new Set(monthCustomers.map(c => c.brand).filter(Boolean)));
+        
+        if (uniqueCodes.length === 0 || uniqueBrands.length === 0) {
+          return;
+        }
+        
+        console.log(`[Label Check] Checking ${uniqueCodes.length} unique codes and ${uniqueBrands.length} brands for month ${month}...`);
+        
+        // Query Supabase 2 for active customers (deposit_cases > 0 in the customer's month)
+        const { data: monthData, error } = await supabase2
+          .from('blue_whale_sgd')
+          .select('update_unique_code, line, deposit_cases')
+          .in('update_unique_code', uniqueCodes)
+          .in('line', uniqueBrands)
+          .gte('date', startDateStr)
+          .lte('date', endDateStr)
+          .gt('deposit_cases', 0)
+          .limit(50000);
+        
+        if (error) {
+          console.error(`[Label Check] Error querying Supabase 2 for month ${month}:`, error);
+          return;
+        }
+        
+        if (monthData && monthData.length > 0) {
+          // Create map of active customers (unique_code|brand) for this month
+          monthData.forEach((row: any) => {
+            const uniqueCode = String(row.update_unique_code || row.unique_code || '').trim().toLowerCase();
+            const brand = String(row.line || '').trim().toLowerCase();
+            if (uniqueCode && brand) {
+              const key = `${uniqueCode}|${brand}`;
+              activeMap.set(key, true);
+            }
+          });
+        }
+      });
+      
+      // Wait for all queries to complete
+      await Promise.all(queryPromises);
+      
+      console.log(`[Label Check] Found ${activeMap.size} active customers out of ${customers.length} total`);
     } catch (error) {
       console.error('[Label Check] Error:', error);
     }
@@ -925,7 +941,7 @@ export function CustomerListingPage() {
           username: (activeTab === 'recommend') ? (row.username ?? '') : '', // Only recommend uses username
           brand: row.brand ?? '',
           handler: row.handler ?? '',
-          label: activeTab === 'recommend' ? (row.label ?? 'New') : 'non active', // Default, will be updated below (extra, reactivation, retention use 'non active')
+          label: row.label ?? 'non active', // Default 'non active', will be updated to 'active' if customer exists in database for selected month
           month: row.month ?? getCurrentMonth(),
         }));
 
@@ -943,12 +959,13 @@ export function CustomerListingPage() {
         // This improves initial load time significantly
         if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra' || activeTab === 'recommend') && mappedData.length > 0) {
           // Run active status check asynchronously without blocking UI
-          checkCustomersActiveStatus(mappedData).then((activeMap) => {
+          // Pass customers with month field to check active status for the correct month
+          checkCustomersActiveStatus(mappedData.map(c => ({ uniqueCode: c.uniqueCode, brand: c.brand, month: c.month }))).then((activeMap) => {
             // Update labels based on active status
             setAllCustomers(prevCustomers => {
               const updated = prevCustomers.map(customer => {
                 if (!customer.uniqueCode || !customer.brand) {
-                  return { ...customer, label: activeTab === 'recommend' ? 'New' : 'non active' };
+                  return { ...customer, label: 'non active' };
                 }
                 
                 const uniqueCode = String(customer.uniqueCode).trim().toLowerCase();
@@ -956,9 +973,10 @@ export function CustomerListingPage() {
                 const key = `${uniqueCode}|${brand}`;
                 const isActive = activeMap.has(key);
                 
+                // Label hanya 'active' atau 'non active' berdasarkan apakah customer ada di database untuk bulan yang dipilih
                 return {
                   ...customer,
-                  label: isActive ? 'active' : (activeTab === 'recommend' ? 'New' : 'non active')
+                  label: isActive ? 'active' : 'non active'
                 };
               });
               
@@ -1357,7 +1375,7 @@ export function CustomerListingPage() {
                 unique_code: uniqueCode,
                 brand: brand,
                 handler: handler,
-                label: activeTab === 'recommend' ? 'New' : 'non active', // Default 'non active' untuk reactivation/retention
+                label: 'non active', // Default 'non active', akan di-update menjadi 'active' jika customer ada di database untuk bulan yang dipilih
                 month: finalMonth,
               };
               
@@ -1531,13 +1549,9 @@ export function CustomerListingPage() {
       // Only add username for recommend tab
       if (activeTab === 'recommend') {
         insertData.username = newUser.username || '';
-        // For recommend, label defaults to 'New'
-        insertData.label = 'New';
-      } else {
-        // For reactivation and retention, label will be auto-updated by Supabase based on deposit_cases
-        // Set initial label as 'non active', will be updated automatically if deposit_cases > 0
-        insertData.label = 'non active';
       }
+      // Label selalu 'non active' saat insert, akan di-update menjadi 'active' jika customer ada di database untuk bulan yang dipilih
+      insertData.label = 'non active';
 
       const { error } = await supabase
         .from(tableName)
@@ -1787,7 +1801,7 @@ export function CustomerListingPage() {
                         customer.label === 'non active' ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
                         customer.label === 'VIP' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' :
                         customer.label === 'Premium' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50' :
-                        customer.label === 'New' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50' :
+                        customer.label === 'active' ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
                         'bg-gray-500/20 text-gray-400 border border-gray-500/50'
                       }`}>
                         {customer.label}
