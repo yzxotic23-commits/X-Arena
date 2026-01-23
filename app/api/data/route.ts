@@ -499,13 +499,23 @@ export async function GET(request: NextRequest) {
       brandToSquadMap.set(bm.brand, bm.squad);
     });
 
+    // Get valid brands from brand_mapping (same as Reports)
+    const validBrands = new Set(allBrandMappings.map((bm: any) => bm.brand));
+    console.log('[API] Valid brands from brand_mapping:', Array.from(validBrands));
+
     // 5. Calculate scores for all members (parallel) - ALL USING CYCLE FILTER ✅
     // calculateMemberScore uses cycle to filter data from blue_whale_sgd (Supabase 2)
-    // Filter out any members that might have been removed from squad_mapping
+    // ✅ IMPORTANT: Only calculate scores for members whose brand exists in brand_mapping (same as Reports)
+    // Reports only calculates scores for members whose brand is in squadABrands or squadBBrands
     const validMembers = allMembers.filter(member => {
       // Double-check: ensure member has required fields
       if (!member.username || !member.brand || !member.shift) {
         console.warn('[API] Skipping invalid member:', member);
+        return false;
+      }
+      // ✅ Only include members whose brand exists in brand_mapping (same as Reports)
+      if (!validBrands.has(member.brand)) {
+        console.warn(`[API] Skipping member ${member.username} - brand '${member.brand}' not found in brand_mapping`);
         return false;
       }
       return true;
@@ -537,11 +547,17 @@ export async function GET(request: NextRequest) {
           days_16_19: score.days_16_19,
           days_20_plus: score.days_20_plus,
         });
+        // Get squad from brand_mapping (should always exist since we filtered by validBrands)
+        const squad = brandToSquadMap.get(member.brand);
+        if (!squad) {
+          console.error(`[API] ERROR: Brand '${member.brand}' not found in brandToSquadMap for member ${member.username}`);
+        }
+        
         return {
           username: member.username,
           brand: member.brand,
           shift: member.shift,
-          squad: brandToSquadMap.get(member.brand) || 'Squad A',
+          squad: squad || 'Squad A', // Fallback only if somehow brand is missing (should not happen)
           score: score.score, // Score calculated from cycle-filtered data
           scoreData: score, // Full score data (deposits, retention, etc.) - all cycle-filtered
         };
