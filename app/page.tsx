@@ -424,7 +424,7 @@ function DashboardContent() {
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
         <div className="text-center">
           <p className="text-red-400 text-xl mb-4">Error: No active users found in Squad Mapping</p>
-          <p className="text-muted mb-4">Please ensure users are added to squad_mapping with status 'active'.</p>
+          <p className="text-muted mb-4">Please ensure users are added to squad_mapping with status &apos;active&apos;.</p>
           <button
             onClick={() => fetchSquadUsers()}
             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
@@ -451,7 +451,7 @@ function DashboardContent() {
         <div className="text-center">
           <p className="text-red-400 text-xl mb-4">Error: User not found in Squad Mapping</p>
           <p className="text-muted mb-4">User ID: {userId}</p>
-          <p className="text-muted mb-4">Please ensure the user exists in squad_mapping with status 'active'.</p>
+          <p className="text-muted mb-4">Please ensure the user exists in squad_mapping with status &apos;active&apos;.</p>
           <button
             onClick={() => fetchSquadUsers()}
             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
