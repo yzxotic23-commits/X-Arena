@@ -320,10 +320,11 @@ export async function calculateMemberScore(
       });
       
       // Single query to get all data: active customers with deposit_amount and dates
+      // Note: blue_whale_sgd now uses 'update_unique_code' column (changed from 'unique_code')
       const { data: activeData, error: activeError } = await supabase2
         .from('blue_whale_sgd')
-        .select('unique_code, line, deposit_cases, deposit_amount, date')
-        .in('unique_code', allUniqueCodes)
+        .select('update_unique_code, line, deposit_cases, deposit_amount, date')
+        .in('update_unique_code', allUniqueCodes)
         .eq('line', brand)
         .gte('date', startDateStr)
         .lte('date', endDateStr)
@@ -345,8 +346,9 @@ export async function calculateMemberScore(
         console.log(`[Calculate Score - Library] ${username}: Fetched ${activeData.length} rows from blue_whale_sgd for date range ${startDateStr} to ${endDateStr}`);
         
         // Process all data in one pass - same as leaderboard
+        // Note: blue_whale_sgd now uses 'update_unique_code' column
         activeData.forEach((row: any) => {
-          const uniqueCode = String(row.unique_code || '').trim();
+          const uniqueCode = String(row.update_unique_code || '').trim();
           if (uniqueCode) {
             activeCustomersSet.add(uniqueCode);
             
