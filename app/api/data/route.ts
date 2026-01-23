@@ -915,21 +915,21 @@ export async function GET(request: NextRequest) {
         dashboardData.personal.breakdown.retention + 
         dashboardData.personal.breakdown.activation + 
         dashboardData.personal.breakdown.referral + 
-        dashboardData.personal.breakdown.days_4_7 + 
-        dashboardData.personal.breakdown.days_8_11 + 
-        dashboardData.personal.breakdown.days_12_15 + 
-        dashboardData.personal.breakdown.days_16_19 + 
-        dashboardData.personal.breakdown.days_20_plus : 0,
+        (dashboardData.personal.breakdown.days_4_7 ?? 0) + 
+        (dashboardData.personal.breakdown.days_8_11 ?? 0) + 
+        (dashboardData.personal.breakdown.days_12_15 ?? 0) + 
+        (dashboardData.personal.breakdown.days_16_19 ?? 0) + 
+        (dashboardData.personal.breakdown.days_20_plus ?? 0) : 0,
       match: dashboardData.personal.totalScore === (dashboardData.personal.breakdown ? 
         dashboardData.personal.breakdown.deposit + 
         dashboardData.personal.breakdown.retention + 
         dashboardData.personal.breakdown.activation + 
         dashboardData.personal.breakdown.referral + 
-        dashboardData.personal.breakdown.days_4_7 + 
-        dashboardData.personal.breakdown.days_8_11 + 
-        dashboardData.personal.breakdown.days_12_15 + 
-        dashboardData.personal.breakdown.days_16_19 + 
-        dashboardData.personal.breakdown.days_20_plus : 0) ? '✅ MATCH' : '❌ MISMATCH',
+        (dashboardData.personal.breakdown.days_4_7 ?? 0) + 
+        (dashboardData.personal.breakdown.days_8_11 ?? 0) + 
+        (dashboardData.personal.breakdown.days_12_15 ?? 0) + 
+        (dashboardData.personal.breakdown.days_16_19 ?? 0) + 
+        (dashboardData.personal.breakdown.days_20_plus ?? 0) : 0) ? '✅ MATCH' : '❌ MISMATCH',
       source: '✅ Direct from @/lib/calculate-member-score library',
     });
 
