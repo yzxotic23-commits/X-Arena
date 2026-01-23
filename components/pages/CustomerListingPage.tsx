@@ -328,8 +328,8 @@ export function CustomerListingPage() {
       
       const { data: monthData, error: queryError } = await supabase2
         .from('blue_whale_sgd')
-        .select('unique_code, line, date, deposit_cases')
-        .in('unique_code', uniqueCodes) // Filter by unique_code first
+        .select('update_unique_code, line, date, deposit_cases')
+        .in('update_unique_code', uniqueCodes) // Filter by update_unique_code (blue_whale_sgd now uses update_unique_code column)
         .in('line', uniqueBrands) // Then filter by brand/line
         .gte('date', startDateStr)
         .lte('date', endDateStr)
@@ -345,7 +345,7 @@ export function CustomerListingPage() {
         const { data: altData, error: altError } = await supabase2
           .from('blue_whale_sgd')
           .select('*')
-          .in('unique_code', uniqueCodes) // Filter by unique_code first
+          .in('update_unique_code', uniqueCodes) // Filter by update_unique_code (blue_whale_sgd now uses update_unique_code column)
           .in('line', uniqueBrands) // Then filter by brand/line
           .gte('date', startDateStr)
           .lte('date', endDateStr)
@@ -359,7 +359,7 @@ export function CustomerListingPage() {
         // Process alternative data
         // Column name is deposit_cases (with 's'), not deposit_case
         const processedData = (altData || []).map((row: any) => ({
-          unique_code: row.unique_code || row.uniqueCode || row.code || '',
+          unique_code: row.update_unique_code || row.unique_code || row.uniqueCode || row.code || '',
           line: row.line || row.brand || '',
           date: row.date || row.tanggal || '',
           deposit_cases: parseFloat(row.deposit_cases || row.deposit_case || row.depositCase || row.deposit || row.deposit_amount || 0),
@@ -373,7 +373,7 @@ export function CustomerListingPage() {
         // Matching logic: unique_code AND brand/line must match, AND deposit_cases > 0
         const activeMap = new Map<string, boolean>();
         activeData.forEach((row: any) => {
-          const uniqueCode = String(row.unique_code || '').trim();
+          const uniqueCode = String(row.update_unique_code || row.unique_code || '').trim();
           const brand = String(row.line || '').trim();
           if (uniqueCode && brand) {
             // Key format: uniqueCode|brand (both must match exactly)
@@ -508,7 +508,7 @@ export function CustomerListingPage() {
         const deposit = parseFloat(row.deposit_cases || 0);
         if (deposit > 0) {
           activeRecordCount++;
-          const uniqueCode = String(row.unique_code || '').trim();
+          const uniqueCode = String(row.update_unique_code || row.unique_code || '').trim();
           const brand = String(row.line || '').trim();
           
           // Key format: uniqueCode|brand (both must match)
@@ -754,7 +754,7 @@ export function CustomerListingPage() {
       // Try to get all matching records in one query
       const { data, error } = await supabase2
         .from('blue_whale_sgd')
-        .select('unique_code, line, username, user_name, user')
+        .select('update_unique_code, line, username, user_name, user')
         .in('line', Array.from(new Set(uniqueCombinations.map(c => c.brand))))
         .limit(5000); // Reasonable limit
       
@@ -762,7 +762,7 @@ export function CustomerListingPage() {
         // Create a map for quick lookup
         const dataMap = new Map<string, any>();
         data.forEach((row: any) => {
-          const key = `${row.unique_code || row.uniqueCode || row.code || row.customer_code || ''}|${row.line || row.brand || ''}`;
+          const key = `${row.update_unique_code || row.unique_code || row.uniqueCode || row.code || row.customer_code || ''}|${row.line || row.brand || ''}`;
           if (!dataMap.has(key)) {
             dataMap.set(key, row);
           }
@@ -845,8 +845,8 @@ export function CustomerListingPage() {
       // Query Supabase 2 for active customers (deposit_cases > 0 in current month)
       const { data: monthData, error } = await supabase2
         .from('blue_whale_sgd')
-        .select('unique_code, line, deposit_cases')
-        .in('unique_code', uniqueCodes)
+        .select('update_unique_code, line, deposit_cases')
+        .in('update_unique_code', uniqueCodes)
         .in('line', uniqueBrands)
         .gte('date', startDateStr)
         .lte('date', endDateStr)
