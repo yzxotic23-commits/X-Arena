@@ -119,11 +119,12 @@ function DashboardContent() {
   };
 
   // Fetch squad mappings to populate user dropdown
-  // Use full_name from users_management as identifier for overview (username is only for login)
+  // Squad Mapping is the PRIMARY source for data (username, brand, shift)
+  // User Management is ONLY for getting full_name for display/mapping
   const fetchSquadUsers = useCallback(async () => {
     setLoadingSquadUsers(true);
     
-    // Fetch squad_mapping and join with users_management to get full_name
+    // 1. PRIMARY: Fetch squad_mapping (this is the main data source)
     const { data: squadData, error: squadError } = await supabase
       .from('squad_mapping')
       .select('username, brand, shift')
@@ -131,74 +132,59 @@ function DashboardContent() {
       .order('username', { ascending: true });
 
     if (squadError) {
-      console.error('Failed to fetch squad users', squadError);
+      console.error('[Frontend] Failed to fetch squad_mapping:', squadError);
       setSquadUsers([]);
       setLoadingSquadUsers(false);
       return;
     }
 
-    // Get all usernames to fetch full_name from users_management
-    const usernames = (squadData ?? []).map((row: any) => row.username).filter(Boolean);
+    if (!squadData || squadData.length === 0) {
+      console.warn('[Frontend] No active users found in squad_mapping');
+      setSquadUsers([]);
+      setLoadingSquadUsers(false);
+      return;
+    }
+
+    // 2. SECONDARY: Get full_name from users_management (ONLY for display/mapping)
+    const usernames = squadData.map((row: any) => row.username).filter(Boolean);
     
-    if (usernames.length === 0) {
-      setSquadUsers([]);
-      setLoadingSquadUsers(false);
-      return;
-    }
-
-    // Fetch full_name from users_management
     const { data: usersData, error: usersError } = await supabase
       .from('users_management')
       .select('username, full_name')
       .in('username', usernames)
       .eq('status', 'active');
 
-    if (usersError) {
-      console.error('Failed to fetch user full names', usersError);
-      // Fallback: use username if full_name fetch fails
-      const users = (squadData ?? []).map((row: any) => ({
-        id: row.username ?? row.username ?? 'Unknown',
-        username: row.username ?? 'Unknown',
-        fullName: row.username ?? 'Unknown', // Fallback to username
-        brand: row.brand ?? 'Unknown',
-        shift: row.shift ?? 'Unknown',
-      }));
-      setSquadUsers(users);
-      setLoadingSquadUsers(false);
-      return;
+    // Create map of username -> full_name (from users_management)
+    const fullNameMap = new Map<string, string>();
+    if (!usersError && usersData) {
+      usersData.forEach((user: any) => {
+        if (user.username && user.full_name) {
+          fullNameMap.set(user.username, user.full_name);
+        }
+      });
+    } else if (usersError) {
+      console.warn('[Frontend] Failed to fetch full_name from users_management (will use username):', usersError);
     }
 
-    // Create map of username -> full_name
-    const fullNameMap = new Map<string, string>();
-    (usersData ?? []).forEach((user: any) => {
-      if (user.username && user.full_name) {
-        fullNameMap.set(user.username, user.full_name);
-      }
-    });
-
-    // Combine squad_mapping with full_name from users_management
-    // If full_name not found, use username as id (backward compatibility)
-    const users = (squadData ?? []).map((row: any) => {
+    // 3. Combine: Squad Mapping (data source) + User Management (full_name for display)
+    // Squad Mapping is PRIMARY - always include all users from squad_mapping
+    // full_name from users_management is OPTIONAL - only for display
+    const users = squadData.map((row: any) => {
       const fullName = fullNameMap.get(row.username);
-      // If full_name found, use it as id. Otherwise, use username as id (backward compatibility)
-      const userId = fullName || row.username || 'Unknown';
-      
-      // Log if full_name not found for debugging
-      if (!fullName) {
-        console.warn('[Frontend] Full name not found for username:', row.username, 'using username as id for mapping');
-      }
       
       return {
-        id: userId, // Use full_name if available, otherwise username
-        username: row.username ?? 'Unknown', // Keep username for reference
-        fullName: fullName || row.username || 'Unknown', // Use full_name if available, otherwise username
-        brand: row.brand ?? 'Unknown',
-        shift: row.shift ?? 'Unknown',
+        id: fullName || row.username, // Use full_name if available, otherwise username (Squad Mapping is primary)
+        username: row.username ?? 'Unknown', // From Squad Mapping (PRIMARY)
+        fullName: fullName || row.username || 'Unknown', // From User Management (for display), fallback to username
+        brand: row.brand ?? 'Unknown', // From Squad Mapping (PRIMARY)
+        shift: row.shift ?? 'Unknown', // From Squad Mapping (PRIMARY)
       };
     });
     
-    console.log('[Frontend] Loaded squad users:', users.length, 'users');
-    console.log('[Frontend] Users with full_name:', users.filter(u => u.fullName !== u.username).length, 'users');
+    console.log('[Frontend] Loaded squad users from squad_mapping:', users.length, 'users');
+    console.log('[Frontend] Users with full_name from users_management:', users.filter(u => u.fullName !== u.username).length, 'users');
+    console.log('[Frontend] Users using username (no full_name in users_management):', users.filter(u => u.fullName === u.username).length, 'users');
+    
     setSquadUsers(users);
     setLoadingSquadUsers(false);
   }, []);
@@ -233,30 +219,42 @@ function DashboardContent() {
     };
   }, [showUserDropdown, showMonthDropdown, showCycleDropdown, showDateRangePicker]);
 
-  // Set userId from rankFullName if limited access (locked to their own data), or from first squad user if not limited access
-  // For limited access (operator), use full_name directly for mapping
+  // Set userId from rankFullName if limited access, or from first squad user if not limited access
+  // Squad Mapping is PRIMARY - use username from squad_mapping, full_name from users_management is for display only
   useEffect(() => {
     if (isLimitedAccess && rankFullName) {
-      // For operator: use full_name directly for mapping
-      setUserId(rankFullName);
+      // For operator: use full_name if available, otherwise try to find from squadUsers
+      const operatorUser = squadUsers.find(u => u.fullName === rankFullName || u.username === rankUsername);
+      if (operatorUser) {
+        setUserId(operatorUser.id); // Use id (full_name if available, otherwise username from Squad Mapping)
+        console.log('[Frontend] Using operator user:', operatorUser.id, 'from Squad Mapping');
+      } else if (rankFullName) {
+        setUserId(rankFullName); // Fallback to rankFullName
+        console.log('[Frontend] Using rankFullName for limited access user:', rankFullName);
+      }
     } else if (isLimitedAccess && rankUsername && !rankFullName) {
-      // Fallback: if full_name not available, find matching full_name from squadUsers
+      // Find user from Squad Mapping by username
       const operatorUser = squadUsers.find(u => u.username === rankUsername);
       if (operatorUser) {
-        setUserId(operatorUser.id); // Use full_name as id
-      } else if (squadUsers.length > 0 && !loadingSquadUsers) {
-        // Fallback: if not found, use first user (should not happen)
-        setUserId(squadUsers[0].id);
+        setUserId(operatorUser.id); // Use id (full_name if available, otherwise username from Squad Mapping)
+        console.log('[Frontend] Found operator user from Squad Mapping:', operatorUser.id);
+      } else {
+        console.warn('[Frontend] Operator user not found in Squad Mapping:', rankUsername);
       }
     } else if (!isLimitedAccess && !userId && squadUsers.length > 0 && !loadingSquadUsers) {
-      // Set first user as default if not limited access and no userId set
-      setUserId(squadUsers[0].id); // full_name
+      // Set first user as default from Squad Mapping
+      const firstUser = squadUsers[0];
+      if (firstUser && firstUser.id) {
+        setUserId(firstUser.id); // Use id (full_name if available, otherwise username from Squad Mapping)
+        console.log('[Frontend] Setting default user from Squad Mapping:', firstUser.id);
+      }
     }
   }, [isLimitedAccess, rankUsername, rankFullName, squadUsers, userId, loadingSquadUsers]);
 
-  // Get users list - use squad users if available
+  // Get users list - use squad users from Squad Mapping
   const users = squadUsers.length > 0 ? squadUsers : [];
-  const selectedUser = users.find(u => u.id === userId) || users[0] || { id: userId, username: userId, fullName: userId, brand: '', shift: '' };
+  // Find user by id (id can be full_name or username from Squad Mapping)
+  const selectedUser = users.find(u => u.id === userId) || users[0] || null;
 
   const { data, isLoading: dataLoading, refetch, isFetching } = useQuery<DashboardData>({
     queryKey: ['dashboard', userId, timeFilter, selectedMonth, selectedCycle, refreshKey],
@@ -269,7 +267,25 @@ function DashboardContent() {
       
       // Encode cycle parameter to handle spaces properly
       const encodedCycle = encodeURIComponent(selectedCycle);
-      console.log('[Frontend] Fetching data with cycle:', selectedCycle, 'encoded:', encodedCycle, 'userId:', userId);
+      console.log('[Frontend] ========================================');
+      console.log('[Frontend] ✅ SENDING REQUEST TO API');
+      console.log('[Frontend] ========================================');
+      console.log('[Frontend] Parameters:', {
+        userId,
+        timeFilter,
+        selectedMonth,
+        selectedMonthType: typeof selectedMonth,
+        selectedMonthValue: JSON.stringify(selectedMonth),
+        selectedCycle,
+        selectedCycleType: typeof selectedCycle,
+        selectedCycleValue: JSON.stringify(selectedCycle),
+        encodedCycle,
+        library: '@/lib/calculate-member-score',
+      });
+      console.log('[Frontend] ⚠️ COMPARE WITH LEADERBOARD:');
+      console.log('[Frontend]   - Month:', selectedMonth, '(should match Leaderboard)');
+      console.log('[Frontend]   - Cycle:', selectedCycle, '(should match Leaderboard)');
+      console.log('[Frontend]   - userId:', userId, '(this will be used to find username in API)');
       const response = await fetch(`/api/data?userId=${encodeURIComponent(userId)}&timeFilter=${timeFilter}&month=${selectedMonth}&cycle=${encodedCycle}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -283,7 +299,81 @@ function DashboardContent() {
         }
         throw new Error(errorData.message || errorData.error || `Failed to fetch data: ${response.status}`);
       }
-      return response.json();
+      const jsonData = await response.json();
+      console.log('[Frontend] ========================================');
+      console.log('[Frontend] ✅ DATA FROM LIBRARY calculateMemberScore');
+      console.log('[Frontend] ========================================');
+      
+      // ✅ Log raw JSON data first to see what we're getting
+      console.log('[Frontend] Raw JSON data from API:', {
+        hasPersonal: !!jsonData?.personal,
+        personalTotalScore: jsonData?.personal?.totalScore,
+        personalBreakdown: jsonData?.personal?.breakdown,
+        hasMetadata: !!jsonData?._metadata,
+        metadataUsername: jsonData?._metadata?.username,
+        metadataRawData: jsonData?._metadata?.rawData,
+      });
+      
+      const breakdown = jsonData?.personal?.breakdown;
+      const breakdownSum = breakdown ? 
+        Object.values(breakdown).reduce((sum: number, val: any) => sum + (typeof val === 'number' ? val : 0), 0) : 0;
+      const totalScore = jsonData?.personal?.totalScore;
+      console.log('[Frontend] Received data from API (using library):', {
+        totalScore,
+        breakdown: {
+          deposit: breakdown?.deposit,
+          retention: breakdown?.retention,
+          activation: breakdown?.activation,
+          referral: breakdown?.referral,
+          days_4_7: breakdown?.days_4_7,
+          days_8_11: breakdown?.days_8_11,
+          days_12_15: breakdown?.days_12_15,
+          days_16_19: breakdown?.days_16_19,
+          days_20_plus: breakdown?.days_20_plus,
+        },
+        breakdownSum,
+        match: totalScore === breakdownSum ? '✅ MATCH' : '❌ MISMATCH',
+        source: '✅ @/lib/calculate-member-score (SAME AS LEADERBOARD AND REPORTS)',
+      });
+      console.log('[Frontend] ⚠️ COMPARE WITH LEADERBOARD:');
+      console.log('[Frontend]   - Total Score:', totalScore);
+      console.log('[Frontend]   - Breakdown Sum:', breakdownSum);
+      console.log('[Frontend]   - Match:', totalScore === breakdownSum ? '✅ MATCH' : '❌ MISMATCH');
+      
+      // ✅ Show metadata from API to compare with Leaderboard
+      if (jsonData?._metadata) {
+        console.log('[Frontend] ========================================');
+        console.log('[Frontend] ✅ PARAMETERS USED BY API (from metadata)');
+        console.log('[Frontend] ========================================');
+        console.log('[Frontend]   - Username:', jsonData._metadata.username);
+        console.log('[Frontend]   - Shift:', jsonData._metadata.shift);
+        console.log('[Frontend]   - Brand:', jsonData._metadata.brand);
+        console.log('[Frontend]   - Month:', jsonData._metadata.month);
+        console.log('[Frontend]   - Cycle:', jsonData._metadata.cycle);
+        if (jsonData._metadata.targetPersonal) {
+          console.log('[Frontend]   - TargetPersonal:', jsonData._metadata.targetPersonal);
+        }
+        if (jsonData._metadata.rawData) {
+          console.log('[Frontend]   - Raw Data:', jsonData._metadata.rawData);
+        }
+        console.log('[Frontend] ⚠️ COMPARE WITH LEADERBOARD:');
+        console.log('[Frontend]   - Leaderboard shows: Christal (Shift A, OXSG) with totalScore: 682');
+        console.log('[Frontend]   - Overview shows: totalScore: 379');
+        console.log('[Frontend]   - All parameters match, but results differ!');
+        console.log('[Frontend]   - Check if rawData values match in Leaderboard log!');
+        console.log('[Frontend]   - Look for [Calculate Score - Library] log in console for rawData comparison!');
+      } else {
+        console.warn('[Frontend] ⚠️ Metadata not found in response - check API route');
+      }
+      if (jsonData?._metadata) {
+        console.log('[Frontend]   - Username from API:', jsonData._metadata.username);
+        console.log('[Frontend]   - Shift from API:', jsonData._metadata.shift);
+        console.log('[Frontend]   - Brand from API:', jsonData._metadata.brand);
+        console.log('[Frontend]   - Month from API:', jsonData._metadata.month);
+        console.log('[Frontend]   - Cycle from API:', jsonData._metadata.cycle);
+        console.log('[Frontend] ⚠️ These MUST match Leaderboard for same user!');
+      }
+      return jsonData;
     },
     enabled: !!userId, // Only fetch when userId is available
   });
@@ -328,10 +418,47 @@ function DashboardContent() {
     return <LandingPage />;
   }
 
+  // Show error if no users found in Squad Mapping
+  if (squadUsers.length === 0 && !loadingSquadUsers) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
+        <div className="text-center">
+          <p className="text-red-400 text-xl mb-4">Error: No active users found in Squad Mapping</p>
+          <p className="text-muted mb-4">Please ensure users are added to squad_mapping with status 'active'.</p>
+          <button
+            onClick={() => fetchSquadUsers()}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (dataLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
         <Loading size="lg" text={`Loading ${translations.nav.overview}...`} variant="gaming" />
+      </div>
+    );
+  }
+
+  // Show error if selectedUser is null (user not found in Squad Mapping)
+  if (!selectedUser && !dataLoading && userId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
+        <div className="text-center">
+          <p className="text-red-400 text-xl mb-4">Error: User not found in Squad Mapping</p>
+          <p className="text-muted mb-4">User ID: {userId}</p>
+          <p className="text-muted mb-4">Please ensure the user exists in squad_mapping with status 'active'.</p>
+          <button
+            onClick={() => fetchSquadUsers()}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -423,7 +550,7 @@ function DashboardContent() {
                       >
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          <span className="text-sm font-medium">{translations.overview.user}: {selectedUser?.fullName || selectedUser?.username || userId}</span>
+                          <span className="text-sm font-medium">{translations.overview.user}: {selectedUser?.fullName || 'No user selected'}</span>
                         </div>
                         <ChevronDown className="w-3.5 h-3.5" />
                       </Button>

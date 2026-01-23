@@ -18,6 +18,7 @@ import { Loading } from '@/components/Loading';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import Image from 'next/image';
+import { calculateMemberScore as calculateMemberScoreLib, type TargetPersonal as TargetPersonalType, type MemberScoreData } from '@/lib/calculate-member-score';
 
 interface PodiumUser {
   rank: number;
@@ -42,20 +43,7 @@ interface SquadMappingData {
   avatar_url?: string;
 }
 
-interface MemberScoreData {
-  score: number;
-  deposits: number;
-  retention: number;
-  dormant: number;
-  referrals: number;
-  days_4_7: number;
-  days_8_11: number;
-  days_12_15: number;
-  days_15_17: number;
-  days_16_19: number;
-  days_20_plus: number;
-  totalActiveCustomers: number;
-}
+// MemberScoreData is now imported from library
 
 interface TargetPersonal {
   deposit_amount: number;
@@ -387,7 +375,7 @@ export function LeaderboardPage() {
     }
   }, [selectedMonth]);
 
-  // Calculate member score based on real data - USING CYCLE FILTER ✅
+  // Use calculateMemberScore from library to ensure consistency with Overview and Reports
   const calculateMemberScore = useCallback(async (
     username: string,
     shift: string,
@@ -410,181 +398,21 @@ export function LeaderboardPage() {
       };
     }
 
-    try {
-      // Get date range based on cycle ✅
-      const { startDate, endDate } = getCycleDateRange(selectedMonth, selectedCycle);
-      
-      const formatDateLocal = (date: Date) => {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-      };
-      
-      const startDateStr = formatDateLocal(startDate);
-      const endDateStr = formatDateLocal(endDate);
+    // Convert targetPersonal to TargetPersonalType format
+    const targetPersonalLib: TargetPersonalType = {
+      deposit_amount: targetPersonal.deposit_amount,
+      retention: targetPersonal.retention,
+      reactivation: targetPersonal.reactivation,
+      recommend: targetPersonal.recommend,
+      days_4_7: targetPersonal.days_4_7,
+      days_8_11: targetPersonal.days_8_11,
+      days_12_15: targetPersonal.days_12_15,
+      days_16_19: targetPersonal.days_16_19,
+      days_20_more: targetPersonal.days_20_more,
+    };
 
-      // Get customers from customer listing (including extra)
-      const [retentionCustomers, reactivationCustomers, recommendCustomers, extraCustomers] = await Promise.all([
-        supabase.from('customer_retention').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
-        supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
-        supabase.from('customer_recommend').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
-        supabase.from('customer_extra').select('unique_code, brand').eq('handler', shift).eq('brand', brand),
-      ]);
-
-      const retentionUniqueCodes = (retentionCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
-      const reactivationUniqueCodes = (reactivationCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
-      const recommendUniqueCodes = (recommendCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
-      const extraUniqueCodes = (extraCustomers.data || []).map((c: any) => c.unique_code).filter(Boolean);
-
-      // Include extra customers for deposit and days calculation
-      const allUniqueCodes = Array.from(new Set([
-        ...retentionUniqueCodes,
-        ...reactivationUniqueCodes,
-        ...recommendUniqueCodes,
-        ...extraUniqueCodes, // Extra customers included for deposit and days calculation
-      ]));
-
-      // OPTIMIZED: Single query to get all active customer data (deposit_cases > 0) with dates and deposit_amount
-      const activeCustomersSet = new Set<string>();
-      const customerDeposits = new Map<string, number>(); // Track deposit per customer
-      const customerDaysCount = new Map<string, Set<string>>(); // Track distinct dates per customer
-      let totalDeposit = 0;
-
-      if (allUniqueCodes.length > 0) {
-        // Single query to get all data: active customers with deposit_amount and dates
-        const { data: activeData, error: activeError } = await supabase2
-          .from('blue_whale_sgd')
-          .select('unique_code, line, deposit_cases, deposit_amount, date')
-          .in('unique_code', allUniqueCodes)
-          .eq('line', brand)
-          .gte('date', startDateStr)
-          .lte('date', endDateStr)
-          .gt('deposit_cases', 0)
-          .limit(50000);
-
-        if (activeError) {
-          console.error(`[Leaderboard] Error fetching active customers for ${username}:`, activeError);
-        } else if (activeData) {
-          // Process all data in one pass
-          activeData.forEach((row: any) => {
-            const uniqueCode = String(row.unique_code || '').trim();
-            if (uniqueCode) {
-              activeCustomersSet.add(uniqueCode);
-              
-              // Sum deposit_amount per customer (avoid double counting)
-              const depositAmount = parseFloat(row.deposit_amount || 0) || 0;
-              if (!customerDeposits.has(uniqueCode)) {
-                customerDeposits.set(uniqueCode, 0);
-              }
-              customerDeposits.set(uniqueCode, customerDeposits.get(uniqueCode)! + depositAmount);
-              
-              // Track distinct dates per customer
-              if (!customerDaysCount.has(uniqueCode)) {
-                customerDaysCount.set(uniqueCode, new Set());
-              }
-              customerDaysCount.get(uniqueCode)!.add(row.date);
-            }
-          });
-
-          // Calculate total deposit from unique customers
-          customerDeposits.forEach((deposit) => {
-            totalDeposit += deposit;
-          });
-        }
-      }
-
-      // Calculate counts (ONLY ACTIVE CUSTOMERS)
-      const retentionCount = retentionUniqueCodes.filter(code => activeCustomersSet.has(code)).length;
-      const reactivationCount = reactivationUniqueCodes.filter(code => activeCustomersSet.has(code)).length;
-      const recommendCount = recommendUniqueCodes.filter(code => activeCustomersSet.has(code)).length;
-
-      // Calculate days (4-7, 8-11, etc.) from already processed data
-      const daysCounts = {
-        days_4_7: 0,
-        days_8_11: 0,
-        days_12_15: 0,
-        days_15_17: 0,
-        days_16_19: 0,
-        days_20_plus: 0,
-      };
-
-      // Count ACTIVE customers by number of active days (minimum 4 days)
-      customerDaysCount.forEach((datesSet, uniqueCode) => {
-        if (activeCustomersSet.has(uniqueCode)) {
-          const daysCount = datesSet.size;
-          if (daysCount >= 4 && daysCount <= 7) daysCounts.days_4_7++;
-          else if (daysCount >= 8 && daysCount <= 11) daysCounts.days_8_11++;
-          else if (daysCount >= 12 && daysCount <= 14) daysCounts.days_12_15++;
-          else if (daysCount >= 15 && daysCount <= 17) daysCounts.days_15_17++;
-          else if (daysCount >= 18 && daysCount <= 19) daysCounts.days_16_19++;
-          else if (daysCount >= 20) daysCounts.days_20_plus++;
-        }
-      });
-
-      // Calculate scores
-      if (!targetPersonal) {
-        return {
-          score: 0,
-          deposits: totalDeposit,
-          retention: retentionCount,
-          dormant: reactivationCount,
-          referrals: recommendCount,
-          days_4_7: daysCounts.days_4_7,
-          days_8_11: daysCounts.days_8_11,
-          days_12_15: daysCounts.days_12_15,
-          days_15_17: daysCounts.days_15_17,
-          days_16_19: daysCounts.days_16_19,
-          days_20_plus: daysCounts.days_20_plus,
-          totalActiveCustomers: activeCustomersSet.size,
-        };
-      }
-
-      const depositScore = totalDeposit * targetPersonal.deposit_amount;
-      const retentionScore = retentionCount * targetPersonal.retention;
-      const reactivationScore = reactivationCount * targetPersonal.reactivation;
-      const recommendScore = recommendCount * targetPersonal.recommend;
-      const days4_7Score = daysCounts.days_4_7 * targetPersonal.days_4_7;
-      const days8_11Score = daysCounts.days_8_11 * targetPersonal.days_8_11;
-      const days12_15Score = daysCounts.days_12_15 * targetPersonal.days_12_15;
-      const days15_17Score = daysCounts.days_15_17 * targetPersonal.days_15_17;
-      const days16_19Score = daysCounts.days_16_19 * targetPersonal.days_16_19;
-      const days20PlusScore = daysCounts.days_20_plus * targetPersonal.days_20_more;
-
-      const totalScore = depositScore + retentionScore + reactivationScore + recommendScore +
-        days4_7Score + days8_11Score + days12_15Score + days15_17Score + days16_19Score + days20PlusScore;
-
-      return {
-        score: Math.round(totalScore),
-        deposits: totalDeposit,
-        retention: retentionCount,
-        dormant: reactivationCount,
-        referrals: recommendCount,
-        days_4_7: daysCounts.days_4_7,
-        days_8_11: daysCounts.days_8_11,
-        days_12_15: daysCounts.days_12_15,
-        days_15_17: daysCounts.days_15_17,
-        days_16_19: daysCounts.days_16_19,
-        days_20_plus: daysCounts.days_20_plus,
-        totalActiveCustomers: activeCustomersSet.size,
-      };
-    } catch (error) {
-      console.error(`[Leaderboard] Error calculating score for ${username}:`, error);
-      return {
-        score: 0,
-        deposits: 0,
-        retention: 0,
-        dormant: 0,
-        referrals: 0,
-        days_4_7: 0,
-        days_8_11: 0,
-        days_12_15: 0,
-        days_15_17: 0,
-        days_16_19: 0,
-        days_20_plus: 0,
-        totalActiveCustomers: 0,
-      };
-    }
+    // Use library function - same as Overview
+    return await calculateMemberScoreLib(username, shift, brand, targetPersonalLib, selectedMonth, selectedCycle);
   }, [targetPersonal, selectedMonth, selectedCycle]);
 
   // Calculate scores for all members
@@ -600,9 +428,104 @@ export function LeaderboardPage() {
     // OPTIMIZED: Process all members in parallel
     const activeMappings = squadMappings.filter(m => m.status === 'active');
     
+    // ✅ Log Leaderboard parameters for comparison
+    console.log('[Leaderboard] ========================================');
+    console.log('[Leaderboard] ✅ CALCULATING SCORES FOR ALL MEMBERS');
+    console.log('[Leaderboard] ========================================');
+    console.log('[Leaderboard] Global parameters:', {
+      selectedMonth,
+      selectedMonthType: typeof selectedMonth,
+      selectedMonthValue: JSON.stringify(selectedMonth),
+      selectedCycle,
+      selectedCycleType: typeof selectedCycle,
+      selectedCycleValue: JSON.stringify(selectedCycle),
+      totalMembers: activeMappings.length,
+      library: '@/lib/calculate-member-score',
+    });
+    console.log('[Leaderboard] ⚠️ COMPARE WITH OVERVIEW: Check if month and cycle match!');
+    
     // Calculate scores for all members in parallel
     const scorePromises = activeMappings.map(async (mapping) => {
+      // ✅ Log parameters for current user to compare with Overview
+      const mappingFullName = (mapping as any).fullName || mapping.username;
+      const isCurrentUser = (userInfo?.username === mapping.username) || (rankUsername === mapping.username) ||
+                            (userInfo?.fullName === mappingFullName) || (rankFullName === mappingFullName);
+      // ✅ Also log for "Christal" specifically for debugging
+      const isChristal = mapping.username === 'Christal';
+      if (isCurrentUser || isChristal) {
+        console.log('[Leaderboard] ========================================');
+        console.log('[Leaderboard] ✅ CALLING LIBRARY for current user');
+        console.log('[Leaderboard] ========================================');
+        console.log('[Leaderboard] Parameters:', {
+          username: mapping.username,
+          shift: mapping.shift,
+          brand: mapping.brand,
+          selectedMonth,
+          selectedMonthType: typeof selectedMonth,
+          selectedCycle,
+          selectedCycleType: typeof selectedCycle,
+          selectedCycleValue: JSON.stringify(selectedCycle),
+          library: '@/lib/calculate-member-score',
+        });
+        console.log('[Leaderboard] TargetPersonal used:', {
+          deposit_amount: targetPersonal?.deposit_amount,
+          retention: targetPersonal?.retention,
+          reactivation: targetPersonal?.reactivation,
+          recommend: targetPersonal?.recommend,
+          days_4_7: targetPersonal?.days_4_7,
+          days_8_11: targetPersonal?.days_8_11,
+          days_12_15: targetPersonal?.days_12_15,
+          days_16_19: targetPersonal?.days_16_19,
+          days_20_more: targetPersonal?.days_20_more,
+        });
+        console.log('[Leaderboard] ⚠️ COMPARE WITH OVERVIEW:');
+        console.log('[Leaderboard]   - Check if month and cycle match!');
+        console.log('[Leaderboard]   - Check if targetPersonal values match!');
+      }
       const scoreData = await calculateMemberScore(mapping.username, mapping.shift, mapping.brand);
+      if (isCurrentUser || isChristal) {
+        console.log('[Leaderboard] ========================================');
+        console.log('[Leaderboard] ✅ LIBRARY RETURNED FOR CURRENT USER');
+        console.log('[Leaderboard] ========================================');
+        console.log('[Leaderboard] Score result:', {
+          score: scoreData.score,
+          breakdown: scoreData.breakdown,
+          breakdownSum: scoreData.breakdown ? 
+            scoreData.breakdown.deposit + 
+            scoreData.breakdown.retention + 
+            scoreData.breakdown.activation + 
+            scoreData.breakdown.referral + 
+            scoreData.breakdown.days_4_7 + 
+            scoreData.breakdown.days_8_11 + 
+            scoreData.breakdown.days_12_15 + 
+            scoreData.breakdown.days_16_19 + 
+            scoreData.breakdown.days_20_plus : 0,
+          match: scoreData.breakdown && (scoreData.breakdown.deposit + 
+            scoreData.breakdown.retention + 
+            scoreData.breakdown.activation + 
+            scoreData.breakdown.referral + 
+            scoreData.breakdown.days_4_7 + 
+            scoreData.breakdown.days_8_11 + 
+            scoreData.breakdown.days_12_15 + 
+            scoreData.breakdown.days_16_19 + 
+            scoreData.breakdown.days_20_plus) === scoreData.score ? '✅ MATCH' : '❌ MISMATCH',
+        });
+        console.log('[Leaderboard] Raw Data:', {
+          deposits: scoreData.deposits,
+          retention: scoreData.retention,
+          dormant: scoreData.dormant,
+          referrals: scoreData.referrals,
+          days_4_7: scoreData.days_4_7,
+          days_8_11: scoreData.days_8_11,
+          days_12_15: scoreData.days_12_15,
+          days_16_19: scoreData.days_16_19,
+          days_20_plus: scoreData.days_20_plus,
+          totalActiveCustomers: scoreData.totalActiveCustomers,
+        });
+        console.log('[Leaderboard] ⚠️ COMPARE WITH OVERVIEW:');
+        console.log('[Leaderboard]   - Overview shows: deposits: 48622.65, retention: 31, dormant: 4, referrals: 0, days_4_7: 11, totalScore: 379');
+        console.log('[Leaderboard]   - If raw data different, that explains the difference!');
+      }
       return { username: mapping.username, scoreData };
     });
 
