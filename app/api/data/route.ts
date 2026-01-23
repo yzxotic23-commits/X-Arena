@@ -1032,6 +1032,13 @@ export async function GET(request: NextRequest) {
           days_20_plus: memberScore.days_20_plus,
           totalActiveCustomers: memberScore.totalActiveCustomers,
         },
+        // ✅ Add detailed comparison info for debugging
+        comparison: {
+          note: 'Compare these values with Leaderboard log for the same user',
+          expectedMatch: 'If all parameters match, rawData should be identical',
+          ifDifferent: 'If rawData differs, check: 1) Date range, 2) customer_extra count, 3) blue_whale_sgd data',
+          checkServerLogs: 'Check Vercel Function Logs for [Calculate Score - Library] logs to see customer_extra count',
+        },
         source: 'library',
         // ✅ Add environment info to help debug production issues
         environment: {

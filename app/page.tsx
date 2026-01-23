@@ -355,6 +355,22 @@ function DashboardContent() {
         }
         if (jsonData._metadata.rawData) {
           console.log('[Frontend]   - Raw Data:', jsonData._metadata.rawData);
+          console.log('[Frontend] ⚠️ COMPARE RAW DATA WITH LEADERBOARD:');
+          console.log('[Frontend]   - Deposits:', jsonData._metadata.rawData.deposits, '(should match Leaderboard)');
+          console.log('[Frontend]   - Retention:', jsonData._metadata.rawData.retention, '(should match Leaderboard)');
+          console.log('[Frontend]   - Dormant:', jsonData._metadata.rawData.dormant, '(should match Leaderboard)');
+          console.log('[Frontend]   - Referrals:', jsonData._metadata.rawData.referrals, '(should match Leaderboard)');
+          console.log('[Frontend]   - Days 4-7:', jsonData._metadata.rawData.days_4_7, '(should match Leaderboard)');
+          console.log('[Frontend]   - Days 8-11:', jsonData._metadata.rawData.days_8_11, '(should match Leaderboard)');
+          console.log('[Frontend]   - Days 12-15:', jsonData._metadata.rawData.days_12_15, '(should match Leaderboard)');
+          console.log('[Frontend]   - Days 16-19:', jsonData._metadata.rawData.days_16_19, '(should match Leaderboard)');
+          console.log('[Frontend]   - Days 20+:', jsonData._metadata.rawData.days_20_plus, '(should match Leaderboard)');
+          console.log('[Frontend]   - Total Active Customers:', jsonData._metadata.rawData.totalActiveCustomers, '(should match Leaderboard)');
+          console.log('[Frontend] ⚠️ If raw data differs, check Vercel Function Logs for [Calculate Score - Library] logs');
+          console.log('[Frontend]   Look for: customer_extra count, blue_whale_sgd query results, date range');
+        }
+        if (jsonData._metadata.comparison) {
+          console.log('[Frontend] 📋 Comparison Guide:', jsonData._metadata.comparison);
         }
         // ✅ Show environment info to help debug production issues
         if (jsonData._metadata.environment) {
