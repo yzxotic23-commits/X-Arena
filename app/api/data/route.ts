@@ -653,11 +653,11 @@ export async function GET(request: NextRequest) {
         contribution.breakdown.retention + 
         contribution.breakdown.activation + 
         contribution.breakdown.referral + 
-        contribution.breakdown.days_4_7 + 
-        contribution.breakdown.days_8_11 + 
-        contribution.breakdown.days_12_15 + 
-        contribution.breakdown.days_16_19 + 
-        contribution.breakdown.days_20_plus,
+        (contribution.breakdown.days_4_7 ?? 0) + 
+        (contribution.breakdown.days_8_11 ?? 0) + 
+        (contribution.breakdown.days_12_15 ?? 0) + 
+        (contribution.breakdown.days_16_19 ?? 0) + 
+        (contribution.breakdown.days_20_plus ?? 0),
       totalScore: contribution.totalScore,
       match: contribution.totalScore === (memberScore.breakdown ? 
         memberScore.breakdown.deposit + 
