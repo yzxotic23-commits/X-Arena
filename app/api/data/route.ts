@@ -1051,6 +1051,12 @@ export async function GET(request: NextRequest) {
           expectedMatch: 'If all parameters match, rawData should be identical',
           ifDifferent: 'If rawData differs, check: 1) Date range, 2) customer_extra count, 3) blue_whale_sgd data',
           checkServerLogs: 'Check Vercel Function Logs for [Calculate Score - Library] logs to see customer_extra count',
+          troubleshooting: {
+            step1: 'Compare date range (startDate, endDate) between production and local',
+            step2: 'Compare customer_extra count from Vercel Function Logs',
+            step3: 'Compare blue_whale_sgd recordCount from Vercel Function Logs',
+            step4: 'If all match but results differ, check targetPersonal values',
+          },
         },
         source: 'library',
         // ✅ Add date range for comparison

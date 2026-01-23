@@ -308,6 +308,17 @@ export async function calculateMemberScore(
     let totalDeposit = 0;
 
     if (allUniqueCodes.length > 0) {
+      // ✅ CRITICAL: Log query parameters for blue_whale_sgd
+      console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}) - blue_whale_sgd query parameters:`, {
+        uniqueCodesCount: allUniqueCodes.length,
+        brand: brand,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        startDateISO: startDate.toISOString(),
+        endDateISO: endDate.toISOString(),
+        note: '⚠️ Compare these values with local - if different, results will differ!',
+      });
+      
       // Single query to get all data: active customers with deposit_amount and dates
       const { data: activeData, error: activeError } = await supabase2
         .from('blue_whale_sgd')
@@ -318,6 +329,15 @@ export async function calculateMemberScore(
         .lte('date', endDateStr)
         .gt('deposit_cases', 0)
         .limit(50000);
+
+      // ✅ CRITICAL: Log query results for comparison
+      console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}) - blue_whale_sgd query results:`, {
+        recordCount: activeData?.length || 0,
+        hasError: !!activeError,
+        errorMessage: activeError?.message,
+        errorCode: activeError?.code,
+        note: '⚠️ Compare this recordCount with local - if different, deposits and days will differ!',
+      });
 
       if (activeError) {
         console.error(`[Calculate Score] Error fetching active customers for ${username}:`, activeError);
