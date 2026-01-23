@@ -416,9 +416,22 @@ export async function GET(request: NextRequest) {
     
     const memberScore = await calculateMemberScore(squadUsername, shift, brand, targetPersonal, selectedMonth, normalizedCycle);
     
+    // ✅ Calculate date range for logging
+    const { startDate: apiStartDate, endDate: apiEndDate } = getCycleDateRange(selectedMonth, normalizedCycle);
+    const startDateStr = formatDateLocal(apiStartDate);
+    const endDateStr = formatDateLocal(apiEndDate);
+    
     console.log('[API] ========================================');
     console.log('[API] ✅ LIBRARY FUNCTION RETURNED');
     console.log('[API] ========================================');
+    console.log('[API] ⚠️ CRITICAL: Compare these values with local/Leaderboard:');
+    console.log('[API] Date Range:', {
+      startDate: startDateStr,
+      endDate: endDateStr,
+      cycle: normalizedCycle,
+      month: selectedMonth,
+      note: '⚠️ If date range differs from local, raw data will differ!',
+    });
     console.log('[API] Member score result from library:', {
       score: memberScore.score,
       deposits: memberScore.deposits,
@@ -1040,6 +1053,14 @@ export async function GET(request: NextRequest) {
           checkServerLogs: 'Check Vercel Function Logs for [Calculate Score - Library] logs to see customer_extra count',
         },
         source: 'library',
+        // ✅ Add date range for comparison
+        dateRange: {
+          startDate: startDateStr,
+          endDate: endDateStr,
+          cycle: normalizedCycle,
+          month: selectedMonth,
+          note: '⚠️ Compare this date range with local/Leaderboard - if different, raw data will differ!',
+        },
         // ✅ Add environment info to help debug production issues
         environment: {
           hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,

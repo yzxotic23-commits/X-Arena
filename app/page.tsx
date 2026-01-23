@@ -350,6 +350,14 @@ function DashboardContent() {
         console.log('[Frontend]   - Brand:', jsonData._metadata.brand);
         console.log('[Frontend]   - Month:', jsonData._metadata.month);
         console.log('[Frontend]   - Cycle:', jsonData._metadata.cycle);
+        if (jsonData._metadata.dateRange) {
+          console.log('[Frontend] ⚠️ DATE RANGE (CRITICAL FOR COMPARISON):');
+          console.log('[Frontend]   - Start Date:', jsonData._metadata.dateRange.startDate);
+          console.log('[Frontend]   - End Date:', jsonData._metadata.dateRange.endDate);
+          console.log('[Frontend]   - Cycle:', jsonData._metadata.dateRange.cycle);
+          console.log('[Frontend]   - Month:', jsonData._metadata.dateRange.month);
+          console.log('[Frontend] ⚠️ If date range differs from local/Leaderboard, raw data will differ!');
+        }
         if (jsonData._metadata.targetPersonal) {
           console.log('[Frontend]   - TargetPersonal:', jsonData._metadata.targetPersonal);
         }
