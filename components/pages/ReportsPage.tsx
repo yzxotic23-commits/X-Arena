@@ -340,6 +340,7 @@ export function ReportsPage() {
         days_4_7: 0,
         days_8_11: 0,
         days_12_15: 0,
+        days_15_17: 0, // Keep for backward compatibility but not used in calculation
         days_16_19: 0,
         days_20_plus: 0,
         totalActiveCustomers: 0,
