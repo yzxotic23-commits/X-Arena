@@ -14,8 +14,19 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 let supabaseServer: SupabaseClient;
 
+// ✅ CRITICAL: Log environment info to help debug production issues
+const envInfo = {
+  hasServiceRoleKey: !!supabaseServiceRoleKey,
+  serviceRoleKeyLength: supabaseServiceRoleKey?.length || 0,
+  hasSupabaseUrl: !!supabaseUrl,
+  environment: process.env.NODE_ENV || 'unknown',
+  isProduction: process.env.NODE_ENV === 'production',
+  isVercel: !!process.env.VERCEL,
+  vercelEnv: process.env.VERCEL_ENV || 'unknown',
+};
+
 if (supabaseServiceRoleKey && supabaseUrl) {
-  console.log('[Supabase Server] Using service_role key (bypasses RLS)');
+  console.log('[Supabase Server] ✅ Using service_role key (bypasses RLS)', envInfo);
   supabaseServer = createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,
@@ -23,7 +34,12 @@ if (supabaseServiceRoleKey && supabaseUrl) {
     },
   });
 } else {
-  console.warn('[Supabase Server] SUPABASE_SERVICE_ROLE_KEY not found, using anon key (respects RLS)');
+  console.warn('[Supabase Server] ⚠️ SUPABASE_SERVICE_ROLE_KEY not found, using anon key (respects RLS)', {
+    ...envInfo,
+    message: 'This will cause customer_extra to return 0 records in production',
+    action: 'Check Vercel Dashboard > Settings > Environment Variables > SUPABASE_SERVICE_ROLE_KEY',
+    note: 'After adding environment variable, you MUST redeploy the application',
+  });
   // Fallback to anon key if service_role key is not available
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {

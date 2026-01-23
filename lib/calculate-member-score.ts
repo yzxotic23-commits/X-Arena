@@ -10,10 +10,23 @@ const useServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseClient = useServiceRole ? supabaseServer : supabase;
 
 // Log which client is being used (only once when module loads)
+// ✅ CRITICAL: Log environment info to help debug production issues
+const envInfo = {
+  hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  serviceRoleKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
+  environment: process.env.NODE_ENV || 'unknown',
+  isProduction: process.env.NODE_ENV === 'production',
+  isVercel: !!process.env.VERCEL,
+};
+
 if (useServiceRole) {
-  console.log('[Calculate Score - Library] ✅ Using service_role key for customer_extra (bypasses RLS)');
+  console.log('[Calculate Score - Library] ✅ Using service_role key for customer_extra (bypasses RLS)', envInfo);
 } else {
-  console.warn('[Calculate Score - Library] ⚠️ Using anon key for customer_extra (respects RLS) - if customer_extra returns 0 records, setup SUPABASE_SERVICE_ROLE_KEY in .env.local');
+  console.warn('[Calculate Score - Library] ⚠️ Using anon key for customer_extra (respects RLS)', {
+    ...envInfo,
+    message: 'if customer_extra returns 0 records, setup SUPABASE_SERVICE_ROLE_KEY in Vercel Environment Variables',
+    action: 'Check Vercel Dashboard > Settings > Environment Variables > SUPABASE_SERVICE_ROLE_KEY',
+  });
 }
 
 // Helper function to get date range based on cycle (same as leaderboard)

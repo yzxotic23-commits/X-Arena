@@ -493,7 +493,19 @@ export async function GET(request: NextRequest) {
       console.warn('[API] WARNING: WB-A001 found in active members from Supabase!', wbA001);
     }
 
-    // Create a map for quick lookup
+    // Create squad brand lists (same as Reports)
+    // Reports uses squadABrands and squadBBrands to determine which squad a member belongs to
+    const squadABrands = (allBrandMappings || [])
+      .filter((bm: any) => bm.squad === 'Squad A')
+      .map((bm: any) => bm.brand)
+      .filter(Boolean);
+    
+    const squadBBrands = (allBrandMappings || [])
+      .filter((bm: any) => bm.squad === 'Squad B')
+      .map((bm: any) => bm.brand)
+      .filter(Boolean);
+
+    // Create a map for quick lookup (for determining squad)
     const brandToSquadMap = new Map<string, string>();
     allBrandMappings.forEach((bm: any) => {
       brandToSquadMap.set(bm.brand, bm.squad);
@@ -502,6 +514,8 @@ export async function GET(request: NextRequest) {
     // Get valid brands from brand_mapping (same as Reports)
     const validBrands = new Set(allBrandMappings.map((bm: any) => bm.brand));
     console.log('[API] Valid brands from brand_mapping:', Array.from(validBrands));
+    console.log('[API] Squad A brands (same as Reports):', squadABrands);
+    console.log('[API] Squad B brands (same as Reports):', squadBBrands);
 
     // 5. Calculate scores for all members (parallel) - ALL USING CYCLE FILTER ✅
     // calculateMemberScore uses cycle to filter data from blue_whale_sgd (Supabase 2)
@@ -547,17 +561,25 @@ export async function GET(request: NextRequest) {
           days_16_19: score.days_16_19,
           days_20_plus: score.days_20_plus,
         });
-        // Get squad from brand_mapping (should always exist since we filtered by validBrands)
-        const squad = brandToSquadMap.get(member.brand);
-        if (!squad) {
-          console.error(`[API] ERROR: Brand '${member.brand}' not found in brandToSquadMap for member ${member.username}`);
+        // Determine squad using same logic as Reports
+        // Reports uses: if (squadABrands.includes(member.brand)) → Squad A
+        //              else if (squadBBrands.includes(member.brand)) → Squad B
+        let squad: string;
+        if (squadABrands.includes(member.brand)) {
+          squad = 'Squad A';
+        } else if (squadBBrands.includes(member.brand)) {
+          squad = 'Squad B';
+        } else {
+          // This should not happen since we filtered by validBrands
+          console.error(`[API] ERROR: Brand '${member.brand}' not found in squadABrands or squadBBrands for member ${member.username}`);
+          squad = brandToSquadMap.get(member.brand) || 'Squad A'; // Fallback
         }
         
         return {
           username: member.username,
           brand: member.brand,
           shift: member.shift,
-          squad: squad || 'Squad A', // Fallback only if somehow brand is missing (should not happen)
+          squad: squad,
           score: score.score, // Score calculated from cycle-filtered data
           scoreData: score, // Full score data (deposits, retention, etc.) - all cycle-filtered
         };
@@ -579,7 +601,9 @@ export async function GET(request: NextRequest) {
     const squadTotalDepositAmount = squadMembers.reduce((sum, m) => sum + (m.scoreData?.deposits || 0), 0);
 
     // Log squad calculation details (same as Reports)
-    console.log(`[API] Squad ${userSquad} calculation:`);
+    console.log(`[API] ========================================`);
+    console.log(`[API] Squad ${userSquad} calculation (should match Reports):`);
+    console.log(`[API] ========================================`);
     console.log(`[API] Squad members count: ${squadMembers.length}`);
     console.log(`[API] Squad members with scores:`, squadMembers.map(m => ({
       username: m.username,
@@ -589,6 +613,14 @@ export async function GET(request: NextRequest) {
     })));
     console.log(`[API] Squad total score (sum of all member scores): ${squadTotalScore}`);
     console.log(`[API] Squad total deposit amount: ${squadTotalDepositAmount}`);
+    
+    // Calculate squad total score manually to verify (same as Reports)
+    const manualSquadTotalScore = squadMembers.reduce((sum, m) => {
+      const score = m.score || 0;
+      console.log(`[API]   - ${m.username} (${m.brand}, ${m.shift}): ${score}`);
+      return sum + score;
+    }, 0);
+    console.log(`[API] Manual calculation verification: ${manualSquadTotalScore} (should match ${squadTotalScore})`);
 
     // 8. Determine squad status (compare with other squad)
     const otherSquad = userSquad === 'Squad A' ? 'Squad B' : 'Squad A';
@@ -596,8 +628,26 @@ export async function GET(request: NextRequest) {
     const otherSquadTotalScore = otherSquadMembers.reduce((sum, m) => sum + m.score, 0);
     const squadStatus: 'Leading' | 'Behind' = squadTotalScore > otherSquadTotalScore ? 'Leading' : 'Behind';
     
+    console.log(`[API] ========================================`);
+    console.log(`[API] Other squad (${otherSquad}) calculation (should match Reports):`);
+    console.log(`[API] ========================================`);
+    console.log(`[API] Other squad members count: ${otherSquadMembers.length}`);
+    console.log(`[API] Other squad members with scores:`, otherSquadMembers.map(m => ({
+      username: m.username,
+      brand: m.brand,
+      shift: m.shift,
+      score: m.score
+    })));
     console.log(`[API] Other squad (${otherSquad}) total score: ${otherSquadTotalScore}`);
     console.log(`[API] Squad status: ${squadStatus} (gap: ${squadTotalScore - otherSquadTotalScore})`);
+    console.log(`[API] ========================================`);
+    console.log(`[API] ⚠️ COMPARE WITH REPORTS:`);
+    console.log(`[API]   - Reports Squad A total score: (check Reports page)`);
+    console.log(`[API]   - Reports Squad B total score: (check Reports page)`);
+    console.log(`[API]   - Overview Squad ${userSquad} total score: ${squadTotalScore}`);
+    console.log(`[API]   - Overview Squad ${otherSquad} total score: ${otherSquadTotalScore}`);
+    console.log(`[API]   - These MUST match Reports for same month and cycle!`);
+    console.log(`[API] ========================================`);
 
     // 9. Calculate level and gap to next target (permanent targets: 1000, 1500, 2000)
     const level = getLevel(memberScore.score);
@@ -983,6 +1033,18 @@ export async function GET(request: NextRequest) {
           totalActiveCustomers: memberScore.totalActiveCustomers,
         },
         source: 'library',
+        // ✅ Add environment info to help debug production issues
+        environment: {
+          hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          serviceRoleKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
+          isProduction: process.env.NODE_ENV === 'production',
+          isVercel: !!process.env.VERCEL,
+          vercelEnv: process.env.VERCEL_ENV || 'unknown',
+          // ⚠️ WARNING: If hasServiceRoleKey is false in production, customer_extra will return 0 records
+          warning: !process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NODE_ENV === 'production' 
+            ? '⚠️ SUPABASE_SERVICE_ROLE_KEY not found in production! Check Vercel Environment Variables and redeploy.'
+            : null,
+        },
       },
     };
 

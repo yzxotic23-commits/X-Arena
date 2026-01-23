@@ -356,9 +356,30 @@ function DashboardContent() {
         if (jsonData._metadata.rawData) {
           console.log('[Frontend]   - Raw Data:', jsonData._metadata.rawData);
         }
+        // ✅ Show environment info to help debug production issues
+        if (jsonData._metadata.environment) {
+          console.log('[Frontend] ========================================');
+          console.log('[Frontend] ✅ ENVIRONMENT INFO (from API):');
+          console.log('[Frontend] ========================================');
+          console.log('[Frontend]   - Has Service Role Key:', jsonData._metadata.environment.hasServiceRoleKey);
+          console.log('[Frontend]   - Service Role Key Length:', jsonData._metadata.environment.serviceRoleKeyLength);
+          console.log('[Frontend]   - Is Production:', jsonData._metadata.environment.isProduction);
+          console.log('[Frontend]   - Is Vercel:', jsonData._metadata.environment.isVercel);
+          console.log('[Frontend]   - Vercel Env:', jsonData._metadata.environment.vercelEnv);
+          if (jsonData._metadata.environment.warning) {
+            console.warn('[Frontend] ⚠️', jsonData._metadata.environment.warning);
+          }
+          if (!jsonData._metadata.environment.hasServiceRoleKey && jsonData._metadata.environment.isProduction) {
+            console.error('[Frontend] ❌ ERROR: SUPABASE_SERVICE_ROLE_KEY not found in production!');
+            console.error('[Frontend]   Action: Go to Vercel Dashboard > Settings > Environment Variables');
+            console.error('[Frontend]   Add: SUPABASE_SERVICE_ROLE_KEY = (your service_role key)');
+            console.error('[Frontend]   Then: Redeploy the application');
+          }
+          console.log('[Frontend] ========================================');
+        }
         console.log('[Frontend] ⚠️ COMPARE WITH LEADERBOARD:');
         console.log('[Frontend]   - Leaderboard shows: Christal (Shift A, OXSG) with totalScore: 682');
-        console.log('[Frontend]   - Overview shows: totalScore: 379');
+        console.log('[Frontend]   - Overview shows: totalScore:', totalScore);
         console.log('[Frontend]   - All parameters match, but results differ!');
         console.log('[Frontend]   - Check if rawData values match in Leaderboard log!');
         console.log('[Frontend]   - Look for [Calculate Score - Library] log in console for rawData comparison!');
