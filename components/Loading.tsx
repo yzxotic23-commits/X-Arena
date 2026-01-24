@@ -105,13 +105,13 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
     return (
       <div className="flex flex-col items-center justify-center gap-2">
         {/* Mario Character Animation */}
-        <div className="relative mb-0.5" style={{ width: marioSize * 2, height: marioSize * 1.5 }}>
+        <div className="relative mb-0.5" style={{ width: `${marioSize * 2}px`, height: `${marioSize * 1.5}px` }}>
           {/* Mario Character */}
           <motion.div
             className="relative"
             style={{
-              width: marioSize,
-              height: marioSize,
+              width: `${marioSize}px`,
+              height: `${marioSize}px`,
             }}
             animate={{
               x: [0, marioSize, 0],
@@ -127,10 +127,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <div 
               className="absolute rounded-t-full"
               style={{
-                width: marioSize * 0.6,
-                height: marioSize * 0.3,
-                top: 0,
-                left: marioSize * 0.2,
+                width: `${marioSize * 0.6}px`,
+                height: `${marioSize * 0.3}px`,
+                top: '0px',
+                left: `${marioSize * 0.2}px`,
                 background: isDark ? '#E60012' : '#DC2626',
                 border: `2px solid ${isDark ? '#CC0000' : '#B91C1C'}`,
               }}
@@ -139,10 +139,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <div 
               className="absolute rounded-full"
               style={{
-                width: marioSize * 0.5,
-                height: marioSize * 0.5,
-                top: marioSize * 0.25,
-                left: marioSize * 0.25,
+                width: `${marioSize * 0.5}px`,
+                height: `${marioSize * 0.5}px`,
+                top: `${marioSize * 0.25}px`,
+                left: `${marioSize * 0.25}px`,
                 background: isDark ? '#FFDBAC' : '#FED7AA',
                 border: `2px solid ${isDark ? '#E6C99A' : '#FBBF24'}`,
               }}
@@ -151,20 +151,20 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <div 
               className="absolute rounded-full"
               style={{
-                width: marioSize * 0.08,
-                height: marioSize * 0.08,
-                top: marioSize * 0.35,
-                left: marioSize * 0.35,
+                width: `${marioSize * 0.08}px`,
+                height: `${marioSize * 0.08}px`,
+                top: `${marioSize * 0.35}px`,
+                left: `${marioSize * 0.35}px`,
                 background: '#000',
               }}
             />
             <div 
               className="absolute rounded-full"
               style={{
-                width: marioSize * 0.08,
-                height: marioSize * 0.08,
-                top: marioSize * 0.35,
-                right: marioSize * 0.35,
+                width: `${marioSize * 0.08}px`,
+                height: `${marioSize * 0.08}px`,
+                top: `${marioSize * 0.35}px`,
+                right: `${marioSize * 0.35}px`,
                 background: '#000',
               }}
             />
@@ -172,10 +172,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <div 
               className="absolute"
               style={{
-                width: marioSize * 0.3,
-                height: marioSize * 0.1,
-                top: marioSize * 0.45,
-                left: marioSize * 0.35,
+                width: `${marioSize * 0.3}px`,
+                height: `${marioSize * 0.1}px`,
+                top: `${marioSize * 0.45}px`,
+                left: `${marioSize * 0.35}px`,
                 background: '#8B4513',
                 borderRadius: '50%',
               }}
@@ -184,10 +184,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <div 
               className="absolute"
               style={{
-                width: marioSize * 0.5,
-                height: marioSize * 0.4,
-                top: marioSize * 0.5,
-                left: marioSize * 0.25,
+                width: `${marioSize * 0.5}px`,
+                height: `${marioSize * 0.4}px`,
+                top: `${marioSize * 0.5}px`,
+                left: `${marioSize * 0.25}px`,
                 background: isDark ? '#E60012' : '#DC2626',
                 border: `2px solid ${isDark ? '#CC0000' : '#B91C1C'}`,
                 borderRadius: '0 0 8px 8px',
@@ -197,10 +197,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <motion.div
               className="absolute"
               style={{
-                width: marioSize * 0.15,
-                height: marioSize * 0.2,
-                top: marioSize * 0.55,
-                left: marioSize * 0.1,
+                width: `${marioSize * 0.15}px`,
+                height: `${marioSize * 0.2}px`,
+                top: `${marioSize * 0.55}px`,
+                left: `${marioSize * 0.1}px`,
                 background: isDark ? '#FFDBAC' : '#FED7AA',
                 borderRadius: '4px',
               }}
@@ -216,10 +216,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <motion.div
               className="absolute"
               style={{
-                width: marioSize * 0.15,
-                height: marioSize * 0.2,
-                top: marioSize * 0.55,
-                right: marioSize * 0.1,
+                width: `${marioSize * 0.15}px`,
+                height: `${marioSize * 0.2}px`,
+                top: `${marioSize * 0.55}px`,
+                right: `${marioSize * 0.1}px`,
                 background: isDark ? '#FFDBAC' : '#FED7AA',
                 borderRadius: '4px',
               }}
@@ -236,10 +236,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <div 
               className="absolute"
               style={{
-                width: marioSize * 0.2,
-                height: marioSize * 0.25,
-                top: marioSize * 0.75,
-                left: marioSize * 0.15,
+                width: `${marioSize * 0.2}px`,
+                height: `${marioSize * 0.25}px`,
+                top: `${marioSize * 0.75}px`,
+                left: `${marioSize * 0.15}px`,
                 background: isDark ? '#0066CC' : '#2563EB',
                 border: `2px solid ${isDark ? '#0052A3' : '#1D4ED8'}`,
                 borderRadius: '0 0 4px 4px',
@@ -248,10 +248,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <div 
               className="absolute"
               style={{
-                width: marioSize * 0.2,
-                height: marioSize * 0.25,
-                top: marioSize * 0.75,
-                right: marioSize * 0.15,
+                width: `${marioSize * 0.2}px`,
+                height: `${marioSize * 0.25}px`,
+                top: `${marioSize * 0.75}px`,
+                right: `${marioSize * 0.15}px`,
                 background: isDark ? '#0066CC' : '#2563EB',
                 border: `2px solid ${isDark ? '#0052A3' : '#1D4ED8'}`,
                 borderRadius: '0 0 4px 4px',
@@ -263,10 +263,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
           <motion.div
             className="absolute"
             style={{
-              width: blockSize,
-              height: blockSize,
-              top: marioSize * 0.2,
-              right: 0,
+              width: `${blockSize}px`,
+              height: `${blockSize}px`,
+              top: `${marioSize * 0.2}px`,
+              right: '0px',
             }}
             animate={{
               y: [0, -blockSize * 0.3, 0],
@@ -283,8 +283,8 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
             <div 
               className="relative"
               style={{
-                width: blockSize,
-                height: blockSize,
+                width: `${blockSize}px`,
+                height: `${blockSize}px`,
                 background: isDark ? '#FFD700' : '#FBBF24',
                 border: `3px solid ${isDark ? '#FFA500' : '#F59E0B'}`,
                 borderRadius: '4px',

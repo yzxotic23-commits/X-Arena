@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Edit, Trash2, RefreshCw, Repeat, UserPlus, Upload, X, FileText, Download, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Edit, Trash2, RefreshCw, Repeat, UserPlus, Upload, X, FileText, Download, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
@@ -74,6 +74,7 @@ export function CustomerListingPage() {
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [userShift, setUserShift] = useState<string | null>(null);
   const [userBrand, setUserBrand] = useState<string | null>(null);
+  const [uniqueCodeSearch, setUniqueCodeSearch] = useState<string>('');
   
   // Get current month for default value
   const getCurrentMonth = () => {
@@ -1011,10 +1012,11 @@ export function CustomerListingPage() {
     fetchCustomers();
   }, [activeTab, fetchCustomers]);
 
-  // Reset pagination and selected customers when tab changes
+  // Reset pagination, selected customers, and search when tab changes
   useEffect(() => {
     setCurrentPage(1);
     setSelectedCustomers([]);
+    setUniqueCodeSearch('');
   }, [activeTab]);
 
   // Reset selected customers when page changes
@@ -1022,17 +1024,26 @@ export function CustomerListingPage() {
     setSelectedCustomers([]);
   }, [currentPage]);
 
-  // Re-apply pagination when itemsPerPage or currentPage changes
+  // Filter and paginate customers based on search query
   useEffect(() => {
+    // Filter customers by unique code search
+    let filteredCustomers = allCustomers;
+    if (uniqueCodeSearch.trim()) {
+      filteredCustomers = allCustomers.filter(customer =>
+        customer.uniqueCode.toLowerCase().includes(uniqueCodeSearch.toLowerCase().trim())
+      );
+    }
+    
+    // Apply pagination
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    setCustomers(allCustomers.slice(startIndex, endIndex));
-  }, [itemsPerPage, allCustomers, currentPage]);
+    setCustomers(filteredCustomers.slice(startIndex, endIndex));
+  }, [itemsPerPage, allCustomers, currentPage, uniqueCodeSearch]);
 
-  // Reset to page 1 when itemsPerPage changes
+  // Reset to page 1 when itemsPerPage or search query changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [itemsPerPage]);
+  }, [itemsPerPage, uniqueCodeSearch]);
 
   // Handle select/deselect all
   const handleSelectAll = (checked: boolean) => {
@@ -1697,13 +1708,26 @@ export function CustomerListingPage() {
       {/* Customer Table */}
       <Card className="bg-card-glass">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            {activeTab === 'reactivation' && translations.customerListing.reactivation} 
-            {activeTab === 'retention' && translations.customerListing.retention} 
-            {activeTab === 'recommend' && translations.customerListing.recommend}
-            {activeTab === 'extra' && translations.customerListing.extra} {translations.customerListing.customerList}
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              {activeTab === 'reactivation' && translations.customerListing.reactivation} 
+              {activeTab === 'retention' && translations.customerListing.retention} 
+              {activeTab === 'recommend' && translations.customerListing.recommend}
+              {activeTab === 'extra' && translations.customerListing.extra} {translations.customerListing.customerList}
+            </CardTitle>
+            <span className="text-muted">|</span>
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
+              <input
+                type="text"
+                placeholder="Search unique code..."
+                value={uniqueCodeSearch}
+                onChange={(e) => setUniqueCodeSearch(e.target.value)}
+                className="pl-8 pr-3 py-1.5 text-sm border border-card-border rounded-md bg-card-inner text-foreground-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-64"
+              />
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             {selectedCustomers.length > 0 && (
               <Button
