@@ -1141,6 +1141,7 @@ export function CustomerListingPage() {
       }
 
       // Build update object based on active tab
+      // Only include user-editable fields (not id, created_at, updated_at)
       const updateData: any = {
         unique_code: editForm.uniqueCode,
         brand: editForm.brand,
@@ -1154,22 +1155,66 @@ export function CustomerListingPage() {
         updateData.username = editForm.username || '';
       }
       
-      const { error } = await supabase
+      console.log('[Edit] Updating customer:', { id: editingCustomer.id, tableName, updateData });
+      
+      // Update customer
+      // Note: If error "record has no field updated_at" occurs, the trigger in database
+      // expects updated_at column but it doesn't exist. This needs to be fixed in database.
+      const { data: updatedData, error } = await supabase
         .from(tableName)
         .update(updateData)
-        .eq('id', editingCustomer.id);
+        .eq('id', editingCustomer.id)
+        .select();
 
       if (error) {
         console.error('Failed to update customer', error);
-        alert('Failed to update customer: ' + error.message);
+        
+        // Provide more helpful error message for common issues
+        let errorMessage = error.message;
+        if (error.message?.includes('updated_at')) {
+          errorMessage = `Database error: The table "${tableName}" has a trigger that expects an "updated_at" column, but this column doesn't exist in the table. Please add the "updated_at" column to the table or fix the trigger in Supabase.`;
+        }
+        
+        alert('Failed to update customer: ' + errorMessage);
         setSaving(false);
         return;
       }
 
+      console.log('[Edit] Update successful:', updatedData);
+
+      // Optimistically update state for immediate UI feedback
+      const updatedCustomer: Customer = {
+        id: editingCustomer.id,
+        uniqueCode: editForm.uniqueCode,
+        username: activeTab === 'recommend' ? (editForm.username || '') : editingCustomer.username,
+        brand: editForm.brand,
+        handler: editForm.handler,
+        label: editForm.label || 'non active', // Will be updated by checkCustomersActiveStatus
+        month: editForm.month || getCurrentMonth(),
+      };
+
+      // Update state optimistically
+      setAllCustomers(prevCustomers => {
+        const updated = prevCustomers.map(customer => 
+          customer.id === editingCustomer.id ? updatedCustomer : customer
+        );
+        
+        // Update paginated customers
+        const startIdx = (currentPage - 1) * itemsPerPage;
+        const endIdx = startIdx + itemsPerPage;
+        setCustomers(updated.slice(startIdx, endIdx));
+        
+        return updated;
+      });
+
+      // Close modal
       setShowEditModal(false);
       setEditingCustomer(null);
       setEditForm({ uniqueCode: '', username: '', brand: '', handler: '', label: '', month: '' });
-      fetchCustomers(); // Refresh data
+      
+      // Refresh data from database to ensure consistency (especially for label)
+      await fetchCustomers();
+      
       alert('Customer updated successfully!');
     } catch (error) {
       console.error('Update error', error);
