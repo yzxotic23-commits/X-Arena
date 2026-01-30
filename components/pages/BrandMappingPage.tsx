@@ -194,7 +194,7 @@ export function BrandMappingPage() {
   return (
     <div className="w-full space-y-6">
       <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" onClick={() => fetchMappings()} disabled={loading || refreshing} className="flex items-center gap-2">
+        <Button variant="default" onClick={() => fetchMappings()} disabled={loading || refreshing} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white">
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
         </Button>

@@ -18,6 +18,7 @@ import {
       FileText,
       Map,
       Building2,
+      Swords,
     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme-context';
@@ -62,6 +63,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     { id: 'customer-listing', label: translations.nav.customerListing, icon: List },
     { id: 'targets', label: translations.nav.targetSummary, icon: BarChart3 },
     { id: 'reports', label: translations.nav.reports, icon: FileText },
+    { id: 'battle-arena', label: 'Battle Arena', icon: Swords },
     { 
       id: 'settings', 
       label: translations.nav.settings, 
@@ -265,7 +267,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     <aside 
       ref={sidebarRef}
       className={cn(
-        "fixed left-0 top-0 h-screen bg-gradient-to-t from-[#E8E6E0] via-[#F0EDE5] to-[#F7F6F3] dark:bg-gradient-to-b dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-red-500/20 dark:border-primary/40 z-40 flex flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
+        "fixed left-0 top-0 h-screen bg-gradient-to-t from-[#E8E6E0] via-[#F0EDE5] to-[#F7F6F3] dark:bg-gradient-to-b dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-red-500/20 dark:border-primary/40 z-40 flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
         isCollapsed ? "w-20" : "w-64"
       )}
     >

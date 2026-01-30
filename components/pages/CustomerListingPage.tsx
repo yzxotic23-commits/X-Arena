@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Edit, Trash2, RefreshCw, Repeat, UserPlus, Upload, X, FileText, Download, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Users, Edit, Trash2, RefreshCw, Repeat, UserPlus, Upload, X, FileText, Download, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Gift } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
@@ -14,7 +15,7 @@ import { Loading } from '@/components/Loading';
 import { useAuth } from '@/lib/auth-context';
 import * as XLSX from 'xlsx';
 
-type TabType = 'reactivation' | 'retention' | 'recommend' | 'extra';
+type TabType = 'reactivation' | 'retention' | 'recommend' | 'extra' | 'adjustment';
 
 interface Customer {
   id: string;
@@ -70,6 +71,15 @@ export function CustomerListingPage() {
     label: '',
     month: '',
   });
+  const [showAddBonusModal, setShowAddBonusModal] = useState(false);
+  const [newBonus, setNewBonus] = useState({
+    uniqueCode: '',
+    brand: '',
+    handler: '',
+    label: '',
+    month: '',
+  });
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [userShift, setUserShift] = useState<string | null>(null);
@@ -906,6 +916,7 @@ export function CustomerListingPage() {
     }
 
     setLoading(true);
+    setFetchError(null);
     try {
       const tableName = activeTab === 'reactivation' 
         ? 'customer_reactivation' 
@@ -913,6 +924,8 @@ export function CustomerListingPage() {
         ? 'customer_retention' 
         : activeTab === 'extra'
         ? 'customer_extra'
+        : activeTab === 'adjustment'
+        ? 'customer_adjustment'
         : 'customer_recommend';
       
       // Build query with filters for limited access users
@@ -932,10 +945,12 @@ export function CustomerListingPage() {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Failed to fetch customers', error);
+        setFetchError('Unable to load list. Please try again.');
         setCustomers([]);
         setAllCustomers([]);
+        console.warn('[CustomerListing] Fetch failed:', error.message);
       } else {
+        setFetchError(null);
         let mappedData = (data ?? []).map((row) => ({
           id: row.id.toString(),
           uniqueCode: row.unique_code ?? '',
@@ -958,7 +973,7 @@ export function CustomerListingPage() {
 
         // Check active status in background (non-blocking)
         // This improves initial load time significantly
-        if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra' || activeTab === 'recommend') && mappedData.length > 0) {
+        if ((activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra' || activeTab === 'adjustment' || activeTab === 'recommend') && mappedData.length > 0) {
           // Run active status check asynchronously without blocking UI
           // Pass customers with month field to check active status for the correct month
           checkCustomersActiveStatus(mappedData.map(c => ({ uniqueCode: c.uniqueCode, brand: c.brand, month: c.month }))).then((activeMap) => {
@@ -996,9 +1011,11 @@ export function CustomerListingPage() {
           });
         }
       }
-    } catch (error) {
-      console.error('Error fetching customers', error);
+    } catch (err) {
+      setFetchError('Unable to load list. Please try again.');
       setCustomers([]);
+      setAllCustomers([]);
+      console.warn('[CustomerListing] Fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -1086,6 +1103,8 @@ export function CustomerListingPage() {
         ? 'customer_retention' 
         : activeTab === 'extra'
         ? 'customer_extra'
+        : activeTab === 'adjustment'
+        ? 'customer_adjustment'
         : 'customer_recommend';
 
       const { error } = await supabase
@@ -1142,6 +1161,8 @@ export function CustomerListingPage() {
         ? 'customer_retention' 
         : activeTab === 'extra'
         ? 'customer_extra'
+        : activeTab === 'adjustment'
+        ? 'customer_adjustment'
         : 'customer_recommend';
 
       // Validasi Handler
@@ -1251,6 +1272,8 @@ export function CustomerListingPage() {
         ? 'customer_retention' 
         : activeTab === 'extra'
         ? 'customer_extra'
+        : activeTab === 'adjustment'
+        ? 'customer_adjustment'
         : 'customer_recommend';
 
       const { error } = await supabase
@@ -1487,6 +1510,8 @@ export function CustomerListingPage() {
         ? 'customer_retention' 
         : activeTab === 'extra'
         ? 'customer_extra'
+        : activeTab === 'adjustment'
+        ? 'customer_adjustment'
         : 'customer_recommend';
 
       // Insert data to Supabase
@@ -1590,6 +1615,8 @@ export function CustomerListingPage() {
         ? 'customer_retention' 
         : activeTab === 'extra'
         ? 'customer_extra'
+        : activeTab === 'adjustment'
+        ? 'customer_adjustment'
         : 'customer_recommend';
 
       // Build insert data object based on active tab
@@ -1629,8 +1656,8 @@ export function CustomerListingPage() {
       });
       setShowAddUserModal(false);
       
-      // After adding user, update labels based on deposit_cases > 0 for reactivation/retention/extra
-      if (activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra') {
+      // After adding user, update labels based on deposit_cases > 0 for reactivation/retention/extra/adjustment
+      if (activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra' || activeTab === 'adjustment') {
         console.log('[Add User] User added, refreshing data...');
         // Fetch customers - labels will be checked directly from Supabase 2
         await fetchCustomers();
@@ -1652,6 +1679,41 @@ export function CustomerListingPage() {
     }));
   };
 
+  const handleBonusInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setNewBonus((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddBonus = async () => {
+    const finalHandler = isLimitedAccess && userShift ? userShift : newBonus.handler;
+    const finalBrand = isLimitedAccess && userBrand ? userBrand : newBonus.brand;
+    if (!newBonus.uniqueCode || !finalBrand || !finalHandler) {
+      alert('Please fill in Unique Code, Brand, and Handler.');
+      return;
+    }
+    try {
+      const insertData = {
+        unique_code: newBonus.uniqueCode,
+        brand: finalBrand,
+        handler: finalHandler,
+        label: newBonus.label || 'non active',
+        month: newBonus.month || getCurrentMonth(),
+      };
+      const { error } = await supabase.from('customer_adjustment').insert(insertData);
+      if (error) {
+        console.error('Failed to add bonus', error);
+        alert('Failed to add bonus: ' + error.message);
+        return;
+      }
+      setNewBonus({ uniqueCode: '', brand: '', handler: '', label: '', month: '' });
+      setShowAddBonusModal(false);
+      await fetchCustomers();
+      alert('Bonus added successfully!');
+    } catch (err) {
+      console.error('Add bonus error', err);
+      alert('An error occurred. Please try again.');
+    }
+  };
 
   return (
     <div className="w-full space-y-6">
@@ -1702,6 +1764,17 @@ export function CustomerListingPage() {
             <Users className="w-3.5 h-3.5" />
             {translations.customerListing.extra}
           </button>
+          <button
+            onClick={() => setActiveTab('adjustment')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
+              activeTab === 'adjustment'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-foreground-primary hover:bg-primary/10'
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            {translations.customerListing.adjustment}
+          </button>
         </div>
       </div>
 
@@ -1714,7 +1787,8 @@ export function CustomerListingPage() {
               {activeTab === 'reactivation' && translations.customerListing.reactivation} 
               {activeTab === 'retention' && translations.customerListing.retention} 
               {activeTab === 'recommend' && translations.customerListing.recommend}
-              {activeTab === 'extra' && translations.customerListing.extra} {translations.customerListing.customerList}
+              {activeTab === 'extra' && translations.customerListing.extra}
+              {activeTab === 'adjustment' && translations.customerListing.adjustment} {translations.customerListing.customerList}
             </CardTitle>
             <span className="text-muted">|</span>
             <div className="relative">
@@ -1741,29 +1815,49 @@ export function CustomerListingPage() {
                 Delete Selected ({selectedCustomers.length})
               </Button>
             )}
+            {/* Tab Adjustment: only "Add Bonus" button */}
+            {activeTab === 'adjustment' && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setNewBonus({
+                    uniqueCode: '',
+                    brand: isLimitedAccess && userBrand ? userBrand : '',
+                    handler: isLimitedAccess && userShift ? userShift : '',
+                    label: '',
+                    month: getCurrentMonth(),
+                  });
+                  setShowAddBonusModal(true);
+                }}
+                className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white"
+              >
+                <Gift className="w-4 h-4" />
+                {translations.customerListing.addBonus}
+              </Button>
+            )}
+            {/* Other tabs: Refresh Labels + Import (not for adjustment) */}
             {(activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra') && (
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={async () => {
                   console.log('[Refresh Labels] Manually refreshing labels based on deposit_cases > 0...');
-                  // Fetch all customers - labels will be checked directly from Supabase 2
                   await fetchCustomers();
                 }}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white"
                 title="Refresh labels based on deposit_cases > 0 in current month"
               >
                 <RefreshCw className="w-4 h-4" />
                 Refresh Labels
               </Button>
             )}
-            {/* Hide Import Customer button for Operator role on reactivation, retention, and extra tabs */}
-            {!(isLimitedAccess && (activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra')) && (
+            {!(isLimitedAccess && (activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra')) && activeTab !== 'adjustment' && (
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={handleImport}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white"
               >
                 <Upload className="w-4 h-4" />
                 {translations.customerListing.importCustomers}
@@ -1793,13 +1887,11 @@ export function CustomerListingPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className={`border-b-2 ${
-                  'border-primary/50 bg-gradient-to-r from-primary/10 to-primary/5 dark:bg-card-inner dark:border-primary/60'
-                }`}>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary w-12">
+          <div className="overflow-auto rounded-b-lg max-h-[60vh]">
+            <table className="w-full border-collapse">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-card-border bg-gray-100 dark:bg-gray-900/95 shadow-sm dark:shadow-black/20">
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary w-12 bg-inherit">
                     <input
                       type="checkbox"
                       checked={isAllSelected}
@@ -1807,30 +1899,44 @@ export function CustomerListingPage() {
                       className="w-4 h-4 rounded border-card-border text-primary focus:ring-primary cursor-pointer"
                     />
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.uniqueCode}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.uniqueCode}</th>
                   {activeTab === 'recommend' && (
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.username}</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.username}</th>
                   )}
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.brand}</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.handler}</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.customerListing.label}</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">Month</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary">{translations.common.actions}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.brand}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.handler}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.label}</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">Month</th>
+                  <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={activeTab === 'recommend' ? 8 : 7} className="py-12 px-4">
-                      <div className="flex items-center justify-center min-h-[200px]">
+                    <td colSpan={activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 align-middle">
+                      <div className="flex items-center justify-center min-h-[180px]">
                         <Loading size="md" text={translations.common.loading} variant="gaming" />
                       </div>
                     </td>
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>
-                    <td colSpan={activeTab === 'recommend' ? 8 : 7} className="py-8 px-4 text-center text-muted">
-                      No customers found.
+                    <td colSpan={activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 text-center">
+                      <div className="flex flex-col items-center gap-3 text-muted">
+                        {fetchError ? (
+                          <>
+                            <AlertCircle className="w-12 h-12 opacity-50 text-amber-500" />
+                            <p className="text-sm font-medium text-foreground-primary">{fetchError}</p>
+                            <p className="text-xs">Please try again or switch to another tab.</p>
+                          </>
+                        ) : (
+                          <>
+                            <Users className="w-12 h-12 opacity-50" />
+                            <p className="text-sm font-medium">No customers found.</p>
+                            <p className="text-xs">Try another search or tab.</p>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -1840,9 +1946,9 @@ export function CustomerListingPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="border-b border-card-border hover:bg-primary/5 transition-colors"
+                    className={`border-b border-card-border/70 transition-colors hover:bg-primary/5 ${index % 2 === 0 ? 'bg-transparent' : 'bg-gray-50/80 dark:bg-white/[0.02]'}`}
                   >
-                    <td className="py-4 px-4 text-center">
+                    <td className="py-3 px-4 text-center align-middle">
                       <input
                         type="checkbox"
                         checked={selectedCustomers.includes(customer.id)}
@@ -1850,52 +1956,53 @@ export function CustomerListingPage() {
                         className="w-4 h-4 rounded border-card-border text-primary focus:ring-primary cursor-pointer"
                       />
                     </td>
-                    <td className="py-4 px-4">
-                      <span className="font-semibold text-foreground-primary">{customer.uniqueCode}</span>
+                    <td className="py-3 px-4 align-middle">
+                      <span className="font-medium text-foreground-primary">{customer.uniqueCode}</span>
                     </td>
                     {activeTab === 'recommend' && (
-                      <td className="py-4 px-4">
-                        <span className="text-foreground-primary">{customer.username}</span>
+                      <td className="py-3 px-4 align-middle">
+                        <span className="text-foreground-primary text-sm">{customer.username}</span>
                       </td>
                     )}
-                    <td className="py-4 px-4">
-                      <span className="text-foreground-primary">{customer.brand}</span>
+                    <td className="py-3 px-4 align-middle">
+                      <span className="text-foreground-primary text-sm">{customer.brand}</span>
                     </td>
-                    <td className="py-4 px-4">
-                      <span className="text-foreground-primary">{customer.handler}</span>
+                    <td className="py-3 px-4 align-middle">
+                      <span className="text-foreground-primary text-sm">{customer.handler}</span>
                     </td>
-                    <td className="py-4 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        customer.label === 'active' ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
-                        customer.label === 'non active' ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
-                        customer.label === 'VIP' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' :
-                        customer.label === 'Premium' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50' :
-                        customer.label === 'active' ? 'bg-green-500/20 text-green-400 border border-green-500/50' :
-                        'bg-gray-500/20 text-gray-400 border border-gray-500/50'
+                    <td className="py-3 px-4 align-middle">
+                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${
+                        customer.label === 'active' ? 'bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/30' :
+                        customer.label === 'non active' ? 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30' :
+                        customer.label === 'VIP' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30' :
+                        customer.label === 'Premium' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30' :
+                        'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
                       }`}>
                         {customer.label}
                       </span>
                     </td>
-                    <td className="py-4 px-4">
-                      <span className="text-foreground-primary">{customer.month || getCurrentMonth()}</span>
+                    <td className="py-3 px-4 align-middle">
+                      <span className="text-foreground-primary text-sm">{customer.month || getCurrentMonth()}</span>
                     </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="py-3 px-4 align-middle">
+                      <div className="flex items-center justify-center gap-1.5">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(customer)}
-                          className="p-2 h-auto hover:bg-blue-500/10 hover:text-blue-400 transition-colors"
+                          className="p-1.5 h-8 w-8 rounded-md hover:bg-blue-500/10 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
                           disabled={deleting}
+                          title="Edit"
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteClick(customer)}
-                          className="p-2 h-auto hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                          className="p-1.5 h-8 w-8 rounded-md hover:bg-red-500/10 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                           disabled={deleting || loading}
+                          title="Delete"
                         >
                           <Trash2 className={`w-4 h-4 ${deleting ? 'opacity-50' : ''}`} />
                         </Button>
@@ -1911,13 +2018,13 @@ export function CustomerListingPage() {
         
         {/* Pagination Controls */}
         {!loading && allCustomers.length > 0 && (
-          <div className="border-t border-card-border px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="border-t border-card-border px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 bg-gray-50/50 dark:bg-white/[0.02] rounded-b-lg">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted">Items per page:</span>
+              <span className="text-xs text-muted">Per page</span>
               <select
                 value={itemsPerPage}
                 onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary text-sm focus:outline-none focus:border-primary transition-colors"
+                className="px-2.5 py-1.5 bg-card-inner border border-card-border rounded-md text-foreground-primary text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary transition-colors"
               >
                 <option value={20}>20</option>
                 <option value={50}>50</option>
@@ -1925,32 +2032,28 @@ export function CustomerListingPage() {
                 <option value={200}>200</option>
               </select>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted">
-                Showing {startIndex + 1} - {endIndex} of {allCustomers.length}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
+            <span className="text-xs text-muted order-first sm:order-none">
+              {startIndex + 1}–{endIndex} of {allCustomers.length}
+            </span>
+            <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="p-2"
+                className="h-8 w-8 p-0 rounded-md border-card-border hover:bg-primary/5"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-sm text-foreground-primary px-3">
-                Page {currentPage} of {totalPages}
+              <span className="text-xs text-foreground-primary px-2 min-w-[4rem] text-center">
+                {currentPage} / {totalPages}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2"
+                className="h-8 w-8 p-0 rounded-md border-card-border hover:bg-primary/5"
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -2315,6 +2418,138 @@ export function CustomerListingPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Add Bonus Modal - Only for Adjustment tab (React Portal) */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showAddBonusModal && activeTab === 'adjustment' && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setShowAddBonusModal(false)}
+                style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)', zIndex: 99999
+                }}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, pointerEvents: 'none'
+                }}
+              >
+                <Card className="relative w-full max-w-md max-h-[90vh] overflow-y-auto" style={{ pointerEvents: 'auto', margin: '1rem' }}>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Gift className="w-5 h-5 text-primary" />
+                      {translations.customerListing.addBonus}
+                    </CardTitle>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddBonusModal(false)}
+                      className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-foreground-primary"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={(e) => { e.preventDefault(); handleAddBonus(); }} className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">{translations.customerListing.uniqueCode}</label>
+                        <input
+                          type="text"
+                          name="uniqueCode"
+                          value={newBonus.uniqueCode}
+                          onChange={handleBonusInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
+                          required
+                          placeholder="e.g., UC001"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">{translations.customerListing.brand}</label>
+                        <select
+                          name="brand"
+                          value={newBonus.brand}
+                          onChange={handleBonusInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
+                          required
+                          disabled={loadingBrands || (isLimitedAccess && !!userBrand)}
+                        >
+                          <option value="">{loadingBrands ? 'Loading...' : 'Select Brand'}</option>
+                          {availableBrands.map((b) => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                        {isLimitedAccess && userBrand && <p className="text-xs text-muted">Brand: {userBrand}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">{translations.customerListing.handler}</label>
+                        <select
+                          name="handler"
+                          value={newBonus.handler}
+                          onChange={handleBonusInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
+                          required
+                          disabled={isLimitedAccess && !!userShift}
+                        >
+                          <option value="">Select Handler</option>
+                          <option value="Shift A">Shift A</option>
+                          <option value="Shift B">Shift B</option>
+                        </select>
+                        {isLimitedAccess && userShift && <p className="text-xs text-muted">Handler: {userShift}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">{translations.customerListing.label}</label>
+                        <select
+                          name="label"
+                          value={newBonus.label}
+                          onChange={handleBonusInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
+                        >
+                          <option value="non active">non active</option>
+                          <option value="active">active</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">Month</label>
+                        <input
+                          type="month"
+                          name="month"
+                          value={newBonus.month || getCurrentMonth()}
+                          onChange={handleBonusInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div className="flex gap-3 pt-4">
+                        <Button type="submit" variant="default" className="flex-1">
+                          <Gift className="w-4 h-4 mr-2" />
+                          {translations.customerListing.addBonus}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowAddBonusModal(false)}
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Edit Customer Modal */}
       <AnimatePresence>

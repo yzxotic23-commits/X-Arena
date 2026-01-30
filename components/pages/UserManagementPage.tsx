@@ -276,10 +276,10 @@ export function UserManagementPage() {
       {/* Add User Button - Outside Card */}
       <div className="flex items-center justify-end gap-2">
         <Button
-          variant="outline"
+          variant="default"
           onClick={() => fetchUsers()}
           disabled={loading || refreshing}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh

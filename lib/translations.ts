@@ -106,6 +106,7 @@ export interface Translations {
     retention: string;
     recommend: string;
     extra: string;
+    adjustment: string;
     customerList: string;
     uniqueCode: string;
     username: string;
@@ -113,6 +114,7 @@ export interface Translations {
     handler: string;
     label: string;
     addCustomer: string;
+    addBonus: string;
     importCustomers: string;
     exportCustomers: string;
     view: string;
@@ -365,6 +367,7 @@ export const translations: Record<Language, Translations> = {
           retention: 'Retention',
           recommend: 'Recommend',
           extra: 'Extra',
+          adjustment: 'Adjustment',
           customerList: 'Customer List',
           uniqueCode: 'Unique Code',
       username: 'Username',
@@ -372,6 +375,7 @@ export const translations: Record<Language, Translations> = {
       handler: 'Handler',
       label: 'Label',
       addCustomer: 'Add Customer',
+      addBonus: 'Add Bonus',
       importCustomers: 'Import Customers',
       exportCustomers: 'Export Customers',
       view: 'View',
@@ -613,6 +617,7 @@ export const translations: Record<Language, Translations> = {
       retention: '留存',
       recommend: '推荐',
       extra: '额外',
+      adjustment: '调整',
       customerList: '客户列表',
       uniqueCode: '唯一代码',
       username: '用户名',
@@ -620,6 +625,7 @@ export const translations: Record<Language, Translations> = {
       handler: '处理人',
       label: '标签',
       addCustomer: '添加客户',
+      addBonus: '添加奖金',
       importCustomers: '导入客户',
       exportCustomers: '导出客户',
       view: '查看',

@@ -622,10 +622,10 @@ export function TargetSettingsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
+            variant="default"
             onClick={() => fetchTargetSettings()}
             disabled={loading || refreshing}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh

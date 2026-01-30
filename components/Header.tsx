@@ -434,7 +434,7 @@ export function Header({
               >
                 <Target className="w-6 h-6 text-primary" />
               </motion.div>
-              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent whitespace-nowrap">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground-primary whitespace-nowrap">
                 {t(language).nav.targetSettings}
               </h1>
             </div>

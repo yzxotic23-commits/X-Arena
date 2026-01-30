@@ -33,6 +33,7 @@ import { BrandMappingPage } from '@/components/pages/BrandMappingPage';
 import { AppearanceSettingsPage } from '@/components/pages/AppearanceSettingsPage';
 import { TargetSettingsPage } from '@/components/pages/TargetSettingsPage';
 import { ReportsPage } from '@/components/pages/ReportsPage';
+import { BattleArenaPage } from '@/components/pages/BattleArenaPage';
 import { useAuth } from '@/lib/auth-context';
 import { LandingPage } from '@/components/LandingPage';
 import { useLanguage } from '@/lib/language-context';
@@ -538,7 +539,7 @@ function DashboardContent() {
       
       <div className={isSidebarCollapsed ? "flex-1 lg:ml-20" : "flex-1 lg:ml-64"} style={{ minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <Header 
-          hideBorder={activeMenu === 'dashboard' || activeMenu === 'leaderboard'} 
+          hideBorder={['dashboard', 'leaderboard', 'customer-listing', 'targets', 'reports', 'battle-arena', 'settings', 'target-settings', 'user-management', 'squad-mapping', 'brand-mapping', 'appearance-settings', 'profile'].includes(activeMenu)} 
           showGreeting={activeMenu === 'dashboard'} 
           userName={userInfo?.fullName}
           showLeaderboardHeader={activeMenu === 'leaderboard'}
@@ -754,6 +755,7 @@ function DashboardContent() {
           {!isLimitedAccess && activeMenu === 'target-settings' && <TargetSettingsPage />}
           {activeMenu === 'customer-listing' && <CustomerListingPage />}
           {activeMenu === 'reports' && <ReportsPage />}
+          {activeMenu === 'battle-arena' && <BattleArenaPage />}
           {!isLimitedAccess && activeMenu === 'settings' && <SettingsPage />}
           {!isLimitedAccess && userInfo?.role !== 'manager' && activeMenu === 'user-management' && <UserManagementPage />}
           {!isLimitedAccess && activeMenu === 'squad-mapping' && <SquadMappingPage />}
