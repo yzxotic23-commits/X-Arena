@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useTheme } from '@/lib/theme-context';
+import { useEffect, useState } from 'react';
 
 interface LoadingProps {
   size?: 'sm' | 'md' | 'lg';
@@ -11,7 +12,13 @@ interface LoadingProps {
 
 export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps) {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted ? theme === 'dark' : false;
 
   if (variant === 'minimal') {
     return (

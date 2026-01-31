@@ -120,7 +120,7 @@ export function LandingPage() {
                   size="default"
                   variant="outline"
                   onClick={() => setShowRankModal(true)}
-                  className="text-base px-6 py-4"
+                  className="text-base px-6 py-4 bg-transparent text-red-600 dark:text-red-500 border border-red-600 dark:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-500 dark:hover:border-red-500 transition-colors"
                 >
                   Your Rank
                 </Button>

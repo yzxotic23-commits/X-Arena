@@ -19,6 +19,7 @@ import {
       Map,
       Building2,
       Swords,
+      Scale,
     } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme-context';
@@ -42,7 +43,7 @@ interface SidebarProps {
   userRole?: string;
 }
 
-export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = false, onToggleCollapse, isLimitedAccess = false, userRole }: SidebarProps) {
+export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed = false, onToggleCollapse, isLimitedAccess = false, userRole }: SidebarProps) {
   const { language } = useLanguage();
   const translations = t(language);
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
@@ -58,12 +59,12 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
   const isDark = theme === 'dark';
 
   const menuItems: MenuItem[] = useMemo(() => [
+    { id: 'battle-arena', label: translations.nav.battleArena, icon: Swords },
     { id: 'leaderboard', label: translations.nav.leaderboard, icon: Award },
     { id: 'dashboard', label: translations.nav.overview, icon: LayoutDashboard },
     { id: 'customer-listing', label: translations.nav.customerListing, icon: List },
     { id: 'targets', label: translations.nav.targetSummary, icon: BarChart3 },
     { id: 'reports', label: translations.nav.reports, icon: FileText },
-    { id: 'battle-arena', label: 'Battle Arena', icon: Swords },
     { 
       id: 'settings', 
       label: translations.nav.settings, 
@@ -72,6 +73,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
         { id: 'target-settings', label: translations.nav.targetSettings, icon: Target },
         // Hide user-management submenu for manager role
         ...(userRole !== 'manager' ? [{ id: 'user-management', label: translations.nav.userManagement, icon: UserPlus }] : []),
+        { id: 'pk-score-rules', label: translations.nav.pkScoreRules, icon: Scale },
         { id: 'squad-mapping', label: 'Squad Mapping', icon: Map },
         { id: 'brand-mapping', label: 'Brand Mapping', icon: Building2 },
         { id: 'appearance-settings', label: translations.nav.appearance, icon: Palette },
@@ -86,7 +88,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     return isLimitedAccess
       ? menuItems.filter((item: MenuItem) => {
           // Only allow specific menu items for limited access users
-          const allowedIds = ['dashboard', 'leaderboard', 'targets', 'reports', 'customer-listing'];
+          const allowedIds = ['battle-arena', 'dashboard', 'leaderboard', 'targets', 'reports', 'customer-listing'];
           return allowedIds.includes(item.id);
         })
       : menuItems;
@@ -267,7 +269,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
     <aside 
       ref={sidebarRef}
       className={cn(
-        "fixed left-0 top-0 h-screen bg-gradient-to-t from-[#E8E6E0] via-[#F0EDE5] to-[#F7F6F3] dark:bg-gradient-to-b dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 border-r border-red-500/20 dark:border-primary/40 z-40 flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
+        "x-arena-sidebar fixed left-0 top-0 h-screen bg-gradient-to-t from-[#E8E6E0] via-[#F0EDE5] to-[#F7F6F3] dark:bg-black border-r border-red-500/20 dark:border-primary/40 z-40 flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
@@ -361,7 +363,7 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
                       : 'text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-primary/10 transition-all duration-200'
                   )}
                   whileHover={!isActive && !isDark ? { x: 4 } : {}}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={{ scale: 1 }}
                   transition={{ duration: 0.15, ease: 'easeOut' }}
                 >
                   {/* Active gradient background - red to black fade */}
@@ -389,15 +391,15 @@ export function Sidebar({ activeMenu = 'dashboard', onMenuChange, isCollapsed = 
                       isHovered && !isActive && 'text-primary/80 dark:text-primary/80'
                     )}
                   >
-                    <Icon className={cn('w-5 h-5', isActive && 'scale-110')} />
+                    <Icon className="w-5 h-5" />
                   </div>
 
                   {/* Label */}
                   {!isCollapsed && (
                     <span
                       className={cn(
-                        'font-medium text-sm relative z-10 transition-all duration-200',
-                        isActive && 'text-primary font-semibold dark:text-white',
+                        'text-sm relative z-10 transition-all duration-200',
+                        isActive ? 'font-semibold text-primary dark:text-white' : 'font-medium text-gray-600 dark:text-gray-400',
                         isHovered && !isActive && 'text-primary dark:text-white'
                       )}
                     >

@@ -20,6 +20,7 @@ export interface Translations {
   
   // Navigation
   nav: {
+    battleArena: string;
     leaderboard: string;
     overview: string;
     customerListing: string;
@@ -29,6 +30,7 @@ export interface Translations {
     targetSettings: string;
     userManagement: string;
     appearance: string;
+    pkScoreRules: string;
   };
 
   // Header
@@ -293,6 +295,7 @@ export const translations: Record<Language, Translations> = {
       offline: 'Offline',
     },
     nav: {
+      battleArena: 'Battle Arena',
       leaderboard: 'Leaderboard',
       overview: 'Overview',
       customerListing: 'Customer Listing',
@@ -302,6 +305,7 @@ export const translations: Record<Language, Translations> = {
       targetSettings: 'Target Settings',
       userManagement: 'User Management',
       appearance: 'Appearance',
+      pkScoreRules: 'PK Score Rules',
     },
     header: {
       notifications: 'Notifications',
@@ -543,6 +547,7 @@ export const translations: Record<Language, Translations> = {
       offline: '离线',
     },
     nav: {
+      battleArena: '战斗竞技场',
       leaderboard: '排行榜',
       overview: '概览',
       customerListing: '客户列表',
@@ -552,6 +557,7 @@ export const translations: Record<Language, Translations> = {
       targetSettings: '目标设置',
       userManagement: '用户管理',
       appearance: '外观',
+      pkScoreRules: 'PK分数规则',
     },
     header: {
       notifications: '通知',

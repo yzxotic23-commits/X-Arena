@@ -26,10 +26,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return 'dark'; // Default for SSR
   });
   useEffect(() => {
-    // Apply theme to document
+    // Apply theme to document (class for Tailwind, data-theme for dashboard-overview-template)
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
-    
+    document.documentElement.setAttribute('data-theme', theme);
+
     // Save to localStorage (only in browser)
     if (typeof window !== 'undefined') {
       localStorage.setItem('x-arena-theme', theme);

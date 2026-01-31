@@ -15,6 +15,8 @@ interface HeaderProps {
   showGreeting?: boolean; // Show greeting message in header
   userName?: string; // User name for greeting
   showLeaderboardHeader?: boolean; // Show leaderboard gaming header
+  showOverviewHeader?: boolean; // Show overview header (Live Clock + Weather)
+  showClockWeatherHeader?: boolean; // Show Live Clock + Weather for Customer Listing, Target Summary, Reports, Settings pages
   leaderboardData?: {
     userRank?: number;
     totalParticipants?: number;
@@ -48,6 +50,8 @@ export function Header({
   showGreeting = false, 
   userName, 
   showLeaderboardHeader = false, 
+  showOverviewHeader = false,
+  showClockWeatherHeader = false,
   leaderboardData,
   showCustomerListingHeader = false,
   customerListingData,
@@ -145,7 +149,7 @@ export function Header({
   useEffect(() => {
     // Mock weather data - can be replaced with real API call
     // In production, you can use OpenWeatherMap API or similar
-    if (showLeaderboardHeader) {
+    if (showLeaderboardHeader || showOverviewHeader || showClockWeatherHeader) {
       setWeather({
         temp: 28,
         condition: 'Sunny',
@@ -154,7 +158,7 @@ export function Header({
     } else {
       setWeather(null);
     }
-  }, [showLeaderboardHeader]);
+  }, [showLeaderboardHeader, showOverviewHeader, showClockWeatherHeader]);
   
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', { 
@@ -238,7 +242,7 @@ export function Header({
 
   return (
     <header className={`w-full sticky top-0 z-50 transition-all ${hideBorder ? 'bg-background header-no-shadow' : 'bg-[#F7F6F3] dark:bg-gradient-to-r dark:from-black/95 dark:via-gray-950/95 dark:to-black/95 backdrop-blur-md border-b border-gray-200 dark:border-primary/40 shadow-sm dark:shadow-[0_0_8px_rgba(230,0,18,0.1)]'}`}>
-      <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader || showTargetSettingsHeader || showReportsHeader || showProfileHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
+      <div className={`w-full py-4 min-h-[88px] flex items-center ${showGreeting || showLeaderboardHeader || showOverviewHeader || showClockWeatherHeader || showCustomerListingHeader || showSettingsHeader || showTargetsHeader || showUserManagementHeader || showAppearanceHeader || showTargetSettingsHeader || showReportsHeader || showProfileHeader ? 'px-3 sm:px-4 md:px-6 lg:px-8' : 'px-4'}`}>
         <div className="w-full flex flex-col md:flex-row items-start md:items-center gap-4">
           {/* Greeting Message - Left side */}
           {showGreeting && (
@@ -249,6 +253,39 @@ export function Header({
 
           {/* Leaderboard Header - Left side */}
           {showLeaderboardHeader && (
+            <div className="flex-1 flex items-center gap-4 sm:gap-6">
+              {/* Live Clock */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <div className="flex flex-col">
+                  <div className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground-primary tabular-nums">
+                    {formatTime(currentTime)}
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted">
+                    {formatDate(currentTime)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Weather */}
+              {weather && (
+                <div className="flex items-center gap-2 sm:gap-3 pl-4 sm:pl-6 border-l border-gray-400 dark:border-white">
+                  {getWeatherIcon(weather.icon)}
+                  <div className="flex flex-col">
+                    <div className="text-base sm:text-lg font-heading font-semibold text-foreground-primary">
+                      {weather.temp}°C
+                    </div>
+                    <div className="text-xs sm:text-sm text-muted">
+                      {weather.condition}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Overview Header - Live Clock + Weather (same as Leaderboard) */}
+          {(showOverviewHeader || showClockWeatherHeader) && (
             <div className="flex-1 flex items-center gap-4 sm:gap-6">
               {/* Live Clock */}
               <div className="flex items-center gap-2 sm:gap-3">
@@ -434,7 +471,7 @@ export function Header({
               >
                 <Target className="w-6 h-6 text-primary" />
               </motion.div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground-primary whitespace-nowrap">
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent whitespace-nowrap">
                 {t(language).nav.targetSettings}
               </h1>
             </div>

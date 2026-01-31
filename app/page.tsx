@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery } from '@tanstack/react-query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -32,13 +33,18 @@ import { SquadMappingPage } from '@/components/pages/SquadMappingPage';
 import { BrandMappingPage } from '@/components/pages/BrandMappingPage';
 import { AppearanceSettingsPage } from '@/components/pages/AppearanceSettingsPage';
 import { TargetSettingsPage } from '@/components/pages/TargetSettingsPage';
+import { PKScoreRulesPage } from '@/components/pages/PKScoreRulesPage';
 import { ReportsPage } from '@/components/pages/ReportsPage';
-import { BattleArenaPage } from '@/components/pages/BattleArenaPage';
 import { useAuth } from '@/lib/auth-context';
 import { LandingPage } from '@/components/LandingPage';
 import { useLanguage } from '@/lib/language-context';
 import { Loading } from '@/components/Loading';
 import { t } from '@/lib/translations';
+
+const BattleArenaPage = dynamic(
+  () => import('../components/pages/BattleArenaPage').then((mod) => mod.BattleArenaPage),
+  { ssr: false }
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,7 +74,7 @@ function DashboardContent() {
   const [showDateRangePicker, setShowDateRangePicker] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [refreshKey] = useState(0);
-  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [activeMenu, setActiveMenu] = useState('battle-arena');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [squadUsers, setSquadUsers] = useState<SquadMappingUser[]>([]);
   const [loadingSquadUsers, setLoadingSquadUsers] = useState(true);
@@ -482,7 +488,8 @@ function DashboardContent() {
     );
   }
 
-  if (dataLoading) {
+  // Hanya tampilkan loading Overview saat user ada di halaman Overview
+  if (dataLoading && (activeMenu === 'dashboard' || activeMenu === 'overview')) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
         <Loading size="lg" text={`Loading ${translations.nav.overview}...`} variant="gaming" />
@@ -539,41 +546,38 @@ function DashboardContent() {
       
       <div className={isSidebarCollapsed ? "flex-1 lg:ml-20" : "flex-1 lg:ml-64"} style={{ minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <Header 
-          hideBorder={['dashboard', 'leaderboard', 'customer-listing', 'targets', 'reports', 'battle-arena', 'settings', 'target-settings', 'user-management', 'squad-mapping', 'brand-mapping', 'appearance-settings', 'profile'].includes(activeMenu)} 
-          showGreeting={activeMenu === 'dashboard'} 
+          hideBorder={['dashboard', 'leaderboard', 'customer-listing', 'targets', 'reports', 'battle-arena', 'settings', 'target-settings', 'user-management', 'pk-score-rules', 'squad-mapping', 'brand-mapping', 'appearance-settings', 'profile'].includes(activeMenu)} 
+          showGreeting={activeMenu === 'battle-arena'} 
           userName={userInfo?.fullName}
+          showOverviewHeader={activeMenu === 'dashboard'}
           showLeaderboardHeader={activeMenu === 'leaderboard'}
+          showClockWeatherHeader={['customer-listing', 'targets', 'reports', 'settings', 'user-management', 'appearance-settings', 'target-settings', 'pk-score-rules', 'squad-mapping', 'brand-mapping', 'profile'].includes(activeMenu)}
           leaderboardData={activeMenu === 'leaderboard' ? {
             userRank: 61,
             totalParticipants: 23141,
             userScore: 26007
           } : undefined}
-          showCustomerListingHeader={activeMenu === 'customer-listing'}
-          customerListingData={activeMenu === 'customer-listing' ? {
-            totalCustomers: 1250,
-            activeTab: 'reactivation'
-          } : undefined}
-          showSettingsHeader={activeMenu === 'settings'}
-          showTargetsHeader={activeMenu === 'targets'}
-          targetsData={activeMenu === 'targets' ? {
-            totalTargets: 5,
-            completedTargets: 2,
-            onTrackTargets: 2
-          } : undefined}
-          showUserManagementHeader={activeMenu === 'user-management'}
-          userManagementData={activeMenu === 'user-management' ? {
-            totalUsers: 15,
-            activeUsers: 12
-          } : undefined}
-          showAppearanceHeader={activeMenu === 'appearance-settings'}
-          showTargetSettingsHeader={activeMenu === 'target-settings'}
-          showReportsHeader={activeMenu === 'reports'}
-          showProfileHeader={activeMenu === 'profile'}
+          showCustomerListingHeader={false}
+          customerListingData={undefined}
+          showSettingsHeader={false}
+          showTargetsHeader={false}
+          targetsData={undefined}
+          showUserManagementHeader={false}
+          userManagementData={undefined}
+          showAppearanceHeader={false}
+          showTargetSettingsHeader={false}
+          showReportsHeader={false}
+          showProfileHeader={false}
         />
 
         <main className="flex-1 w-full mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 overflow-y-auto" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
           {/* Conditional Rendering based on activeMenu */}
-              {(activeMenu === 'dashboard' || activeMenu === 'overview') && data && (
+          {(activeMenu === 'dashboard' || activeMenu === 'overview') && dataLoading && (
+            <div className="flex min-h-[400px] items-center justify-center">
+              <Loading size="lg" text={`Loading ${translations.nav.overview}...`} variant="gaming" />
+            </div>
+          )}
+              {(activeMenu === 'dashboard' || activeMenu === 'overview') && data && !dataLoading && (
             <>
               {/* Top Section - User, Month, and Cycle Slicers (Aligned) */}
               <div className="flex flex-col items-center gap-4 mb-6 select-none -mt-4">
@@ -753,6 +757,7 @@ function DashboardContent() {
           {activeMenu === 'leaderboard' && <LeaderboardPage />}
           {activeMenu === 'targets' && <TargetsPage />}
           {!isLimitedAccess && activeMenu === 'target-settings' && <TargetSettingsPage />}
+          {!isLimitedAccess && activeMenu === 'pk-score-rules' && <PKScoreRulesPage />}
           {activeMenu === 'customer-listing' && <CustomerListingPage />}
           {activeMenu === 'reports' && <ReportsPage />}
           {activeMenu === 'battle-arena' && <BattleArenaPage />}
