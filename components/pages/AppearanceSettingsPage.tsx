@@ -160,7 +160,7 @@ export function AppearanceSettingsPage() {
           <Icon className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-foreground-primary text-base sm:text-lg">{title}</h3>
+          <h3 className="font-heading font-semibold text-foreground-primary text-base sm:text-lg">{title}</h3>
           {description && (
             <p className="text-sm text-muted mt-1">{description}</p>
           )}
@@ -262,7 +262,7 @@ export function AppearanceSettingsPage() {
             <div className="p-2 rounded-lg bg-primary/10">
               <Palette className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-foreground-primary">{translations.appearance.theme}</h2>
+            <h2 className="font-heading text-xl font-bold text-foreground-primary">{translations.appearance.theme}</h2>
           </div>
           <SettingCard
             title={translations.appearance.colorMode}
@@ -309,7 +309,7 @@ export function AppearanceSettingsPage() {
             <div className="p-2 rounded-lg bg-primary/10">
               <Type className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="text-xl font-bold text-foreground-primary">{translations.appearance.typography}</h2>
+            <h2 className="font-heading text-xl font-bold text-foreground-primary">{translations.appearance.typography}</h2>
           </div>
           <SettingCard
             title={translations.appearance.fontSize}
@@ -354,7 +354,7 @@ export function AppearanceSettingsPage() {
           <div className="p-2 rounded-lg bg-primary/10">
             <Layout className="w-5 h-5 text-primary" />
           </div>
-          <h2 className="text-xl font-bold text-foreground-primary">{translations.appearance.layoutBehavior}</h2>
+          <h2 className="font-heading text-xl font-bold text-foreground-primary">{translations.appearance.layoutBehavior}</h2>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Layout Density */}
@@ -417,7 +417,7 @@ export function AppearanceSettingsPage() {
           <div className="p-2 rounded-lg bg-primary/10">
             <Zap className="w-5 h-5 text-primary" />
           </div>
-          <h2 className="text-xl font-bold text-foreground-primary">{translations.appearance.accessibility}</h2>
+          <h2 className="font-heading text-xl font-bold text-foreground-primary">{translations.appearance.accessibility}</h2>
         </div>
         <SettingCard
           title={translations.appearance.motion}

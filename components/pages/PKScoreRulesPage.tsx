@@ -139,7 +139,7 @@ export function PKScoreRulesPage() {
           <Card className="relative overflow-hidden">
             <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
             <CardHeader className="relative z-10">
-              <CardTitle className="flex items-center gap-2 text-primary">
+              <CardTitle className="font-heading flex items-center gap-2 text-primary">
                 <TrendingUp className="w-5 h-5" />
                 Score Rules
               </CardTitle>
@@ -258,7 +258,7 @@ export function PKScoreRulesPage() {
           <Card className="relative overflow-hidden">
             <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
             <CardHeader className="relative z-10">
-              <CardTitle className="flex items-center gap-2 text-primary">
+              <CardTitle className="font-heading flex items-center gap-2 text-primary">
                 <TrendingUp className="w-5 h-5" />
                 Traffic Source Rules
               </CardTitle>

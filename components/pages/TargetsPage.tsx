@@ -971,7 +971,7 @@ export function TargetsPage() {
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-card-border">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground-primary">
+                  <h2 className="font-heading text-2xl font-bold text-foreground-primary">
                     {selectedBrand} - {selectedCycle.name}
                   </h2>
                   <p className="text-sm text-muted mt-1">
