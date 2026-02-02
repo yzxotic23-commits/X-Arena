@@ -4,6 +4,15 @@ import { supabase2 } from './supabase-client-2';
 // ⚠️ WARNING: Only use this for testing. In production, fix RLS policy instead.
 import { supabaseServer } from './supabase-server';
 
+// Cache for adjustment data and user mappings to avoid redundant queries
+const adjustmentCache = new Map<string, {
+  adjustments: any[];
+  usernameToFullName: Map<string, string>;
+  timestamp: number;
+}>();
+
+const CACHE_TTL = 30000; // 30 seconds cache
+
 // Use supabaseServer (service_role) if available, otherwise use supabase (anon key)
 // This is a temporary workaround for RLS issue with customer_extra table
 const useServiceRole = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -109,6 +118,14 @@ export async function calculateMemberScore(
   selectedMonth: string,
   cycle: string = 'All'
 ): Promise<MemberScoreData> {
+  // Normalize brand for database queries (OK188SG -> OK188)
+  // Database only stores OK188, not OK188SG
+  let normalizedBrand = brand.toUpperCase().trim();
+  if (normalizedBrand === 'OK188SG') {
+    normalizedBrand = 'OK188';
+  }
+  brand = normalizedBrand;
+  
   if (!targetPersonal) {
     return {
       score: 0,
@@ -181,21 +198,44 @@ export async function calculateMemberScore(
       clientType: typeof supabase,
     });
     
-    const retentionQuery = supabase.from('customer_retention').select('unique_code, brand').eq('handler', shift).eq('brand', brand);
-    const reactivationQuery = supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', shift).eq('brand', brand);
-    const recommendQuery = supabase.from('customer_recommend').select('unique_code, brand').eq('handler', shift).eq('brand', brand);
+    // ✅ CRITICAL: Filter by month to ensure data from month 1 doesn't appear in month 2
+    // ✅ CRITICAL: Handle both OK188 and OK188SG in customer listing
+    // Customer listing might have OK188SG, but we query with both formats to catch all data
+    const brandVariants = brand === 'OK188' ? ['OK188', 'OK188SG'] : [brand];
+    
+    const retentionQuery = supabase.from('customer_retention')
+      .select('unique_code, brand')
+      .eq('handler', shift)
+      .in('brand', brandVariants)
+      .eq('month', selectedMonth);
+    const reactivationQuery = supabase.from('customer_reactivation')
+      .select('unique_code, brand')
+      .eq('handler', shift)
+      .in('brand', brandVariants)
+      .eq('month', selectedMonth);
+    const recommendQuery = supabase.from('customer_recommend')
+      .select('unique_code, brand')
+      .eq('handler', shift)
+      .in('brand', brandVariants)
+      .eq('month', selectedMonth);
     // Use supabaseClient (service_role if available, otherwise anon) for customer_extra
     // This is a temporary workaround for RLS issue
-    const extraQuery = supabaseClient.from('customer_extra').select('unique_code, brand').eq('handler', shift).eq('brand', brand);
+    const extraQuery = supabaseClient.from('customer_extra')
+      .select('unique_code, brand')
+      .eq('handler', shift)
+      .in('brand', brandVariants)
+      .eq('month', selectedMonth);
     
     // ✅ Log the actual query being executed for customer_extra
-    console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}) - Executing customer_extra query:`, {
-      table: 'customer_extra',
+    console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}) - Executing customer listing queries:`, {
+      table: 'customer_*',
       filters: {
         handler: shift,
         brand: brand,
+        brandVariants: brandVariants, // Show both OK188 and OK188SG if applicable
+        month: selectedMonth,
       },
-      queryString: `SELECT unique_code, brand FROM customer_extra WHERE handler = '${shift}' AND brand = '${brand}'`,
+      note: 'Querying customer listing with brand variants to handle both OK188 and OK188SG formats',
     });
     
     // ✅ Execute queries and log timing
@@ -527,53 +567,81 @@ export async function calculateMemberScore(
     const days16_19Score = daysCounts.days_16_19 * targetPersonal.days_16_19;
     const days20PlusScore = daysCounts.days_20_plus * targetPersonal.days_20_more;
 
-    const totalScore = depositScore + retentionScore + reactivationScore + recommendScore +
-      days4_7Score + days8_11Score + days12_15Score + days16_19Score + days20PlusScore;
+    // Fetch adjustment score for X-Arena
+    // ✅ OPTIMIZED: Use cache to avoid redundant queries
+    let adjustmentScore = 0;
+    try {
+      const cacheKey = `${selectedMonth}-X-Arena`;
+      const now = Date.now();
+      let cached = adjustmentCache.get(cacheKey);
+      
+      // Check if cache is valid
+      if (!cached || (now - cached.timestamp) > CACHE_TTL) {
+        // Fetch all adjustments and user mappings once for the month (batch fetch)
+        const [adjustmentsResult, usersResult] = await Promise.all([
+          supabase
+            .from('customer_adjustment')
+            .select('employee_name, score, type, month')
+            .eq('type', 'X-Arena')
+            .eq('month', selectedMonth),
+          supabase
+            .from('users_management')
+            .select('username, full_name')
+            .eq('status', 'active')
+        ]);
+        
+        const allAdjustments = adjustmentsResult.data || [];
+        const usernameToFullName = new Map<string, string>();
+        
+        if (usersResult.data) {
+          usersResult.data.forEach((user: any) => {
+            if (user.username && user.full_name) {
+              usernameToFullName.set(user.username, user.full_name.trim());
+            }
+          });
+        }
+        
+        // Cache the data
+        cached = {
+          adjustments: allAdjustments,
+          usernameToFullName,
+          timestamp: now
+        };
+        adjustmentCache.set(cacheKey, cached);
+      }
+      
+      // Get full_name from cache
+      let normalizedFullName: string | null = cached.usernameToFullName.get(username) || null;
+      
+      if (!normalizedFullName) {
+        // Fallback: Use username as full_name
+        normalizedFullName = username.trim();
+      }
+      
+      if (normalizedFullName && cached.adjustments.length > 0) {
+        // Filter by case-insensitive employee_name match (in memory, fast)
+        const matchingAdjustments = cached.adjustments.filter(item => {
+          const itemName = (item.employee_name || '').trim();
+          return itemName.toLowerCase() === normalizedFullName!.toLowerCase();
+        });
+        
+        if (matchingAdjustments.length > 0) {
+          adjustmentScore = matchingAdjustments.reduce((sum, item) => sum + (parseFloat(String(item.score || 0)) || 0), 0);
+        }
+      }
+    } catch (error) {
+      console.error(`[Calculate Score - Library] Error fetching adjustment score for ${username}:`, error);
+    }
 
-    // Debug logging to match Reports calculation
-    console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}):`, {
-      selectedMonth,
-      cycle,
-      dateRange: {
-        startDate: startDateStr,
-        endDate: endDateStr,
-      },
-      targetPersonal: {
-        deposit_amount: targetPersonal.deposit_amount,
-        retention: targetPersonal.retention,
-        reactivation: targetPersonal.reactivation,
-        recommend: targetPersonal.recommend,
-        days_4_7: targetPersonal.days_4_7,
-        days_8_11: targetPersonal.days_8_11,
-        days_12_15: targetPersonal.days_12_15,
-        days_16_19: targetPersonal.days_16_19,
-        days_20_more: targetPersonal.days_20_more,
-      },
-      rawData: {
-        totalDeposit,
-        retentionCount,
-        reactivationCount,
-        recommendCount,
-        days_4_7: daysCounts.days_4_7,
-        days_8_11: daysCounts.days_8_11,
-        days_12_15: daysCounts.days_12_15,
-        days_16_19: daysCounts.days_16_19,
-        days_20_plus: daysCounts.days_20_plus,
-      },
-      scores: {
-        depositScore,
-        retentionScore,
-        reactivationScore,
-        recommendScore,
-        days4_7Score,
-        days8_11Score,
-        days12_15Score,
-        days16_19Score,
-        days20PlusScore,
-      },
-      totalScoreBeforeRound: totalScore,
-      totalScoreAfterRound: Math.round(totalScore),
-    });
+    // Calculate total score INCLUDING adjustment
+    const baseScore = depositScore + retentionScore + reactivationScore + recommendScore +
+      days4_7Score + days8_11Score + days12_15Score + days16_19Score + days20PlusScore;
+    const totalScore = baseScore + adjustmentScore;
+
+    // Reduced logging for performance (only log if adjustment found)
+    if (adjustmentScore > 0) {
+      console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}): Base=${Math.round(baseScore)}, Adjustment=+${adjustmentScore}, Total=${Math.round(totalScore)}`);
+    }
 
     // Calculate breakdown scores (points for each category) - same calculation as in library
     const breakdown = {
@@ -590,16 +658,30 @@ export async function calculateMemberScore(
 
     const breakdownSum = breakdown.deposit + breakdown.retention + breakdown.activation + breakdown.referral +
       breakdown.days_4_7 + breakdown.days_8_11 + breakdown.days_12_15 + breakdown.days_16_19 + breakdown.days_20_plus;
+    
+    // Breakdown sum + adjustment should equal total score
+    const breakdownWithAdjustment = breakdownSum + adjustmentScore;
 
-    console.log(`[Calculate Score - Library] ${username} Breakdown from library:`, {
-      breakdown,
-      breakdownSum,
-      totalScore: Math.round(totalScore),
-      match: breakdownSum === Math.round(totalScore) ? '✅ MATCH' : '❌ MISMATCH',
-    });
+    // Reduced logging for performance
+    if (adjustmentScore > 0) {
+      console.log(`[Calculate Score - Library] ${username} Breakdown: Sum=${breakdownSum}, Adjustment=+${adjustmentScore}, Total=${Math.round(totalScore)}`);
+    }
 
+    // ✅ FINAL: Return score with adjustment included
+    const finalScore = Math.round(totalScore);
+    
+    // Reduced logging for performance (only log if adjustment found)
+    if (adjustmentScore > 0) {
+      console.log(`[Calculate Score - Library] ${username} - Adjustment: +${adjustmentScore} (Final: ${finalScore})`);
+    }
+
+    // ✅ CRITICAL: Verify adjustment is included in returned score
+    if (adjustmentScore > 0 && finalScore === Math.round(baseScore)) {
+      console.error(`[Calculate Score - Library] ⚠️ WARNING: Adjustment score (${adjustmentScore}) not included in final score!`);
+    }
+    
     return {
-      score: Math.round(totalScore),
+      score: finalScore, // ✅ This includes adjustment score
       deposits: totalDeposit,
       retention: retentionCount,
       dormant: reactivationCount,

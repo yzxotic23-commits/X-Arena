@@ -5,37 +5,21 @@
  * Monthly Cycle Overview, Accumulate Score Overview
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Trophy, Crown, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-
-// ============ DUMMY DATA (Replace with API) ============
-const DUMMY_CYCLE_SCORE = { cycle: 'Cycle 3', squadA: 268, squadB: 272 };
-const DUMMY_MONTHLY_SCORE = { month: 'January', squadA: 820, squadB: 795 };
-const DUMMY_CYCLE_OVERVIEW: Record<string, string | number>[] = [
-  { 'Cycle': 'Cycle 1', 'Squad A': 195, 'Squad B': 182 },
-  { 'Cycle': 'Cycle 2', 'Squad A': 218, 'Squad B': 225 },
-  { 'Cycle': 'Cycle 3', 'Squad A': 268, 'Squad B': 272 },
-  { 'Cycle': 'Cycle 4', 'Squad A': 0, 'Squad B': 0 },
-];
-const DUMMY_CYCLE_BREAKDOWN: Record<string, string | number>[] = [
-  { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': 45, 'Squad B': 52 },
-  { 'Metrics': 'Recommend', 'Squad A': 120, 'Squad B': 115 },
-  { 'Metrics': 'Active Member', 'Squad A': 103, 'Squad B': 105 },
-];
-const DUMMY_MONTHLY_BREAKDOWN: Record<string, string | number>[] = [
-  { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': 135, 'Squad B': 128 },
-  { 'Metrics': 'Recommend', 'Squad A': 365, 'Squad B': 350 },
-  { 'Metrics': 'Active Member', 'Squad A': 320, 'Squad B': 317 },
-];
-const DUMMY_ACHIEVEMENTS = [
-  { id: '1', badge: '🎯', text: '<strong>Squad A</strong> hit 200 pts in Cycle 3!', type: 'squad' },
-  { id: '2', badge: '📈', text: '<strong>Sarah</strong> scored 15 pts today', type: 'performance' },
-  { id: '3', badge: '🏆', text: '<strong>Squad B</strong> leads monthly total', type: 'squad' },
-];
-const DUMMY_CUSTOMER_STATS = { totalCustomers: 746, squadACustomers: 420, squadBCustomers: 326 };
+import { 
+  calculateBattleScores, 
+  getPKScoreRules, 
+  getSquadMapping,
+  getCycleDateRange,
+  getMonthDateRange,
+  type ScoreBreakdown,
+  type SquadMapping
+} from '@/lib/battle-arena-helpers';
+import { Loading } from '@/components/Loading';
 
 // Crown Badge Icon
 const CrownBadgeIcon: React.FC = () => (
@@ -73,14 +57,11 @@ const CustomTooltip = ({ active, payload, label, squadColor }: any) => {
 };
 
 export function BattleArenaPage() {
-  const cycleScore = DUMMY_CYCLE_SCORE;
-  const monthlyScore = DUMMY_MONTHLY_SCORE;
-  const cycleOverview = DUMMY_CYCLE_OVERVIEW;
-
   const getCurrentMonth = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   };
+
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth);
   const [selectedCycle, setSelectedCycle] = useState<string>('All');
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
@@ -90,20 +71,43 @@ export function BattleArenaPage() {
   const currentYear = new Date().getFullYear();
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const cycles = ['All', 'Cycle 1', 'Cycle 2', 'Cycle 3', 'Cycle 4'];
+
+  // State for data
+  const [loading, setLoading] = useState(true);
+  const [cycleScore, setCycleScore] = useState({ cycle: 'Cycle 1', squadA: 0, squadB: 0 });
+  const [monthlyScore, setMonthlyScore] = useState({ month: getCurrentMonth(), squadA: 0, squadB: 0 });
+  const [cycleOverview, setCycleOverview] = useState<Record<string, string | number>[]>([]);
+  const [cycleBreakdown, setCycleBreakdown] = useState<Record<string, string | number>[]>([
+    { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': 0, 'Squad B': 0 },
+    { 'Metrics': 'Recommend', 'Squad A': 0, 'Squad B': 0 },
+    { 'Metrics': 'Active Member', 'Squad A': 0, 'Squad B': 0 }
+  ]);
+  const [monthlyBreakdown, setMonthlyBreakdown] = useState<Record<string, string | number>[]>([
+    { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': 0, 'Squad B': 0 },
+    { 'Metrics': 'Recommend', 'Squad A': 0, 'Squad B': 0 },
+    { 'Metrics': 'Active Member', 'Squad A': 0, 'Squad B': 0 }
+  ]);
+  const [achievements, setAchievements] = useState<Array<{ id: string; badge: string; text: string; type: string }>>([]);
+  const [customerStats, setCustomerStats] = useState({ totalCustomers: 0, squadACustomers: 0, squadBCustomers: 0 });
+  const [squadMapping, setSquadMapping] = useState<SquadMapping>({});
+
   const getMonthName = (monthStr: string): string => {
     const [year, month] = monthStr.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1, 1);
     return date.toLocaleDateString('en-US', { month: 'long' });
   };
+
   const handleMonthChange = (monthIndex: number) => {
     const month = String(monthIndex + 1).padStart(2, '0');
     setSelectedMonth(`${currentYear}-${month}`);
     setShowMonthDropdown(false);
   };
+
   const handleCycleChange = (cycle: string) => {
     setSelectedCycle(cycle);
     setShowCycleDropdown(false);
   };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (monthDropdownRef.current && !monthDropdownRef.current.contains(event.target as Node)) setShowMonthDropdown(false);
@@ -113,10 +117,118 @@ export function BattleArenaPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMonthDropdown, showCycleDropdown]);
 
-  const cycleBreakdown = DUMMY_CYCLE_BREAKDOWN;
-  const monthlyBreakdown = DUMMY_MONTHLY_BREAKDOWN;
-  const achievements = DUMMY_ACHIEVEMENTS;
-  const customerStats = DUMMY_CUSTOMER_STATS;
+  // Fetch battle data
+  const fetchBattleData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Get score rules and squad mapping
+      const scoreRules = getPKScoreRules();
+      const mapping = await getSquadMapping();
+      setSquadMapping(mapping);
+
+      // Calculate current cycle score (or monthly if "All")
+      let cycleResult;
+      if (selectedCycle !== 'All') {
+        cycleResult = await calculateBattleScores(selectedMonth, selectedCycle, scoreRules, mapping);
+        setCycleScore({
+          cycle: selectedCycle,
+          squadA: cycleResult.squadA,
+          squadB: cycleResult.squadB
+        });
+      } else {
+        // If "All", use monthly score for cycle display
+        cycleResult = await calculateBattleScores(selectedMonth, null, scoreRules, mapping);
+        setCycleScore({
+          cycle: 'All',
+          squadA: cycleResult.squadA,
+          squadB: cycleResult.squadB
+        });
+      }
+      setCycleBreakdown([
+        { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': cycleResult.breakdown.reactivation.squadA, 'Squad B': cycleResult.breakdown.reactivation.squadB },
+        { 'Metrics': 'Recommend', 'Squad A': cycleResult.breakdown.recommend.squadA, 'Squad B': cycleResult.breakdown.recommend.squadB },
+        { 'Metrics': 'Active Member', 'Squad A': cycleResult.breakdown.activeMember.squadA, 'Squad B': cycleResult.breakdown.activeMember.squadB }
+      ]);
+
+      // Set achievements (empty for now)
+      setAchievements([]);
+
+      // Set customer stats (placeholder)
+      setCustomerStats({ totalCustomers: 0, squadACustomers: 0, squadBCustomers: 0 });
+    } catch (error) {
+      console.error('Error fetching battle data:', error);
+      // Set default values on error to prevent stuck loading
+      setCycleScore({ cycle: selectedCycle !== 'All' ? selectedCycle : 'Cycle 1', squadA: 0, squadB: 0 });
+      setMonthlyScore({ month: selectedMonth, squadA: 0, squadB: 0 });
+      setCycleBreakdown([
+        { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': 0, 'Squad B': 0 },
+        { 'Metrics': 'Recommend', 'Squad A': 0, 'Squad B': 0 },
+        { 'Metrics': 'Active Member', 'Squad A': 0, 'Squad B': 0 }
+      ]);
+      setMonthlyBreakdown([
+        { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': 0, 'Squad B': 0 },
+        { 'Metrics': 'Recommend', 'Squad A': 0, 'Squad B': 0 },
+        { 'Metrics': 'Active Member', 'Squad A': 0, 'Squad B': 0 }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedMonth, selectedCycle]);
+
+  // Fetch monthly score and cycle overview separately (only when month changes, not cycle)
+  const fetchMonthlyData = useCallback(async () => {
+    try {
+      const scoreRules = getPKScoreRules();
+      const mapping = await getSquadMapping();
+      
+      // Calculate monthly score and cycle overview in parallel
+      const [monthlyResult, ...cycleResults] = await Promise.all([
+        calculateBattleScores(selectedMonth, null, scoreRules, mapping),
+        ...Array.from({ length: 4 }, (_, i) => calculateBattleScores(selectedMonth, `Cycle ${i + 1}`, scoreRules, mapping))
+      ]);
+      
+      // Set monthly score
+      setMonthlyScore({
+        month: selectedMonth,
+        squadA: monthlyResult.squadA,
+        squadB: monthlyResult.squadB
+      });
+      setMonthlyBreakdown([
+        { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': monthlyResult.breakdown.reactivation.squadA, 'Squad B': monthlyResult.breakdown.reactivation.squadB },
+        { 'Metrics': 'Recommend', 'Squad A': monthlyResult.breakdown.recommend.squadA, 'Squad B': monthlyResult.breakdown.recommend.squadB },
+        { 'Metrics': 'Active Member', 'Squad A': monthlyResult.breakdown.activeMember.squadA, 'Squad B': monthlyResult.breakdown.activeMember.squadB }
+      ]);
+      
+      // Set cycle overview
+      const cycleOverviewData: Record<string, string | number>[] = cycleResults.map((result, index) => ({
+        'Cycle': `Cycle ${index + 1}`,
+        'Squad A': result.squadA,
+        'Squad B': result.squadB
+      }));
+      setCycleOverview(cycleOverviewData);
+    } catch (error) {
+      console.error('Error fetching monthly data:', error);
+      setMonthlyScore({ month: selectedMonth, squadA: 0, squadB: 0 });
+      setMonthlyBreakdown([
+        { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': 0, 'Squad B': 0 },
+        { 'Metrics': 'Recommend', 'Squad A': 0, 'Squad B': 0 },
+        { 'Metrics': 'Active Member', 'Squad A': 0, 'Squad B': 0 }
+      ]);
+      setCycleOverview([]);
+    }
+  }, [selectedMonth]);
+
+  useEffect(() => {
+    fetchBattleData();
+  }, [fetchBattleData]);
+
+  useEffect(() => {
+    fetchMonthlyData();
+  }, [fetchMonthlyData]);
+
+  useEffect(() => {
+    fetchBattleData();
+  }, [fetchBattleData]);
 
   const currentCycle = cycleScore.cycle;
 
@@ -136,13 +248,16 @@ export function BattleArenaPage() {
     const row = data.find(item => item.Metrics === metric);
     return row ? (typeof row[squad] === 'number' ? row[squad] : undefined) : undefined;
   };
-  const combinedMetrics = contributionMetrics.map(metric => ({
-    metric,
-    cycleA: getContributionScore(cycleBreakdown, metric, 'Squad A'),
-    cycleB: getContributionScore(cycleBreakdown, metric, 'Squad B'),
-    monthA: getContributionScore(monthlyBreakdown, metric, 'Squad A'),
-    monthB: getContributionScore(monthlyBreakdown, metric, 'Squad B'),
-  }));
+  // Use useMemo to ensure combinedMetrics recalculates when monthlyBreakdown changes
+  const combinedMetrics = useMemo(() => {
+    return contributionMetrics.map(metric => ({
+      metric,
+      cycleA: getContributionScore(cycleBreakdown, metric, 'Squad A'),
+      cycleB: getContributionScore(cycleBreakdown, metric, 'Squad B'),
+      monthA: getContributionScore(monthlyBreakdown, metric, 'Squad A'),
+      monthB: getContributionScore(monthlyBreakdown, metric, 'Squad B'),
+    }));
+  }, [cycleBreakdown, monthlyBreakdown]);
   const formatScoreValue = (v: number | string | undefined) => (v === undefined || v === null ? '-' : typeof v === 'number' ? v.toLocaleString() : v);
 
   const renderBreakdownCard = (squad: 'Squad A' | 'Squad B') => {
@@ -153,8 +268,8 @@ export function BattleArenaPage() {
     const monthlyShare = customerStats.totalCustomers > 0 ? parseFloat(((monthlyValue / customerStats.totalCustomers) * 100).toFixed(1)) : 0;
     const metrics = combinedMetrics.map(m => ({
       label: m.metric,
-      cycle: squad === 'Squad A' ? m.cycleA : m.cycleB,
-      overall: squad === 'Squad A' ? m.monthA : m.monthB,
+      cycle: squad === 'Squad A' ? (m.cycleA ?? 0) : (m.cycleB ?? 0),
+      overall: squad === 'Squad A' ? (m.monthA ?? 0) : (m.monthB ?? 0),
     }));
 
     return (
@@ -202,7 +317,7 @@ export function BattleArenaPage() {
           {metrics.map(m => (
             <div className="metric-table-row" key={`${squad}-${m.label}`}>
               <span className="metric-table-label">{m.label}</span>
-              <span className="metric-table-value">{currentCycle}</span>
+              <span className="metric-table-value">{selectedCycle !== 'All' ? selectedCycle : cycleScore.cycle}</span>
               <span className="metric-table-value">{formatScoreValue(m.cycle)}</span>
               <span className="metric-table-value">{formatScoreValue(m.overall)}</span>
             </div>
@@ -212,17 +327,25 @@ export function BattleArenaPage() {
     );
   };
 
-  const accumulateSquadA = cycleOverview.reduce((t, r) => t + (typeof r['Squad A'] === 'number' ? r['Squad A'] : 0), 0);
-  const accumulateSquadB = cycleOverview.reduce((t, r) => t + (typeof r['Squad B'] === 'number' ? r['Squad B'] : 0), 0);
+  const accumulateSquadA = (cycleOverview || []).reduce((t, r) => t + (typeof r['Squad A'] === 'number' ? r['Squad A'] : 0), 0);
+  const accumulateSquadB = (cycleOverview || []).reduce((t, r) => t + (typeof r['Squad B'] === 'number' ? r['Squad B'] : 0), 0);
   const totalWinner = accumulateSquadA > accumulateSquadB ? 'Squad A' : accumulateSquadB > accumulateSquadA ? 'Squad B' : 'Tie';
-  const squadAChartData = cycleOverview.map((r, i) => ({
+  const squadAChartData = (cycleOverview || []).map((r, i) => ({
     cycle: ((r.cycle as string) ?? r.Cycle ?? `Cycle ${i + 1}`).replace('Cycle ', 'C'),
     score: typeof r['Squad A'] === 'number' ? r['Squad A'] : 0,
   }));
-  const squadBChartData = cycleOverview.map((r, i) => ({
+  const squadBChartData = (cycleOverview || []).map((r, i) => ({
     cycle: ((r.cycle as string) ?? r.Cycle ?? `Cycle ${i + 1}`).replace('Cycle ', 'C'),
     score: typeof r['Squad B'] === 'number' ? r['Squad B'] : 0,
   }));
+
+  if (loading) {
+    return (
+      <div className="battle-arena-embed">
+        <Loading text="Loading battle arena..." variant="gaming" />
+      </div>
+    );
+  }
 
   return (
     <div className="battle-arena-embed">
@@ -447,7 +570,7 @@ export function BattleArenaPage() {
                 <p>Cycle-by-cycle champion recap per squad</p>
               </div>
               <div className="cycle-grid">
-                {cycleOverview.map((row, idx) => {
+                {(cycleOverview || []).map((row, idx) => {
                   const squadAScore = typeof row['Squad A'] === 'number' ? row['Squad A'] : 0;
                   const squadBScore = typeof row['Squad B'] === 'number' ? row['Squad B'] : 0;
                   const winner = squadAScore > squadBScore ? 'Squad A' : squadBScore > squadAScore ? 'Squad B' : 'Tie';

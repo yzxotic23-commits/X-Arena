@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Plus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +35,36 @@ const INITIAL_SCORE_RULES = {
 export function PKScoreRulesPage() {
   const { language } = useLanguage();
   const translations = t(language);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('pkScoreRules');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Convert from battle-arena-helpers format to PKScoreRulesPage format
+        if (parsed.reactivation || parsed.recommend || parsed.activeMember) {
+          const loadedRules = {
+            reactivationPoints: parsed.reactivation?.points ?? INITIAL_SCORE_RULES.reactivationPoints,
+            recommendPoints: parsed.recommend?.points ?? INITIAL_SCORE_RULES.recommendPoints,
+            activeMemberPoints: parsed.activeMember?.points ?? INITIAL_SCORE_RULES.activeMemberPoints,
+            reactivationOpponent: (parsed.reactivation?.opponent ?? INITIAL_SCORE_RULES.reactivationOpponent) as OpponentEffect,
+            recommendOpponent: (parsed.recommend?.opponent ?? INITIAL_SCORE_RULES.recommendOpponent) as OpponentEffect,
+            activeMemberOpponent: (parsed.activeMember?.opponent ?? INITIAL_SCORE_RULES.activeMemberOpponent) as OpponentEffect,
+          };
+          setSavedScoreRules(loadedRules);
+          setReactivationPoints(loadedRules.reactivationPoints);
+          setRecommendPoints(loadedRules.recommendPoints);
+          setActiveMemberPoints(loadedRules.activeMemberPoints);
+          setReactivationOpponent(loadedRules.reactivationOpponent);
+          setRecommendOpponent(loadedRules.recommendOpponent);
+          setActiveMemberOpponent(loadedRules.activeMemberOpponent);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading PK Score Rules from localStorage:', error);
+    }
+  }, []);
 
   // Saved snapshot (after Save or on load)
   const [savedScoreRules, setSavedScoreRules] = useState(INITIAL_SCORE_RULES);
@@ -73,7 +103,28 @@ export function PKScoreRulesPage() {
       activeMemberOpponent,
     };
     setSavedScoreRules(next);
-    // TODO: persist to API/localStorage
+    
+    // Save to localStorage in format expected by battle-arena-helpers
+    try {
+      const rulesToSave = {
+        reactivation: {
+          points: reactivationPoints,
+          opponent: reactivationOpponent
+        },
+        recommend: {
+          points: recommendPoints,
+          opponent: recommendOpponent
+        },
+        activeMember: {
+          points: activeMemberPoints,
+          opponent: activeMemberOpponent
+        }
+      };
+      localStorage.setItem('pkScoreRules', JSON.stringify(rulesToSave));
+      console.log('[PK Score Rules] Saved to localStorage:', rulesToSave);
+    } catch (error) {
+      console.error('Error saving PK Score Rules to localStorage:', error);
+    }
   };
 
   // Traffic Source: saved snapshot (after Save or on load)

@@ -546,10 +546,11 @@ export function LeaderboardPage() {
         const endDateStr = formatDateLocal(endDate);
 
         // Get customers from customer listing
+        // ✅ CRITICAL: Filter by month to ensure data from month 1 doesn't appear in month 2
         const [retentionCustomers, reactivationCustomers, recommendCustomers] = await Promise.all([
-          supabase.from('customer_retention').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand),
-          supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand),
-          supabase.from('customer_recommend').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand),
+          supabase.from('customer_retention').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand).eq('month', selectedMonth),
+          supabase.from('customer_reactivation').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand).eq('month', selectedMonth),
+          supabase.from('customer_recommend').select('unique_code, brand').eq('handler', mapping.shift).eq('brand', mapping.brand).eq('month', selectedMonth),
         ]);
 
         const allUniqueCodes = Array.from(new Set([

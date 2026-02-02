@@ -436,6 +436,31 @@ export function ReportsPage() {
     };
   };
   
+  // Helper function to normalize brand for database queries
+  // OK188SG (from customer listing or brand mapping) -> OK188 (for database queries)
+  // Database (blue_whale_sgd) only stores "OK188", not "OK188SG"
+  const normalizeBrandFromDB = (brand: string): string => {
+    if (!brand) return '';
+    const normalized = brand.toUpperCase().trim();
+    // Always normalize OK188SG to OK188 for database queries
+    if (normalized === 'OK188SG') {
+      return 'OK188';
+    }
+    return normalized;
+  };
+
+  // Helper function to normalize brand for mapping comparison
+  // Used when comparing with brand_mapping (which uses OK188)
+  const normalizeBrandForMapping = (brand: string): string => {
+    if (!brand) return '';
+    const normalized = brand.toUpperCase().trim();
+    // Brand mapping uses OK188, so normalize OK188SG to OK188 for comparison
+    if (normalized === 'OK188SG') {
+      return 'OK188';
+    }
+    return normalized;
+  };
+
   // Fetch brand mapping
   const fetchBrandMapping = useCallback(async () => {
     try {
@@ -489,23 +514,28 @@ export function ReportsPage() {
       const squadBMembersMap = new Map<string, SquadMemberData[]>();
 
       (data ?? []).forEach((row: any) => {
+        let brand = row.brand || 'Unknown';
+        // Normalize brand from database (OK188SG -> OK188) for consistency
+        brand = normalizeBrandFromDB(brand);
+        
         const member: SquadMemberData = {
           username: row.username || 'Unknown',
-          brand: row.brand || 'Unknown',
+          brand: brand,
           shift: row.shift || 'Unknown',
         };
 
-        // Determine which squad this brand belongs to
-        if (squadABrands.includes(member.brand)) {
-          if (!squadAMembersMap.has(member.brand)) {
-            squadAMembersMap.set(member.brand, []);
+        // Determine which squad this brand belongs to (check both original and normalized)
+        const brandForMapping = normalizeBrandForMapping(brand);
+        if (squadABrands.includes(brand) || squadABrands.includes(brandForMapping)) {
+          if (!squadAMembersMap.has(brand)) {
+            squadAMembersMap.set(brand, []);
           }
-          squadAMembersMap.get(member.brand)!.push(member);
-        } else if (squadBBrands.includes(member.brand)) {
-          if (!squadBMembersMap.has(member.brand)) {
-            squadBMembersMap.set(member.brand, []);
+          squadAMembersMap.get(brand)!.push(member);
+        } else if (squadBBrands.includes(brand) || squadBBrands.includes(brandForMapping)) {
+          if (!squadBMembersMap.has(brand)) {
+            squadBMembersMap.set(brand, []);
           }
-          squadBMembersMap.get(member.brand)!.push(member);
+          squadBMembersMap.get(brand)!.push(member);
         }
       });
 
@@ -519,8 +549,10 @@ export function ReportsPage() {
         
         // Process all members in parallel (batch processing)
         const memberPromises = members.map(async (member) => {
-          console.log(`[Score] Calculating score for ${member.username} (${member.shift}, ${member.brand})...`);
-          const scoreData = await calculateMemberScore(member.username, member.shift, member.brand);
+          // Normalize brand before querying database (OK188SG -> OK188)
+          const normalizedBrand = normalizeBrandFromDB(member.brand);
+          console.log(`[Score] Calculating score for ${member.username} (${member.shift}, ${member.brand} -> ${normalizedBrand})...`);
+          const scoreData = await calculateMemberScore(member.username, member.shift, normalizedBrand);
           console.log(`[Score] ${member.username}: Score=${scoreData.score}, Deposits=${scoreData.deposits}, Retention=${scoreData.retention}, Reactivation=${scoreData.dormant}, Recommend=${scoreData.referrals}`);
           return { username: member.username, scoreData };
         });
@@ -544,8 +576,10 @@ export function ReportsPage() {
         
         // Process all members in parallel (batch processing)
         const memberPromises = members.map(async (member) => {
-          console.log(`[Score] Calculating score for ${member.username} (${member.shift}, ${member.brand})...`);
-          const scoreData = await calculateMemberScore(member.username, member.shift, member.brand);
+          // Normalize brand before querying database (OK188SG -> OK188)
+          const normalizedBrand = normalizeBrandFromDB(member.brand);
+          console.log(`[Score] Calculating score for ${member.username} (${member.shift}, ${member.brand} -> ${normalizedBrand})...`);
+          const scoreData = await calculateMemberScore(member.username, member.shift, normalizedBrand);
           console.log(`[Score] ${member.username}: Score=${scoreData.score}, Deposits=${scoreData.deposits}, Retention=${scoreData.retention}, Reactivation=${scoreData.dormant}, Recommend=${scoreData.referrals}`);
           return { username: member.username, scoreData };
         });
@@ -622,7 +656,9 @@ export function ReportsPage() {
       const brandActiveCustomers = new Map<string, Set<string>>();
       
       (data ?? []).forEach((row: any) => {
-        const brand = row.line || '';
+        let brand = row.line || '';
+        // Normalize brand from database (OK188SG -> OK188)
+        brand = normalizeBrandFromDB(brand);
         const uniqueCode = String(row.unique_code || '').trim();
         if (brand && uniqueCode) {
           if (!brandActiveCustomers.has(brand)) {
@@ -638,9 +674,11 @@ export function ReportsPage() {
       
       brandActiveCustomers.forEach((uniqueCodes, brand) => {
         const activeMemberCount = uniqueCodes.size;
-        if (squadABrands.includes(brand)) {
+        // For comparison, normalize to match brand mapping format
+        const brandForMapping = normalizeBrandForMapping(brand);
+        if (squadABrands.includes(brand) || squadABrands.includes(brandForMapping)) {
           squadATotalActive += activeMemberCount;
-        } else if (squadBBrands.includes(brand)) {
+        } else if (squadBBrands.includes(brand) || squadBBrands.includes(brandForMapping)) {
           squadBTotalActive += activeMemberCount;
         }
       });
@@ -703,14 +741,19 @@ export function ReportsPage() {
       let squadBTotalDeposit = 0;
       
       (data ?? []).forEach((row: any) => {
-        const brand = row.line || '';
+        let brand = row.line || '';
+        // Normalize brand from database (OK188SG -> OK188) and then check against mapping
+        brand = normalizeBrandFromDB(brand);
+        // For comparison, normalize to match brand mapping format
+        const brandForMapping = normalizeBrandForMapping(brand);
+        
         const netProfit = parseFloat(row.net_profit || 0) || 0;
         const depositAmount = parseFloat(row.deposit_amount || 0) || 0;
         
-        if (squadABrands.includes(brand)) {
+        if (squadABrands.includes(brand) || squadABrands.includes(brandForMapping)) {
           squadANetProfit += netProfit;
           squadATotalDeposit += depositAmount;
-        } else if (squadBBrands.includes(brand)) {
+        } else if (squadBBrands.includes(brand) || squadBBrands.includes(brandForMapping)) {
           squadBNetProfit += netProfit;
           squadBTotalDeposit += depositAmount;
         }
@@ -782,8 +825,11 @@ export function ReportsPage() {
       console.log('[Reports] Aggregating summary data for cycle:', selectedCycle, 'Total rows:', summaryData?.length || 0);
       
       (summaryData || []).forEach((row: any) => {
-        const brand = row.line || '';
+        let brand = row.line || '';
         if (!brand) return;
+        
+        // Normalize brand from database (OK188SG -> OK188) for consistency
+        brand = normalizeBrandFromDB(brand);
         
         if (!monthlyDataMap.has(brand)) {
           monthlyDataMap.set(brand, {
@@ -871,23 +917,41 @@ export function ReportsPage() {
       }
 
       // Fetch all customer listing data for active status check
+      // ✅ CRITICAL: Filter by month to ensure data from month 1 doesn't appear in month 2
       const [retentionCustomers, reactivationCustomers, recommendCustomers, extraCustomers] = await Promise.all([
-        supabase.from('customer_retention').select('unique_code, brand'),
-        supabase.from('customer_reactivation').select('unique_code, brand'),
-        supabase.from('customer_recommend').select('unique_code, brand'),
-        supabase.from('customer_extra').select('unique_code, brand'),
+        supabase.from('customer_retention').select('unique_code, brand').eq('month', selectedMonth),
+        supabase.from('customer_reactivation').select('unique_code, brand').eq('month', selectedMonth),
+        supabase.from('customer_recommend').select('unique_code, brand').eq('month', selectedMonth),
+        supabase.from('customer_extra').select('unique_code, brand').eq('month', selectedMonth),
       ]);
 
       // Process Squad A brands - PARALLEL PROCESSING
-      const squadAPromises = squadABrands.map(async (brand) => {
-        // Get monthly summary data for this brand
-        const brandMonthlyData = (monthlyData || []).find((row: any) => row.line === brand);
+      const squadAPromises = squadABrands.map(async (brandMapping) => {
+        // Normalize brand mapping to database format (OK188SG -> OK188)
+        const brand = normalizeBrandFromDB(brandMapping);
         
-        // Get customer listing for this brand
-        const brandRetentionCustomers = (retentionCustomers.data || []).filter((c: any) => c.brand === brand);
-        const brandReactivationCustomers = (reactivationCustomers.data || []).filter((c: any) => c.brand === brand);
-        const brandRecommendCustomers = (recommendCustomers.data || []).filter((c: any) => c.brand === brand);
-        const brandExtraCustomers = (extraCustomers.data || []).filter((c: any) => c.brand === brand);
+        // Get monthly summary data for this brand (check both formats)
+        const brandMonthlyData = (monthlyData || []).find((row: any) => 
+          row.line === brand || row.line === brandMapping
+        );
+        
+        // Get customer listing for this brand (check both formats)
+        const brandRetentionCustomers = (retentionCustomers.data || []).filter((c: any) => {
+          const customerBrand = normalizeBrandFromDB(c.brand || '');
+          return customerBrand === brand || c.brand === brand || c.brand === brandMapping;
+        });
+        const brandReactivationCustomers = (reactivationCustomers.data || []).filter((c: any) => {
+          const customerBrand = normalizeBrandFromDB(c.brand || '');
+          return customerBrand === brand || c.brand === brand || c.brand === brandMapping;
+        });
+        const brandRecommendCustomers = (recommendCustomers.data || []).filter((c: any) => {
+          const customerBrand = normalizeBrandFromDB(c.brand || '');
+          return customerBrand === brand || c.brand === brand || c.brand === brandMapping;
+        });
+        const brandExtraCustomers = (extraCustomers.data || []).filter((c: any) => {
+          const customerBrand = normalizeBrandFromDB(c.brand || '');
+          return customerBrand === brand || c.brand === brand || c.brand === brandMapping;
+        });
 
         // Normalize unique codes with trim - same as lib/calculate-member-score.ts
         const retentionCodes = brandRetentionCustomers.map((c: any) => String(c.unique_code || '').trim()).filter(Boolean);
@@ -898,6 +962,7 @@ export function ReportsPage() {
         const allBrandCodes = Array.from(new Set([...retentionCodes, ...reactivationCodes, ...recommendCodes, ...extraCodes]));
 
         // Check which customers are ACTIVE (deposit_cases > 0) in current month
+        // Use normalized brand (OK188) for database query
         let activeSet = new Set<string>();
         if (allBrandCodes.length > 0) {
           const { data: activeData } = await supabase2
@@ -948,14 +1013,28 @@ export function ReportsPage() {
       });
 
       // Process Squad B brands - PARALLEL PROCESSING
-      const squadBPromises = squadBBrands.map(async (brand) => {
-        // Get monthly summary data for this brand
-        const brandMonthlyData = (monthlyData || []).find((row: any) => row.line === brand);
+      const squadBPromises = squadBBrands.map(async (brandMapping) => {
+        // Normalize brand mapping to database format (OK188SG -> OK188)
+        const brand = normalizeBrandFromDB(brandMapping);
         
-        // Get customer listing for this brand
-        const brandRetentionCustomers = (retentionCustomers.data || []).filter((c: any) => c.brand === brand);
-        const brandReactivationCustomers = (reactivationCustomers.data || []).filter((c: any) => c.brand === brand);
-        const brandRecommendCustomers = (recommendCustomers.data || []).filter((c: any) => c.brand === brand);
+        // Get monthly summary data for this brand (check both formats)
+        const brandMonthlyData = (monthlyData || []).find((row: any) => 
+          row.line === brand || row.line === brandMapping
+        );
+        
+        // Get customer listing for this brand (check both formats)
+        const brandRetentionCustomers = (retentionCustomers.data || []).filter((c: any) => {
+          const customerBrand = normalizeBrandFromDB(c.brand || '');
+          return customerBrand === brand || c.brand === brand || c.brand === brandMapping;
+        });
+        const brandReactivationCustomers = (reactivationCustomers.data || []).filter((c: any) => {
+          const customerBrand = normalizeBrandFromDB(c.brand || '');
+          return customerBrand === brand || c.brand === brand || c.brand === brandMapping;
+        });
+        const brandRecommendCustomers = (recommendCustomers.data || []).filter((c: any) => {
+          const customerBrand = normalizeBrandFromDB(c.brand || '');
+          return customerBrand === brand || c.brand === brand || c.brand === brandMapping;
+        });
 
         // Normalize unique codes with trim - same as lib/calculate-member-score.ts
         const retentionCodes = brandRetentionCustomers.map((c: any) => String(c.unique_code || '').trim()).filter(Boolean);
@@ -965,6 +1044,7 @@ export function ReportsPage() {
         const allBrandCodes = Array.from(new Set([...retentionCodes, ...reactivationCodes, ...recommendCodes]));
 
         // Check which customers are ACTIVE (deposit_cases > 0) in current month
+        // Use normalized brand (OK188) for database query
         let activeSet = new Set<string>();
         if (allBrandCodes.length > 0) {
           const { data: activeData } = await supabase2

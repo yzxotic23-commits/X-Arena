@@ -25,6 +25,11 @@ interface Customer {
   handler: string;
   label: string;
   month: string;
+  // Adjustment specific fields
+  type?: 'X-Arena' | 'PK-Tracking';
+  employeeName?: string;
+  squad?: string;
+  score?: number;
 }
 
 // REMOVED: getRandomLabel and mock data - no longer needed, using real data from Supabase
@@ -62,6 +67,11 @@ export function CustomerListingPage() {
     handler: '',
     label: '',
     month: '',
+    // Adjustment specific fields
+    type: 'X-Arena' as 'X-Arena' | 'PK-Tracking',
+    employeeName: '',
+    squad: '',
+    score: 0,
   });
   const [newUser, setNewUser] = useState({
     uniqueCode: '',
@@ -73,12 +83,15 @@ export function CustomerListingPage() {
   });
   const [showAddBonusModal, setShowAddBonusModal] = useState(false);
   const [newBonus, setNewBonus] = useState({
-    uniqueCode: '',
-    brand: '',
-    handler: '',
-    label: '',
+    type: '' as '' | 'X-Arena' | 'PK-Tracking',
+    employeeName: '',
+    squad: '',
+    score: 0,
     month: '',
   });
+  const [availableEmployees, setAvailableEmployees] = useState<Array<{username: string; fullName: string; brand: string}>>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [brandToSquadMap, setBrandToSquadMap] = useState<Map<string, string>>(new Map());
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
@@ -217,6 +230,131 @@ export function CustomerListingPage() {
   useEffect(() => {
     fetchBrands();
   }, [fetchBrands]);
+
+  // Fetch brand to squad mapping
+  const fetchBrandToSquadMapping = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('brand_mapping')
+        .select('brand, squad')
+        .eq('status', 'active');
+
+      if (error) {
+        console.error('Failed to fetch brand mapping', error);
+        return;
+      }
+
+      const mapping = new Map<string, string>();
+      (data || []).forEach((item: any) => {
+        if (item.brand && item.squad) {
+          // Store both original and normalized brand
+          const normalizedBrand = item.brand.toUpperCase().trim();
+          mapping.set(normalizedBrand, item.squad);
+          // Handle OK188 -> OK188SG mapping
+          if (normalizedBrand === 'OK188') {
+            mapping.set('OK188SG', item.squad);
+          } else if (normalizedBrand === 'OK188SG') {
+            mapping.set('OK188', item.squad);
+          }
+        }
+      });
+
+      setBrandToSquadMap(mapping);
+    } catch (error) {
+      console.error('Error fetching brand to squad mapping', error);
+    }
+  }, []);
+
+  // Fetch employees from squad_mapping for X-Arena type
+  const fetchEmployees = useCallback(async () => {
+    setLoadingEmployees(true);
+    try {
+      // Fetch squad_mapping with brand
+      const { data: squadData, error: squadError } = await supabase
+        .from('squad_mapping')
+        .select('username, brand')
+        .eq('status', 'active')
+        .order('username', { ascending: true });
+
+      if (squadError) {
+        console.error('Failed to fetch squad mapping', squadError);
+        setAvailableEmployees([]);
+        setLoadingEmployees(false);
+        return;
+      }
+
+      if (!squadData || squadData.length === 0) {
+        setAvailableEmployees([]);
+        setLoadingEmployees(false);
+        return;
+      }
+
+      // Fetch full_name from users_management
+      const usernames = squadData.map((row: any) => row.username).filter(Boolean);
+      const { data: usersData, error: usersError } = await supabase
+        .from('users_management')
+        .select('username, full_name')
+        .in('username', usernames)
+        .eq('status', 'active');
+
+      // Create map of username -> full_name
+      // ✅ IMPORTANT: Trim full_name to ensure exact match with database
+      const fullNameMap = new Map<string, string>();
+      if (!usersError && usersData) {
+        usersData.forEach((user: any) => {
+          if (user.username && user.full_name) {
+            // Trim to ensure no whitespace issues when matching
+            fullNameMap.set(user.username, user.full_name.trim());
+          }
+        });
+      }
+
+      // Create map of username -> brand from squad_mapping
+      const brandMap = new Map<string, string>();
+      squadData.forEach((row: any) => {
+        if (row.username && row.brand) {
+          // Normalize brand from database (OK188SG -> OK188)
+          let brand = row.brand.toUpperCase().trim();
+          if (brand === 'OK188SG') {
+            brand = 'OK188';
+          }
+          brandMap.set(row.username, brand);
+        }
+      });
+
+      // Combine username, full_name, and brand
+      // ✅ IMPORTANT: Store full_name (trimmed) as the value for employeeName
+      // This ensures employee_name in customer_adjustment matches users_management.full_name exactly
+      const employees = usernames.map((username: string) => {
+        const fullName = fullNameMap.get(username) || username;
+        return {
+          username,
+          fullName: fullName, // Already trimmed from fullNameMap
+          brand: brandMap.get(username) || '',
+        };
+      });
+
+      console.log('[Fetch Employees] Loaded employees for X-Arena adjustment:', employees.map(e => ({
+        username: e.username,
+        fullName: e.fullName,
+        'Note': 'fullName will be saved as employee_name in customer_adjustment (must match users_management.full_name)'
+      })));
+
+      setAvailableEmployees(employees);
+    } catch (error) {
+      console.error('Error fetching employees', error);
+      setAvailableEmployees([]);
+    } finally {
+      setLoadingEmployees(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'adjustment') {
+      fetchEmployees();
+      fetchBrandToSquadMapping();
+    }
+  }, [activeTab, fetchEmployees, fetchBrandToSquadMapping]);
 
   // Check if customer is active based on date (current month) and deposit_cases > 0
   // Column name is deposit_cases (with 's'), not deposit_case
@@ -935,7 +1073,8 @@ export function CustomerListingPage() {
       
       // Filter by shift and brand for limited access users directly in query
       // This ensures operator only sees customers matching their brand and shift
-      if (isLimitedAccess && userShift && userBrand) {
+      // Note: Adjustment tab doesn't use handler/brand, so skip filtering for adjustment
+      if (activeTab !== 'adjustment' && isLimitedAccess && userShift && userBrand) {
         console.log('[CustomerListing] Filtering customers for operator:', { shift: userShift, brand: userBrand });
         query = query
           .eq('handler', userShift)
@@ -951,15 +1090,30 @@ export function CustomerListingPage() {
         console.warn('[CustomerListing] Fetch failed:', error.message);
       } else {
         setFetchError(null);
-        let mappedData = (data ?? []).map((row) => ({
-          id: row.id.toString(),
-          uniqueCode: row.unique_code ?? '',
-          username: (activeTab === 'recommend') ? (row.username ?? '') : '', // Only recommend uses username
-          brand: row.brand ?? '',
-          handler: row.handler ?? '',
-          label: row.label ?? 'non active', // Default 'non active', will be updated to 'active' if customer exists in database for selected month
-          month: row.month ?? getCurrentMonth(),
-        }));
+        let mappedData = (data ?? []).map((row) => {
+          const baseData = {
+            id: row.id.toString(),
+            uniqueCode: row.unique_code ?? '',
+            username: (activeTab === 'recommend') ? (row.username ?? '') : '', // Only recommend uses username
+            brand: row.brand ?? '',
+            handler: row.handler ?? '',
+            label: row.label ?? 'non active', // Default 'non active', will be updated to 'active' if customer exists in database for selected month
+            month: row.month ?? getCurrentMonth(),
+          };
+          
+          // Add adjustment-specific fields
+          if (activeTab === 'adjustment') {
+            return {
+              ...baseData,
+              type: row.type as 'X-Arena' | 'PK-Tracking' | undefined,
+              employeeName: row.employee_name ?? '',
+              squad: row.squad ?? '',
+              score: row.score ? parseFloat(row.score) : 0,
+            };
+          }
+          
+          return baseData;
+        });
 
         // Note: Filter by shift and brand is now done directly in the Supabase query above
         // This ensures only data matching the user's shift and brand is fetched
@@ -1138,14 +1292,33 @@ export function CustomerListingPage() {
 
   const handleEdit = (customer: Customer) => {
     setEditingCustomer(customer);
-    setEditForm({
-      uniqueCode: customer.uniqueCode,
-      username: customer.username,
-      brand: customer.brand,
-      handler: customer.handler,
-      label: customer.label,
-      month: customer.month || getCurrentMonth(),
-    });
+    if (activeTab === 'adjustment') {
+      setEditForm({
+        uniqueCode: '',
+        username: '',
+        brand: '',
+        handler: '',
+        label: '',
+        month: customer.month || getCurrentMonth(),
+        type: customer.type || 'X-Arena',
+        employeeName: customer.employeeName || '',
+        squad: customer.squad || '',
+        score: customer.score || 0,
+      });
+    } else {
+      setEditForm({
+        uniqueCode: customer.uniqueCode,
+        username: customer.username,
+        brand: customer.brand,
+        handler: customer.handler,
+        label: customer.label,
+        month: customer.month || getCurrentMonth(),
+        type: 'X-Arena',
+        employeeName: '',
+        squad: '',
+        score: 0,
+      });
+    }
     setShowEditModal(true);
   };
 
@@ -1165,26 +1338,58 @@ export function CustomerListingPage() {
         ? 'customer_adjustment'
         : 'customer_recommend';
 
-      // Validasi Handler
-      if (editForm.handler !== 'Shift A' && editForm.handler !== 'Shift B') {
-        alert('Handler must be "Shift A" or "Shift B"');
-        setSaving(false);
-        return;
+      // Validation for adjustment
+      if (activeTab === 'adjustment') {
+        if (!editForm.type || !editForm.squad || !editForm.score || editForm.score <= 0) {
+          alert('Please fill in Type, Squad, and Score (must be greater than 0).');
+          setSaving(false);
+          return;
+        }
+        if (editForm.type === 'X-Arena' && !editForm.employeeName) {
+          alert('Please select Employee Name for X-Arena type.');
+          setSaving(false);
+          return;
+        }
+      } else {
+        // Validasi Handler for other tabs
+        if (editForm.handler !== 'Shift A' && editForm.handler !== 'Shift B') {
+          alert('Handler must be "Shift A" or "Shift B"');
+          setSaving(false);
+          return;
+        }
       }
 
       // Build update object based on active tab
       // Only include user-editable fields (not id, created_at, updated_at)
-      const updateData: any = {
-        unique_code: editForm.uniqueCode,
-        brand: editForm.brand,
-        handler: editForm.handler,
-        label: editForm.label || 'non active',
-        month: editForm.month || getCurrentMonth(),
-      };
+      let updateData: any = {};
       
-      // Only add username for recommend tab
-      if (activeTab === 'recommend') {
-        updateData.username = editForm.username || '';
+      if (activeTab === 'adjustment') {
+        updateData = {
+          type: editForm.type,
+          squad: editForm.squad,
+          score: editForm.score,
+          month: editForm.month || getCurrentMonth(),
+        };
+        
+        // Only add employee_name for X-Arena
+        if (editForm.type === 'X-Arena' && editForm.employeeName) {
+          updateData.employee_name = editForm.employeeName;
+        } else {
+          updateData.employee_name = null; // Clear for PK-Tracking
+        }
+      } else {
+        updateData = {
+          unique_code: editForm.uniqueCode,
+          brand: editForm.brand,
+          handler: editForm.handler,
+          label: editForm.label || 'non active',
+          month: editForm.month || getCurrentMonth(),
+        };
+        
+        // Only add username for recommend tab
+        if (activeTab === 'recommend') {
+          updateData.username = editForm.username || '';
+        }
       }
       
       console.log('[Edit] Updating customer:', { id: editingCustomer.id, tableName, updateData });
@@ -1242,7 +1447,18 @@ export function CustomerListingPage() {
       // Close modal
       setShowEditModal(false);
       setEditingCustomer(null);
-      setEditForm({ uniqueCode: '', username: '', brand: '', handler: '', label: '', month: '' });
+      setEditForm({ 
+        uniqueCode: '', 
+        username: '', 
+        brand: '', 
+        handler: '', 
+        label: '', 
+        month: '',
+        type: 'X-Arena',
+        employeeName: '',
+        squad: '',
+        score: 0,
+      });
       
       // Refresh data from database to ensure consistency (especially for label)
       await fetchCustomers();
@@ -1681,31 +1897,86 @@ export function CustomerListingPage() {
 
   const handleBonusInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setNewBonus((prev) => ({ ...prev, [name]: value }));
+    if (name === 'score') {
+      setNewBonus((prev) => ({ ...prev, [name]: parseFloat(value) || 0 }));
+    } else if (name === 'type') {
+      setNewBonus((prev) => ({ 
+        ...prev, 
+        [name]: value as '' | 'X-Arena' | 'PK-Tracking',
+        employeeName: value === 'PK-Tracking' || value === '' ? '' : prev.employeeName, // Clear employee name for PK-Tracking or empty
+        squad: value === 'PK-Tracking' || value === '' ? '' : prev.squad // Clear squad if type changes
+      }));
+    } else if (name === 'employeeName' && newBonus.type === 'X-Arena') {
+      // Auto-map squad when employee is selected for X-Arena
+      // value is full_name (from dropdown), find employee by full_name
+      const selectedEmployee = availableEmployees.find(emp => emp.fullName === value);
+      if (selectedEmployee && selectedEmployee.brand) {
+        // Get squad from brand mapping
+        const normalizedBrand = selectedEmployee.brand.toUpperCase().trim();
+        const squad = brandToSquadMap.get(normalizedBrand) || '';
+        setNewBonus((prev) => ({ 
+          ...prev, 
+          [name]: value, // Store full_name for database
+          squad: squad // Auto-set squad based on employee's brand
+        }));
+      } else {
+        setNewBonus((prev) => ({ ...prev, [name]: value }));
+      }
+    } else {
+      setNewBonus((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleAddBonus = async () => {
-    const finalHandler = isLimitedAccess && userShift ? userShift : newBonus.handler;
-    const finalBrand = isLimitedAccess && userBrand ? userBrand : newBonus.brand;
-    if (!newBonus.uniqueCode || !finalBrand || !finalHandler) {
-      alert('Please fill in Unique Code, Brand, and Handler.');
+    if (!newBonus.type || !newBonus.squad || !newBonus.score || newBonus.score <= 0) {
+      alert('Please fill in Type, Squad, and Score (must be greater than 0).');
       return;
     }
+    
+    // For X-Arena, employee name is required
+    if (newBonus.type === 'X-Arena' && !newBonus.employeeName) {
+      alert('Please select Employee Name for X-Arena type.');
+      return;
+    }
+    
     try {
-      const insertData = {
-        unique_code: newBonus.uniqueCode,
-        brand: finalBrand,
-        handler: finalHandler,
-        label: newBonus.label || 'non active',
+      const insertData: any = {
+        type: newBonus.type,
+        squad: newBonus.squad,
+        score: newBonus.score,
         month: newBonus.month || getCurrentMonth(),
       };
+      
+      // Only add employee_name for X-Arena
+      // ✅ IMPORTANT: Ensure employee_name matches exactly with full_name from users_management
+      if (newBonus.type === 'X-Arena' && newBonus.employeeName) {
+        // Trim to ensure no whitespace issues
+        insertData.employee_name = newBonus.employeeName.trim();
+        
+        // Log for debugging
+        console.log('[Add Bonus] Saving adjustment:', {
+          type: insertData.type,
+          employee_name: insertData.employee_name,
+          squad: insertData.squad,
+          score: insertData.score,
+          month: insertData.month
+        });
+      }
+      
       const { error } = await supabase.from('customer_adjustment').insert(insertData);
       if (error) {
         console.error('Failed to add bonus', error);
         alert('Failed to add bonus: ' + error.message);
         return;
       }
-      setNewBonus({ uniqueCode: '', brand: '', handler: '', label: '', month: '' });
+      
+      setNewBonus({ 
+        type: '', 
+        employeeName: '', 
+        squad: '', 
+        score: 0, 
+        month: getCurrentMonth() 
+      });
       setShowAddBonusModal(false);
       await fetchCustomers();
       alert('Bonus added successfully!');
@@ -1899,21 +2170,34 @@ export function CustomerListingPage() {
                       className="w-4 h-4 rounded border-card-border text-primary focus:ring-primary cursor-pointer"
                     />
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.uniqueCode}</th>
-                  {activeTab === 'recommend' && (
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.username}</th>
+                  {activeTab === 'adjustment' ? (
+                    <>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">Type</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">Employee Name</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">Squad</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">Score</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">Month</th>
+                      <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.common.actions}</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.uniqueCode}</th>
+                      {activeTab === 'recommend' && (
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.username}</th>
+                      )}
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.brand}</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.handler}</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.label}</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">Month</th>
+                      <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.common.actions}</th>
+                    </>
                   )}
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.brand}</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.handler}</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.customerListing.label}</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">Month</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-foreground-primary bg-inherit">{translations.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 align-middle">
+                    <td colSpan={activeTab === 'adjustment' ? 6 : activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 align-middle">
                       <div className="flex items-center justify-center min-h-[180px]">
                         <Loading size="md" text={translations.common.loading} variant="gaming" />
                       </div>
@@ -1921,7 +2205,7 @@ export function CustomerListingPage() {
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>
-                    <td colSpan={activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 text-center">
+                    <td colSpan={activeTab === 'adjustment' ? 6 : activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 text-center">
                       <div className="flex flex-col items-center gap-3 text-muted">
                         {fetchError ? (
                           <>
@@ -1956,34 +2240,68 @@ export function CustomerListingPage() {
                         className="w-4 h-4 rounded border-card-border text-primary focus:ring-primary cursor-pointer"
                       />
                     </td>
-                    <td className="py-3 px-4 align-middle">
-                      <span className="font-medium text-foreground-primary">{customer.uniqueCode}</span>
-                    </td>
-                    {activeTab === 'recommend' && (
-                      <td className="py-3 px-4 align-middle">
-                        <span className="text-foreground-primary text-sm">{customer.username}</span>
-                      </td>
+                    {activeTab === 'adjustment' ? (
+                      <>
+                        <td className="py-3 px-4 align-middle">
+                          <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${
+                            customer.type === 'X-Arena' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30' :
+                            customer.type === 'PK-Tracking' ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30' :
+                            'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
+                          }`}>
+                            {customer.type || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 align-middle">
+                          <span className="text-foreground-primary text-sm">{customer.employeeName || '-'}</span>
+                        </td>
+                        <td className="py-3 px-4 align-middle">
+                          <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${
+                            customer.squad === 'Squad A' ? 'bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/30' :
+                            customer.squad === 'Squad B' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30' :
+                            'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
+                          }`}>
+                            {customer.squad || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 align-middle">
+                          <span className="font-medium text-foreground-primary">{formatNumber(customer.score || 0)}</span>
+                        </td>
+                        <td className="py-3 px-4 align-middle">
+                          <span className="text-foreground-primary text-sm">{customer.month || getCurrentMonth()}</span>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="py-3 px-4 align-middle">
+                          <span className="font-medium text-foreground-primary">{customer.uniqueCode}</span>
+                        </td>
+                        {activeTab === 'recommend' && (
+                          <td className="py-3 px-4 align-middle">
+                            <span className="text-foreground-primary text-sm">{customer.username}</span>
+                          </td>
+                        )}
+                        <td className="py-3 px-4 align-middle">
+                          <span className="text-foreground-primary text-sm">{customer.brand}</span>
+                        </td>
+                        <td className="py-3 px-4 align-middle">
+                          <span className="text-foreground-primary text-sm">{customer.handler}</span>
+                        </td>
+                        <td className="py-3 px-4 align-middle">
+                          <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${
+                            customer.label === 'active' ? 'bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/30' :
+                            customer.label === 'non active' ? 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30' :
+                            customer.label === 'VIP' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30' :
+                            customer.label === 'Premium' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30' :
+                            'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
+                          }`}>
+                            {customer.label}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 align-middle">
+                          <span className="text-foreground-primary text-sm">{customer.month || getCurrentMonth()}</span>
+                        </td>
+                      </>
                     )}
-                    <td className="py-3 px-4 align-middle">
-                      <span className="text-foreground-primary text-sm">{customer.brand}</span>
-                    </td>
-                    <td className="py-3 px-4 align-middle">
-                      <span className="text-foreground-primary text-sm">{customer.handler}</span>
-                    </td>
-                    <td className="py-3 px-4 align-middle">
-                      <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium ${
-                        customer.label === 'active' ? 'bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/30' :
-                        customer.label === 'non active' ? 'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30' :
-                        customer.label === 'VIP' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30' :
-                        customer.label === 'Premium' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30' :
-                        'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
-                      }`}>
-                        {customer.label}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 align-middle">
-                      <span className="text-foreground-primary text-sm">{customer.month || getCurrentMonth()}</span>
-                    </td>
                     <td className="py-3 px-4 align-middle">
                       <div className="flex items-center justify-center gap-1.5">
                         <Button
@@ -2463,60 +2781,71 @@ export function CustomerListingPage() {
                   <CardContent>
                     <form onSubmit={(e) => { e.preventDefault(); handleAddBonus(); }} className="space-y-4">
                       <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-foreground-primary">{translations.customerListing.uniqueCode}</label>
-                        <input
-                          type="text"
-                          name="uniqueCode"
-                          value={newBonus.uniqueCode}
+                        <label className="block text-sm font-semibold text-foreground-primary">Type <span className="text-red-400">*</span></label>
+                        <select
+                          name="type"
+                          value={newBonus.type}
                           onChange={handleBonusInputChange}
                           className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
                           required
-                          placeholder="e.g., UC001"
+                        >
+                          <option value="">Select Type</option>
+                          <option value="X-Arena">X-Arena</option>
+                          <option value="PK-Tracking">PK-Tracking</option>
+                        </select>
+                      </div>
+                      
+                      {newBonus.type === 'X-Arena' && (
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Employee Name <span className="text-red-400">*</span></label>
+                          <select
+                            name="employeeName"
+                            value={newBonus.employeeName}
+                            onChange={handleBonusInputChange}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
+                            required
+                            disabled={loadingEmployees}
+                          >
+                            <option value="">{loadingEmployees ? 'Loading employees...' : 'Select Employee'}</option>
+                            {availableEmployees.map((emp) => (
+                              <option key={emp.username} value={emp.fullName}>
+                                {emp.fullName} ({emp.username})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">Squad <span className="text-red-400">*</span></label>
+                        <select
+                          name="squad"
+                          value={newBonus.squad}
+                          onChange={handleBonusInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
+                          required
+                        >
+                          <option value="">Select Squad</option>
+                          <option value="Squad A">Squad A</option>
+                          <option value="Squad B">Squad B</option>
+                        </select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">Score <span className="text-red-400">*</span></label>
+                        <input
+                          type="number"
+                          name="score"
+                          value={newBonus.score}
+                          onChange={handleBonusInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
+                          required
+                          min="0"
+                          step="0.01"
+                          placeholder="Enter score"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-foreground-primary">{translations.customerListing.brand}</label>
-                        <select
-                          name="brand"
-                          value={newBonus.brand}
-                          onChange={handleBonusInputChange}
-                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
-                          required
-                          disabled={loadingBrands || (isLimitedAccess && !!userBrand)}
-                        >
-                          <option value="">{loadingBrands ? 'Loading...' : 'Select Brand'}</option>
-                          {availableBrands.map((b) => <option key={b} value={b}>{b}</option>)}
-                        </select>
-                        {isLimitedAccess && userBrand && <p className="text-xs text-muted">Brand: {userBrand}</p>}
-                      </div>
-                      <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-foreground-primary">{translations.customerListing.handler}</label>
-                        <select
-                          name="handler"
-                          value={newBonus.handler}
-                          onChange={handleBonusInputChange}
-                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
-                          required
-                          disabled={isLimitedAccess && !!userShift}
-                        >
-                          <option value="">Select Handler</option>
-                          <option value="Shift A">Shift A</option>
-                          <option value="Shift B">Shift B</option>
-                        </select>
-                        {isLimitedAccess && userShift && <p className="text-xs text-muted">Handler: {userShift}</p>}
-                      </div>
-                      <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-foreground-primary">{translations.customerListing.label}</label>
-                        <select
-                          name="label"
-                          value={newBonus.label}
-                          onChange={handleBonusInputChange}
-                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
-                        >
-                          <option value="non active">non active</option>
-                          <option value="active">active</option>
-                        </select>
-                      </div>
+                      
                       <div className="space-y-2">
                         <label className="block text-sm font-semibold text-foreground-primary">Month</label>
                         <input
@@ -2527,6 +2856,7 @@ export function CustomerListingPage() {
                           className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary"
                         />
                       </div>
+                      
                       <div className="flex gap-3 pt-4">
                         <Button type="submit" variant="default" className="flex-1">
                           <Gift className="w-4 h-4 mr-2" />
@@ -2588,67 +2918,160 @@ export function CustomerListingPage() {
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <form onSubmit={handleUpdateCustomer} className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-foreground-primary">Unique Code <span className="text-red-400">*</span></label>
-                      <input
-                        type="text"
-                        value={editForm.uniqueCode}
-                        onChange={(e) => setEditForm({ ...editForm, uniqueCode: e.target.value })}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                        required
-                        placeholder="e.g., UC001"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      {activeTab === 'recommend' && (
-                        <>
-                          <label className="block text-sm font-semibold text-foreground-primary">Username</label>
+                    {activeTab === 'adjustment' ? (
+                      <>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Type <span className="text-red-400">*</span></label>
+                          <select
+                            value={editForm.type}
+                            onChange={(e) => setEditForm({ 
+                              ...editForm, 
+                              type: e.target.value as 'X-Arena' | 'PK-Tracking',
+                              employeeName: e.target.value === 'PK-Tracking' ? '' : editForm.employeeName
+                            })}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            required
+                          >
+                            <option value="X-Arena">X-Arena</option>
+                            <option value="PK-Tracking">PK-Tracking</option>
+                          </select>
+                        </div>
+                        
+                        {editForm.type === 'X-Arena' && (
+                          <div className="space-y-2">
+                            <label className="block text-sm font-semibold text-foreground-primary">Employee Name <span className="text-red-400">*</span></label>
+                            <select
+                              value={editForm.employeeName}
+                              onChange={(e) => setEditForm({ ...editForm, employeeName: e.target.value })}
+                              className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                              required
+                              disabled={loadingEmployees}
+                            >
+                              <option value="">{loadingEmployees ? 'Loading employees...' : 'Select Employee'}</option>
+                              {availableEmployees.map((emp) => (
+                                <option key={emp.username} value={emp.fullName}>
+                                  {emp.fullName} ({emp.username})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Squad <span className="text-red-400">*</span></label>
+                          <select
+                            value={editForm.squad}
+                            onChange={(e) => setEditForm({ ...editForm, squad: e.target.value })}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            required
+                          >
+                            <option value="">Select Squad</option>
+                            <option value="Squad A">Squad A</option>
+                            <option value="Squad B">Squad B</option>
+                          </select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Score <span className="text-red-400">*</span></label>
+                          <input
+                            type="number"
+                            value={editForm.score}
+                            onChange={(e) => setEditForm({ ...editForm, score: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            required
+                            min="0"
+                            step="0.01"
+                            placeholder="Enter score"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Month <span className="text-red-400">*</span></label>
+                          <input
+                            type="month"
+                            value={editForm.month}
+                            onChange={(e) => setEditForm({ ...editForm, month: e.target.value })}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            required
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Unique Code <span className="text-red-400">*</span></label>
                           <input
                             type="text"
-                            value={editForm.username}
-                            onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                            value={editForm.uniqueCode}
+                            onChange={(e) => setEditForm({ ...editForm, uniqueCode: e.target.value })}
                             className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                            placeholder="Enter username (optional)"
+                            required
+                            placeholder="e.g., UC001"
                           />
-                        </>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-foreground-primary">Brand <span className="text-red-400">*</span></label>
-                      <input
-                        type="text"
-                        value={editForm.brand}
-                        onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                        required
-                        placeholder="Enter brand"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-foreground-primary">Handler <span className="text-red-400">*</span></label>
-                      <select
-                        value={editForm.handler}
-                        onChange={(e) => setEditForm({ ...editForm, handler: e.target.value })}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                        required
-                      >
-                        <option value="">Select Handler</option>
-                        <option value="Shift A">Shift A</option>
-                        <option value="Shift B">Shift B</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-foreground-primary">Month <span className="text-red-400">*</span></label>
-                      <input
-                        type="text"
-                        value={editForm.month}
-                        onChange={(e) => setEditForm({ ...editForm, month: e.target.value })}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                        required
-                        placeholder="YYYY-MM (e.g., 2024-01)"
-                        pattern="\d{4}-\d{2}"
-                      />
-                    </div>
+                        </div>
+                        <div className="space-y-2">
+                          {activeTab === 'recommend' && (
+                            <>
+                              <label className="block text-sm font-semibold text-foreground-primary">Username</label>
+                              <input
+                                type="text"
+                                value={editForm.username}
+                                onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                                className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                                placeholder="Enter username (optional)"
+                              />
+                            </>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Brand <span className="text-red-400">*</span></label>
+                          <input
+                            type="text"
+                            value={editForm.brand}
+                            onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            required
+                            placeholder="Enter brand"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Handler <span className="text-red-400">*</span></label>
+                          <select
+                            value={editForm.handler}
+                            onChange={(e) => setEditForm({ ...editForm, handler: e.target.value })}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            required
+                          >
+                            <option value="">Select Handler</option>
+                            <option value="Shift A">Shift A</option>
+                            <option value="Shift B">Shift B</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Label</label>
+                          <select
+                            value={editForm.label}
+                            onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          >
+                            <option value="non active">non active</option>
+                            <option value="active">active</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-sm font-semibold text-foreground-primary">Month <span className="text-red-400">*</span></label>
+                          <input
+                            type="text"
+                            value={editForm.month}
+                            onChange={(e) => setEditForm({ ...editForm, month: e.target.value })}
+                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                            required
+                            placeholder="YYYY-MM (e.g., 2024-01)"
+                            pattern="\d{4}-\d{2}"
+                          />
+                        </div>
+                      </>
+                    )}
                     <div className="flex gap-3 pt-4">
                       <Button type="submit" variant="default" className="flex-1" disabled={saving}>
                         {saving ? (
@@ -2714,23 +3137,84 @@ export function CustomerListingPage() {
                 </CardHeader>
                 <CardContent className="relative z-10">
                   <div className="space-y-4">
-                    <p className="text-foreground-primary">Are you sure you want to delete this customer? This action cannot be undone.</p>
+                    <div className="space-y-1">
+                      <p className="text-foreground-primary">Are you sure you want to delete this customer?</p>
+                      <p className="text-foreground-primary">This action cannot be undone.</p>
+                    </div>
                     {customerToDelete && (
-                      <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                        <div className="space-y-2">
-                          <div><span className="text-sm text-muted">Unique Code:</span><p className="text-sm font-semibold text-foreground-primary">{customerToDelete.uniqueCode}</p></div>
-                          {activeTab === 'recommend' && (
-                            <div><span className="text-sm text-muted">Username:</span><p className="text-sm font-semibold text-foreground-primary">{customerToDelete.username || '-'}</p></div>
+                      <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4 border border-red-400">
+                        <div className="space-y-3">
+                          {activeTab === 'adjustment' ? (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-foreground-primary mb-1">Type:</label>
+                                <div className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-foreground-primary">
+                                  {customerToDelete.type || '-'}
+                                </div>
+                              </div>
+                              {customerToDelete.type === 'X-Arena' && (
+                                <div>
+                                  <label className="block text-sm font-medium text-foreground-primary mb-1">Employee Name:</label>
+                                  <div className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-foreground-primary">
+                                    {customerToDelete.employeeName || '-'}
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <label className="block text-sm font-medium text-foreground-primary mb-1">Squad:</label>
+                                <div className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-foreground-primary">
+                                  {customerToDelete.squad || '-'}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-foreground-primary mb-1">Score:</label>
+                                <div className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-foreground-primary">
+                                  {customerToDelete.score || 0}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-foreground-primary mb-1">Month:</label>
+                                <div className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-foreground-primary">
+                                  {customerToDelete.month || '-'}
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium text-foreground-primary mb-1">Unique Code:</label>
+                                <div className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-foreground-primary">
+                                  {customerToDelete.uniqueCode}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-foreground-primary mb-1">Brand:</label>
+                                <div className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded text-foreground-primary">
+                                  {customerToDelete.brand}
+                                </div>
+                              </div>
+                            </>
                           )}
-                          <div><span className="text-sm text-muted">Brand:</span><p className="text-sm font-semibold text-foreground-primary">{customerToDelete.brand}</p></div>
                         </div>
                       </div>
                     )}
                     <div className="flex gap-3 pt-4">
-                      <Button type="button" variant="outline" onClick={handleDeleteCancel} className="flex-1" disabled={deleting}>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handleDeleteCancel} 
+                        className="flex-1 border-red-400 text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20" 
+                        disabled={deleting}
+                      >
                         Cancel
                       </Button>
-                      <Button type="button" variant="default" onClick={handleDeleteConfirm} className="flex-1 bg-red-500 hover:bg-red-600 text-white" disabled={deleting}>
+                      <Button 
+                        type="button" 
+                        variant="default" 
+                        onClick={handleDeleteConfirm} 
+                        className="flex-1 bg-red-500 hover:bg-red-600 text-white" 
+                        disabled={deleting}
+                      >
                         {deleting ? (
                           <>
                             <Loading size="sm" variant="minimal" />
