@@ -1063,32 +1063,51 @@ export function CustomerListingPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      const tableName = activeTab === 'reactivation' 
-        ? 'customer_reactivation' 
-        : activeTab === 'retention' 
-        ? 'customer_retention' 
-        : activeTab === 'extra'
-        ? 'customer_extra'
-        : activeTab === 'adjustment'
-        ? 'customer_adjustment'
-        : 'customer_recommend';
-      
-      // Build query with filters for limited access users
-      let query = supabase
-        .from(tableName)
-        .select('*');
-      
-      // Filter by shift and brand for limited access users directly in query
-      // This ensures operator only sees customers matching their brand and shift
-      // Note: Adjustment tab doesn't use handler/brand, so skip filtering for adjustment
-      if (activeTab !== 'adjustment' && isLimitedAccess && userShift && userBrand) {
-        console.log('[CustomerListing] Filtering customers for operator:', { shift: userShift, brand: userBrand });
-        query = query
-          .eq('handler', userShift)
-          .eq('brand', userBrand);
+      let data: any[] = [];
+      let error: any = null;
+
+      // For adjustment, use API route to bypass RLS
+      if (activeTab === 'adjustment') {
+        try {
+          const response = await fetch('/api/adjustment');
+          const result = await response.json();
+          
+          if (!response.ok) {
+            error = { message: result.error || result.details || 'Failed to fetch adjustments' };
+          } else {
+            data = result.data || [];
+          }
+        } catch (fetchError) {
+          error = { message: 'Failed to fetch adjustments: ' + (fetchError instanceof Error ? fetchError.message : 'Unknown error') };
+        }
+      } else {
+        // For other tabs, use direct Supabase query
+        const tableName = activeTab === 'reactivation' 
+          ? 'customer_reactivation' 
+          : activeTab === 'retention' 
+          ? 'customer_retention' 
+          : activeTab === 'extra'
+          ? 'customer_extra'
+          : 'customer_recommend';
+        
+        // Build query with filters for limited access users
+        let query = supabase
+          .from(tableName)
+          .select('*');
+        
+        // Filter by shift and brand for limited access users directly in query
+        // This ensures operator only sees customers matching their brand and shift
+        if (isLimitedAccess && userShift && userBrand) {
+          console.log('[CustomerListing] Filtering customers for operator:', { shift: userShift, brand: userBrand });
+          query = query
+            .eq('handler', userShift)
+            .eq('brand', userBrand);
+        }
+        
+        const result = await query.order('created_at', { ascending: false });
+        data = result.data || [];
+        error = result.error;
       }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         setFetchError('Unable to load list. Please try again.');

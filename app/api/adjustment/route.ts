@@ -4,6 +4,46 @@ import { supabaseServer } from '@/lib/supabase-server';
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+// GET: Fetch all adjustments
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const month = searchParams.get('month'); // Optional filter by month
+
+    // Build query
+    let query = supabaseServer
+      .from('customer_adjustment')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    // Filter by month if provided
+    if (month) {
+      query = query.eq('month', month);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[API] Failed to fetch adjustments:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch adjustments', details: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: data || [] }, { status: 200 });
+  } catch (error) {
+    console.error('[API] Error in GET /api/adjustment:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
 // POST: Insert new adjustment
 export async function POST(request: NextRequest) {
   try {
