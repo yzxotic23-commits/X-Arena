@@ -1401,55 +1401,113 @@ export function CustomerListingPage() {
       
       console.log('[Edit] Updating customer:', { id: editingCustomer.id, tableName, updateData });
       
-      // Update customer
-      // Note: If error "record has no field updated_at" occurs, the trigger in database
-      // expects updated_at column but it doesn't exist. This needs to be fixed in database.
-      const { data: updatedData, error } = await supabase
-        .from(tableName)
-        .update(updateData)
-        .eq('id', editingCustomer.id)
-        .select();
+      // For adjustment, use API route to bypass RLS
+      if (activeTab === 'adjustment') {
+        const response = await fetch('/api/adjustment', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: editingCustomer.id,
+            ...updateData,
+          }),
+        });
 
-      if (error) {
-        console.error('Failed to update customer', error);
+        const result = await response.json();
         
-        // Provide more helpful error message for common issues
-        let errorMessage = error.message;
-        if (error.message?.includes('updated_at')) {
-          errorMessage = `Database error: The table "${tableName}" has a trigger that expects an "updated_at" column, but this column doesn't exist in the table. Please add the "updated_at" column to the table or fix the trigger in Supabase.`;
+        if (!response.ok) {
+          console.error('Failed to update adjustment', result);
+          alert('Failed to update adjustment: ' + (result.error || result.details || 'Unknown error'));
+          setSaving(false);
+          return;
         }
+
+        // Update successful
+        console.log('[Edit] Update successful:', result.data);
         
-        alert('Failed to update customer: ' + errorMessage);
-        setSaving(false);
-        return;
+        // Optimistically update state for immediate UI feedback
+        const updatedCustomer: Customer = {
+          id: editingCustomer.id,
+          type: editForm.type as 'X-Arena' | 'PK-Tracking',
+          employeeName: editForm.employeeName,
+          squad: editForm.squad,
+          score: editForm.score,
+          month: editForm.month || getCurrentMonth(),
+          // Keep other fields from original customer
+          uniqueCode: editingCustomer.uniqueCode || '',
+          username: editingCustomer.username || '',
+          brand: editingCustomer.brand || '',
+          handler: editingCustomer.handler || '',
+          label: editingCustomer.label || '',
+        };
+        
+        // Update state optimistically
+        setAllCustomers(prevCustomers => {
+          const updated = prevCustomers.map(customer => 
+            customer.id === editingCustomer.id ? updatedCustomer : customer
+          );
+          
+          // Update paginated customers
+          const startIndex = (currentPage - 1) * itemsPerPage;
+          const endIndex = startIndex + itemsPerPage;
+          setCustomers(updated.slice(startIndex, endIndex));
+          
+          return updated;
+        });
+      } else {
+        // For other tabs, use direct Supabase update
+        // Update customer
+        // Note: If error "record has no field updated_at" occurs, the trigger in database
+        // expects updated_at column but it doesn't exist. This needs to be fixed in database.
+        const { data: updatedData, error } = await supabase
+          .from(tableName)
+          .update(updateData)
+          .eq('id', editingCustomer.id)
+          .select();
+
+        if (error) {
+          console.error('Failed to update customer', error);
+          
+          // Provide more helpful error message for common issues
+          let errorMessage = error.message;
+          if (error.message?.includes('updated_at')) {
+            errorMessage = `Database error: The table "${tableName}" has a trigger that expects an "updated_at" column, but this column doesn't exist in the table. Please add the "updated_at" column to the table or fix the trigger in Supabase.`;
+          }
+          
+          alert('Failed to update customer: ' + errorMessage);
+          setSaving(false);
+          return;
+        }
+
+        // Update successful
+        console.log('[Edit] Update successful:', updatedData);
+
+        // Optimistically update state for immediate UI feedback
+        const updatedCustomer: Customer = {
+          id: editingCustomer.id,
+          uniqueCode: editForm.uniqueCode,
+          username: activeTab === 'recommend' ? (editForm.username || '') : editingCustomer.username,
+          brand: editForm.brand,
+          handler: editForm.handler,
+          label: editForm.label || 'non active', // Will be updated by checkCustomersActiveStatus
+          month: editForm.month || getCurrentMonth(),
+        };
+
+        // Update state optimistically
+        setAllCustomers(prevCustomers => {
+          const updated = prevCustomers.map(customer => 
+            customer.id === editingCustomer.id ? updatedCustomer : customer
+          );
+          
+          // Update paginated customers
+          const startIdx = (currentPage - 1) * itemsPerPage;
+          const endIdx = startIdx + itemsPerPage;
+          setCustomers(updated.slice(startIdx, endIdx));
+          
+          return updated;
+        });
       }
-
-      console.log('[Edit] Update successful:', updatedData);
-
-      // Optimistically update state for immediate UI feedback
-      const updatedCustomer: Customer = {
-        id: editingCustomer.id,
-        uniqueCode: editForm.uniqueCode,
-        username: activeTab === 'recommend' ? (editForm.username || '') : editingCustomer.username,
-        brand: editForm.brand,
-        handler: editForm.handler,
-        label: editForm.label || 'non active', // Will be updated by checkCustomersActiveStatus
-        month: editForm.month || getCurrentMonth(),
-      };
-
-      // Update state optimistically
-      setAllCustomers(prevCustomers => {
-        const updated = prevCustomers.map(customer => 
-          customer.id === editingCustomer.id ? updatedCustomer : customer
-        );
-        
-        // Update paginated customers
-        const startIdx = (currentPage - 1) * itemsPerPage;
-        const endIdx = startIdx + itemsPerPage;
-        setCustomers(updated.slice(startIdx, endIdx));
-        
-        return updated;
-      });
 
       // Close modal
       setShowEditModal(false);
@@ -1499,16 +1557,33 @@ export function CustomerListingPage() {
         ? 'customer_adjustment'
         : 'customer_recommend';
 
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('id', customerToDelete.id);
+      // For adjustment, use API route to bypass RLS
+      if (activeTab === 'adjustment') {
+        const response = await fetch(`/api/adjustment?id=${customerToDelete.id}`, {
+          method: 'DELETE',
+        });
 
-      if (error) {
-        console.error('Failed to delete customer', error);
-        alert('Failed to delete customer: ' + error.message);
-        setDeleting(false);
-        return;
+        const result = await response.json();
+        
+        if (!response.ok) {
+          console.error('Failed to delete adjustment', result);
+          alert('Failed to delete adjustment: ' + (result.error || result.details || 'Unknown error'));
+          setDeleting(false);
+          return;
+        }
+      } else {
+        // For other tabs, use direct Supabase delete
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .eq('id', customerToDelete.id);
+
+        if (error) {
+          console.error('Failed to delete customer', error);
+          alert('Failed to delete customer: ' + error.message);
+          setDeleting(false);
+          return;
+        }
       }
 
       setShowDeleteConfirmModal(false);
@@ -1970,10 +2045,20 @@ export function CustomerListingPage() {
         });
       }
       
-      const { error } = await supabase.from('customer_adjustment').insert(insertData);
-      if (error) {
-        console.error('Failed to add bonus', error);
-        alert('Failed to add bonus: ' + error.message);
+      // Use API route instead of direct Supabase insert to bypass RLS
+      const response = await fetch('/api/adjustment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(insertData),
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        console.error('Failed to add bonus', result);
+        alert('Failed to add bonus: ' + (result.error || result.details || 'Unknown error'));
         return;
       }
       
