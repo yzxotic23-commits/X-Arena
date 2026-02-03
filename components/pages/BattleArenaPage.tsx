@@ -243,13 +243,13 @@ export function BattleArenaPage() {
     ? parseFloat(((cycleScore.squadB / customerStats.totalCustomers) * 100).toFixed(1))
     : 0;
 
-  const contributionMetrics = ['Reactivation (Old Listing)', 'Recommend', 'Active Member'] as const;
   const getContributionScore = (data: Record<string, string | number>[], metric: string, squad: string) => {
     const row = data.find(item => item.Metrics === metric);
     return row ? (typeof row[squad] === 'number' ? row[squad] : undefined) : undefined;
   };
   // Use useMemo to ensure combinedMetrics recalculates when monthlyBreakdown changes
   const combinedMetrics = useMemo(() => {
+    const contributionMetrics = ['Reactivation (Old Listing)', 'Recommend', 'Active Member'] as const;
     return contributionMetrics.map(metric => ({
       metric,
       cycleA: getContributionScore(cycleBreakdown, metric, 'Squad A'),

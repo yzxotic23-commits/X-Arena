@@ -2093,10 +2093,10 @@ export function CustomerListingPage() {
                 size="sm"
                 onClick={() => {
                   setNewBonus({
-                    uniqueCode: '',
-                    brand: isLimitedAccess && userBrand ? userBrand : '',
-                    handler: isLimitedAccess && userShift ? userShift : '',
-                    label: '',
+                    type: '',
+                    employeeName: '',
+                    squad: '',
+                    score: 0,
                     month: getCurrentMonth(),
                   });
                   setShowAddBonusModal(true);
