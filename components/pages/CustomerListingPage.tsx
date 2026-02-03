@@ -37,7 +37,7 @@ interface Customer {
 export function CustomerListingPage() {
   const { language } = useLanguage();
   const translations = t(language);
-  const { isLimitedAccess, rankUsername, rankFullName } = useAuth();
+  const { isLimitedAccess, rankUsername, rankFullName, userInfo } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('reactivation');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showImportSidebar, setShowImportSidebar] = useState(false);
@@ -200,6 +200,13 @@ export function CustomerListingPage() {
   useEffect(() => {
     fetchUserShiftAndBrand();
   }, [fetchUserShiftAndBrand]);
+
+  // Prevent operator from accessing adjustment tab
+  useEffect(() => {
+    if (userInfo?.role === 'operator' && activeTab === 'adjustment') {
+      setActiveTab('reactivation');
+    }
+  }, [userInfo?.role, activeTab]);
 
   // Fetch brands from brand_mapping
   const fetchBrands = useCallback(async () => {
@@ -2035,17 +2042,20 @@ export function CustomerListingPage() {
             <Users className="w-3.5 h-3.5" />
             {translations.customerListing.extra}
           </button>
-          <button
-            onClick={() => setActiveTab('adjustment')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
-              activeTab === 'adjustment'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-foreground-primary hover:bg-primary/10'
-            }`}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            {translations.customerListing.adjustment}
-          </button>
+          {/* Hide adjustment tab for operator role */}
+          {userInfo?.role !== 'operator' && (
+            <button
+              onClick={() => setActiveTab('adjustment')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer select-none flex items-center gap-2 ${
+                activeTab === 'adjustment'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-foreground-primary hover:bg-primary/10'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              {translations.customerListing.adjustment}
+            </button>
+          )}
         </div>
       </div>
 
