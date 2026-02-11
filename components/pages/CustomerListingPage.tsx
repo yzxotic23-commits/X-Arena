@@ -98,6 +98,10 @@ export function CustomerListingPage() {
   const [userShift, setUserShift] = useState<string | null>(null);
   const [userBrand, setUserBrand] = useState<string | null>(null);
   const [uniqueCodeSearch, setUniqueCodeSearch] = useState<string>('');
+  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+  const [duplicateGroups, setDuplicateGroups] = useState<Map<string, Customer[]>>(new Map());
+  const [isDeletingDuplicates, setIsDeletingDuplicates] = useState(false);
+  const [filteredCustomersLength, setFilteredCustomersLength] = useState(0); // Length of filtered data for pagination
   
   // Get current month for default value
   const getCurrentMonth = () => {
@@ -1052,6 +1056,43 @@ export function CustomerListingPage() {
     return activeMap;
   }, []);
 
+  // Find duplicate groups based on uniqueCode + brand + month
+  const findDuplicateGroups = useCallback((customers: Customer[]): Map<string, Customer[]> => {
+    const grouped = new Map<string, Customer[]>();
+    
+    customers.forEach(customer => {
+      // Key: uniqueCode|brand|month (case-insensitive, trimmed)
+      const key = `${String(customer.uniqueCode).trim().toLowerCase()}|${String(customer.brand).trim().toLowerCase()}|${String(customer.month).trim()}`;
+      
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key)!.push(customer);
+    });
+    
+    // Filter hanya group yang memiliki lebih dari 1 record (duplicate)
+    const duplicateGroups = new Map<string, Customer[]>();
+    grouped.forEach((records, key) => {
+      if (records.length > 1) {
+        duplicateGroups.set(key, records);
+      }
+    });
+    
+    return duplicateGroups;
+  }, []);
+
+  // Get all duplicate records (flat array)
+  const getAllDuplicateRecords = useCallback((customers: Customer[]): Customer[] => {
+    const duplicateGroups = findDuplicateGroups(customers);
+    const allDuplicates: Customer[] = [];
+    
+    duplicateGroups.forEach((records) => {
+      allDuplicates.push(...records);
+    });
+    
+    return allDuplicates;
+  }, [findDuplicateGroups]);
+
   // Fetch customers from Supabase
   const fetchCustomers = useCallback(async () => {
     // For limited access users, wait until userShift and userBrand are loaded
@@ -1063,51 +1104,32 @@ export function CustomerListingPage() {
     setLoading(true);
     setFetchError(null);
     try {
-      let data: any[] = [];
-      let error: any = null;
-
-      // For adjustment, use API route to bypass RLS
-      if (activeTab === 'adjustment') {
-        try {
-          const response = await fetch('/api/adjustment');
-          const result = await response.json();
-          
-          if (!response.ok) {
-            error = { message: result.error || result.details || 'Failed to fetch adjustments' };
-          } else {
-            data = result.data || [];
-          }
-        } catch (fetchError) {
-          error = { message: 'Failed to fetch adjustments: ' + (fetchError instanceof Error ? fetchError.message : 'Unknown error') };
-        }
-      } else {
-        // For other tabs, use direct Supabase query
-        const tableName = activeTab === 'reactivation' 
-          ? 'customer_reactivation' 
-          : activeTab === 'retention' 
-          ? 'customer_retention' 
-          : activeTab === 'extra'
-          ? 'customer_extra'
-          : 'customer_recommend';
-        
-        // Build query with filters for limited access users
-        let query = supabase
-          .from(tableName)
-          .select('*');
-        
-        // Filter by shift and brand for limited access users directly in query
-        // This ensures operator only sees customers matching their brand and shift
-        if (isLimitedAccess && userShift && userBrand) {
-          console.log('[CustomerListing] Filtering customers for operator:', { shift: userShift, brand: userBrand });
-          query = query
-            .eq('handler', userShift)
-            .eq('brand', userBrand);
-        }
-        
-        const result = await query.order('created_at', { ascending: false });
-        data = result.data || [];
-        error = result.error;
+      const tableName = activeTab === 'reactivation' 
+        ? 'customer_reactivation' 
+        : activeTab === 'retention' 
+        ? 'customer_retention' 
+        : activeTab === 'extra'
+        ? 'customer_extra'
+        : activeTab === 'adjustment'
+        ? 'customer_adjustment'
+        : 'customer_recommend';
+      
+      // Build query with filters for limited access users
+      let query = supabase
+        .from(tableName)
+        .select('*');
+      
+      // Filter by shift and brand for limited access users directly in query
+      // This ensures operator only sees customers matching their brand and shift
+      // Note: Adjustment tab doesn't use handler/brand, so skip filtering for adjustment
+      if (activeTab !== 'adjustment' && isLimitedAccess && userShift && userBrand) {
+        console.log('[CustomerListing] Filtering customers for operator:', { shift: userShift, brand: userBrand });
+        query = query
+          .eq('handler', userShift)
+          .eq('brand', userBrand);
       }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         setFetchError('Unable to load list. Please try again.');
@@ -1146,6 +1168,8 @@ export function CustomerListingPage() {
 
         // Display data first (optimistic rendering for faster initial load)
         setAllCustomers(mappedData);
+        // Initialize filtered length (will be updated by useEffect)
+        setFilteredCustomersLength(mappedData.length);
         // Apply pagination
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
@@ -1201,8 +1225,109 @@ export function CustomerListingPage() {
     }
   }, [activeTab, checkCustomersActiveStatus, currentPage, itemsPerPage, isLimitedAccess, userShift, userBrand]);
 
+  // Handle delete duplicates (must be after fetchCustomers definition)
+  const handleDeleteDuplicates = useCallback(async () => {
+    const duplicateGroups = findDuplicateGroups(allCustomers);
+    const totalDuplicates = Array.from(duplicateGroups.values())
+      .reduce((sum, records) => sum + (records.length - 1), 0); // Total yang akan dihapus
+    
+    if (totalDuplicates === 0) {
+      alert('No duplicates found!');
+      return;
+    }
+    
+    const confirmMessage = `Are you sure you want to delete ${totalDuplicates} duplicate record(s)?\n\nThis will keep only 1 record per duplicate group (the newest one based on created_at or id).`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    setIsDeletingDuplicates(true);
+    
+    try {
+      const recordsToDelete: Customer[] = [];
+      
+      // Untuk setiap duplicate group, ambil semua kecuali yang terbaru
+      duplicateGroups.forEach((records) => {
+        // Sort by id descending (asumsi: id yang lebih besar = lebih baru)
+        // Jika ada created_at, bisa di-sort berdasarkan itu, tapi untuk sekarang gunakan id
+        const sorted = [...records].sort((a, b) => {
+          const idA = parseInt(a.id) || 0;
+          const idB = parseInt(b.id) || 0;
+          return idB - idA; // Descending: terbaru di index 0
+        });
+        
+        // Simpan yang terbaru (index 0), hapus sisanya (index 1+)
+        const toKeep = sorted[0];
+        const toDelete = sorted.slice(1); // Semua kecuali yang pertama
+        
+        recordsToDelete.push(...toDelete);
+      });
+      
+      console.log(`[Delete Duplicates] Will delete ${recordsToDelete.length} records`);
+      
+      // Delete records berdasarkan activeTab (table yang sedang aktif)
+      const tableName = activeTab === 'reactivation' 
+        ? 'customer_reactivation' 
+        : activeTab === 'retention' 
+        ? 'customer_retention' 
+        : activeTab === 'extra'
+        ? 'customer_extra'
+        : activeTab === 'adjustment'
+        ? 'customer_adjustment'
+        : 'customer_recommend';
+      
+      // Delete menggunakan API route untuk adjustment, atau langsung untuk yang lain
+      if (activeTab === 'adjustment') {
+        // Gunakan API route untuk adjustment
+        const deletePromises = recordsToDelete.map(record => 
+          fetch('/api/adjustment', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: record.id }),
+          }).then(res => res.json())
+        );
+        
+        const results = await Promise.all(deletePromises);
+        const errors = results.filter(r => !r.success);
+        if (errors.length > 0) {
+          throw new Error(`Failed to delete ${errors.length} record(s)`);
+        }
+      } else {
+        // Delete langsung untuk tab lain
+        const idsToDelete = recordsToDelete.map(r => r.id);
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .in('id', idsToDelete);
+        
+        if (error) throw error;
+      }
+      
+      alert(`Successfully deleted ${recordsToDelete.length} duplicate record(s)!`);
+      
+      // Refresh data
+      await fetchCustomers();
+      
+      // Update duplicate groups after refresh
+      // Filter akan otomatis update karena fetchCustomers sudah dipanggil
+      
+    } catch (error) {
+      console.error('Failed to delete duplicates:', error);
+      alert('Failed to delete duplicates: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsDeletingDuplicates(false);
+    }
+  }, [allCustomers, activeTab, findDuplicateGroups, fetchCustomers]);
+
   // REMOVED: useEffect that sets all labels to "non active" on mount
   // Now labels are determined dynamically based on deposit_cases > 0 from Supabase 2
+  
+  // Reset duplicate filter when switching to adjustment tab
+  useEffect(() => {
+    if (activeTab === 'adjustment') {
+      setShowDuplicatesOnly(false);
+    }
+  }, [activeTab]);
   
   useEffect(() => {
     // Fetch when tab changes, or when user shift/brand changes (for limited access users)
@@ -1223,24 +1348,42 @@ export function CustomerListingPage() {
 
   // Filter and paginate customers based on search query
   useEffect(() => {
-    // Filter customers by unique code search
+    // Filter customers by unique code search and duplicate filter
     let filteredCustomers = allCustomers;
+    
+    // Filter by unique code search
     if (uniqueCodeSearch.trim()) {
-      filteredCustomers = allCustomers.filter(customer =>
+      filteredCustomers = filteredCustomers.filter(customer =>
         customer.uniqueCode.toLowerCase().includes(uniqueCodeSearch.toLowerCase().trim())
       );
     }
+    
+    // Filter by duplicate (show only duplicates)
+    if (showDuplicatesOnly) {
+      const duplicates = getAllDuplicateRecords(filteredCustomers);
+      filteredCustomers = duplicates;
+      
+      // Update duplicate groups for display
+      const groups = findDuplicateGroups(allCustomers);
+      setDuplicateGroups(groups);
+    } else {
+      // Clear duplicate groups when not showing duplicates
+      setDuplicateGroups(new Map());
+    }
+    
+    // Save filtered length for pagination display
+    setFilteredCustomersLength(filteredCustomers.length);
     
     // Apply pagination
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     setCustomers(filteredCustomers.slice(startIndex, endIndex));
-  }, [itemsPerPage, allCustomers, currentPage, uniqueCodeSearch]);
+  }, [itemsPerPage, allCustomers, currentPage, uniqueCodeSearch, showDuplicatesOnly, getAllDuplicateRecords, findDuplicateGroups]);
 
-  // Reset to page 1 when itemsPerPage or search query changes
+  // Reset to page 1 when itemsPerPage, search query, or duplicate filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [itemsPerPage, uniqueCodeSearch]);
+  }, [itemsPerPage, uniqueCodeSearch, showDuplicatesOnly]);
 
   // Handle select/deselect all
   const handleSelectAll = (checked: boolean) => {
@@ -1311,10 +1454,10 @@ export function CustomerListingPage() {
     }
   };
 
-  // Calculate pagination
-  const totalPages = Math.ceil(allCustomers.length / itemsPerPage);
+  // Calculate pagination based on filtered data
+  const totalPages = Math.ceil(filteredCustomersLength / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, allCustomers.length);
+  const endIndex = Math.min(startIndex + itemsPerPage, filteredCustomersLength);
 
   const handleEdit = (customer: Customer) => {
     setEditingCustomer(customer);
@@ -2186,8 +2329,52 @@ export function CustomerListingPage() {
                 className="pl-8 pr-3 py-1.5 text-sm border border-card-border rounded-md bg-card-inner text-foreground-primary placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-64"
               />
             </div>
+            {/* Duplicate Filter Toggle (not for adjustment tab) */}
+            {activeTab !== 'adjustment' && (
+              <button
+                onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
+                className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1.5 ${
+                  showDuplicatesOnly 
+                    ? 'bg-gray-200 text-red-600 hover:bg-gray-300' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                <AlertCircle className={`w-3.5 h-3.5 ${showDuplicatesOnly ? 'text-red-600' : 'text-gray-700'}`} />
+                {showDuplicatesOnly ? 'Show All' : 'Duplicates'}
+                {showDuplicatesOnly && duplicateGroups.size > 0 && (
+                  <span className="bg-white text-red-600 px-1.5 py-0.5 rounded-full text-xs font-semibold">
+                    {duplicateGroups.size}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
+            {/* Delete Duplicates Button (only show when filter is active, not for adjustment tab) */}
+            {activeTab !== 'adjustment' && showDuplicatesOnly && duplicateGroups.size > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleDeleteDuplicates}
+                disabled={isDeletingDuplicates}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed text-xs px-3"
+              >
+                {isDeletingDuplicates ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete All
+                    <span className="bg-white text-red-600 px-1.5 py-0.5 rounded-full text-xs font-semibold">
+                      {Array.from(duplicateGroups.values()).reduce((sum, records) => sum + (records.length - 1), 0)}
+                    </span>
+                  </>
+                )}
+              </Button>
+            )}
             {selectedCustomers.length > 0 && (
               <Button
                 variant="default"
@@ -2271,6 +2458,18 @@ export function CustomerListingPage() {
             )}
           </div>
         </CardHeader>
+        {/* Duplicate Info Badge (not for adjustment tab) */}
+        {activeTab !== 'adjustment' && showDuplicatesOnly && duplicateGroups.size > 0 && (
+          <div className="px-6 py-3 bg-yellow-50 border-b border-yellow-200 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+            <div className="text-sm text-yellow-800">
+              <strong>{duplicateGroups.size}</strong> duplicate group(s) found.
+              <strong className="ml-2">
+                {Array.from(duplicateGroups.values()).reduce((sum, records) => sum + (records.length - 1), 0)}
+              </strong> record(s) will be deleted if you click "Delete All Duplicates".
+            </div>
+          </div>
+        )}
         <CardContent className="p-0">
           <div className="overflow-auto rounded-b-lg max-h-[60vh]">
             <table className="w-full border-collapse">
@@ -2465,7 +2664,7 @@ export function CustomerListingPage() {
               </select>
             </div>
             <span className="text-xs text-muted order-first sm:order-none">
-              {startIndex + 1}–{endIndex} of {allCustomers.length}
+              {filteredCustomersLength > 0 ? `${startIndex + 1}–${endIndex} of ${filteredCustomersLength}` : '0 of 0'}
             </span>
             <div className="flex items-center gap-1">
               <Button
