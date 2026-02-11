@@ -2466,7 +2466,7 @@ export function CustomerListingPage() {
               <strong>{duplicateGroups.size}</strong> duplicate group(s) found.
               <strong className="ml-2">
                 {Array.from(duplicateGroups.values()).reduce((sum, records) => sum + (records.length - 1), 0)}
-              </strong> record(s) will be deleted if you click "Delete All Duplicates".
+              </strong> record(s) will be deleted if you click &quot;Delete All Duplicates&quot;.
             </div>
           </div>
         )}
