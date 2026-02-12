@@ -1293,14 +1293,46 @@ export function CustomerListingPage() {
           throw new Error(`Failed to delete ${errors.length} record(s)`);
         }
       } else {
-        // Delete langsung untuk tab lain
+        // Delete langsung untuk tab lain dengan batch processing
         const idsToDelete = recordsToDelete.map(r => r.id);
-        const { error } = await supabase
-          .from(tableName)
-          .delete()
-          .in('id', idsToDelete);
         
-        if (error) throw error;
+        // Batch delete untuk menghindari error 400 (terlalu banyak IDs dalam satu request)
+        const BATCH_SIZE = 50; // Delete 50 records per batch
+        let deletedCount = 0;
+        let failedCount = 0;
+        const errors: string[] = [];
+        
+        for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
+          const batch = idsToDelete.slice(i, i + BATCH_SIZE);
+          
+          try {
+            const { error } = await supabase
+              .from(tableName)
+              .delete()
+              .in('id', batch);
+            
+            if (error) {
+              console.error(`[Delete Duplicates] Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, error);
+              failedCount += batch.length;
+              errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);
+            } else {
+              deletedCount += batch.length;
+              console.log(`[Delete Duplicates] Deleted batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} records`);
+            }
+          } catch (err) {
+            console.error(`[Delete Duplicates] Batch ${Math.floor(i / BATCH_SIZE) + 1} exception:`, err);
+            failedCount += batch.length;
+            errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+        }
+        
+        if (failedCount > 0) {
+          throw new Error(`Failed to delete ${failedCount} record(s). Successfully deleted: ${deletedCount}. Errors: ${errors.join('; ')}`);
+        }
+        
+        if (deletedCount !== idsToDelete.length) {
+          throw new Error(`Partial deletion: Expected ${idsToDelete.length}, deleted ${deletedCount}`);
+        }
       }
       
       alert(`Successfully deleted ${recordsToDelete.length} duplicate record(s)!`);
