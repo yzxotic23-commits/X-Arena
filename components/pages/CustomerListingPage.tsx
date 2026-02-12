@@ -1016,25 +1016,51 @@ export function CustomerListingPage() {
         
         console.log(`[Label Check] Checking ${uniqueCodes.length} unique codes and ${uniqueBrands.length} brands for month ${month}...`);
         
-        // Query Supabase 2 for active customers (deposit_cases > 0 in the customer's month)
-        const { data: monthData, error } = await supabase2
-          .from('blue_whale_sgd')
-          .select('update_unique_code, line, deposit_cases')
-          .in('update_unique_code', uniqueCodes)
-          .in('line', uniqueBrands)
-          .gte('date', startDateStr)
-          .lte('date', endDateStr)
-          .gt('deposit_cases', 0)
-          .limit(50000);
+        // Batch processing to avoid URL too long error (400 Bad Request)
+        // Split uniqueCodes into smaller batches to avoid query string length limits
+        const BATCH_SIZE = 100; // Process 100 unique codes per batch
+        const allMonthData: any[] = [];
         
-        if (error) {
-          console.error(`[Label Check] Error querying Supabase 2 for month ${month}:`, error);
-          return;
+        for (let i = 0; i < uniqueCodes.length; i += BATCH_SIZE) {
+          const batchCodes = uniqueCodes.slice(i, i + BATCH_SIZE);
+          const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+          const totalBatches = Math.ceil(uniqueCodes.length / BATCH_SIZE);
+          
+          try {
+            console.log(`[Label Check] Processing batch ${batchNumber}/${totalBatches} (${batchCodes.length} codes) for month ${month}...`);
+            
+            // Query Supabase 2 for active customers (deposit_cases > 0 in the customer's month)
+            const { data: batchData, error } = await supabase2
+              .from('blue_whale_sgd')
+              .select('update_unique_code, line, deposit_cases')
+              .in('update_unique_code', batchCodes)
+              .in('line', uniqueBrands)
+              .gte('date', startDateStr)
+              .lte('date', endDateStr)
+              .gt('deposit_cases', 0)
+              .limit(50000);
+            
+            if (error) {
+              console.error(`[Label Check] Error querying Supabase 2 for month ${month}, batch ${batchNumber}:`, error);
+              // Continue with next batch instead of returning early
+              continue;
+            }
+            
+            if (batchData && batchData.length > 0) {
+              allMonthData.push(...batchData);
+              console.log(`[Label Check] Batch ${batchNumber}/${totalBatches} found ${batchData.length} active records`);
+            }
+          } catch (err) {
+            console.error(`[Label Check] Exception in batch ${batchNumber} for month ${month}:`, err);
+            // Continue with next batch
+            continue;
+          }
         }
         
-        if (monthData && monthData.length > 0) {
+        // Process all collected data
+        if (allMonthData.length > 0) {
           // Create map of active customers (unique_code|brand) for this month
-          monthData.forEach((row: any) => {
+          allMonthData.forEach((row: any) => {
             const uniqueCode = String(row.update_unique_code || row.unique_code || '').trim().toLowerCase();
             const brand = String(row.line || '').trim().toLowerCase();
             if (uniqueCode && brand) {
@@ -1042,6 +1068,7 @@ export function CustomerListingPage() {
               activeMap.set(key, true);
             }
           });
+          console.log(`[Label Check] Month ${month}: Processed ${allMonthData.length} total active records from ${Math.ceil(uniqueCodes.length / BATCH_SIZE)} batches`);
         }
       });
       
