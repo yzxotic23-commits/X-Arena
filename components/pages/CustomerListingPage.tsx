@@ -1489,25 +1489,100 @@ export function CustomerListingPage() {
         ? 'customer_adjustment'
         : 'customer_recommend';
 
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .in('id', selectedCustomers);
-
-      if (error) {
-        console.error('Failed to delete customers', error);
-        alert('Failed to delete customers: ' + error.message);
-        setDeletingMultiple(false);
-        return;
+      const totalToDelete = selectedCustomers.length;
+      
+      // Use batch processing for large deletions to avoid URL/query limits
+      if (activeTab === 'adjustment') {
+        // Use API route for adjustment with batch processing
+        const BATCH_SIZE = 50;
+        let deletedCount = 0;
+        let failedCount = 0;
+        const errors: string[] = [];
+        
+        for (let i = 0; i < selectedCustomers.length; i += BATCH_SIZE) {
+          const batch = selectedCustomers.slice(i, i + BATCH_SIZE);
+          
+          try {
+            const deletePromises = batch.map(id => 
+              fetch('/api/adjustment', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id }),
+              }).then(res => res.json())
+            );
+            
+            const results = await Promise.all(deletePromises);
+            const batchErrors = results.filter(r => !r.success);
+            
+            if (batchErrors.length > 0) {
+              failedCount += batchErrors.length;
+              errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batchErrors.length} failed`);
+            } else {
+              deletedCount += batch.length;
+            }
+            
+            console.log(`[Delete Multiple] Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} records processed`);
+          } catch (err) {
+            console.error(`[Delete Multiple] Batch ${Math.floor(i / BATCH_SIZE) + 1} exception:`, err);
+            failedCount += batch.length;
+            errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+        }
+        
+        if (failedCount > 0) {
+          throw new Error(`Failed to delete ${failedCount} record(s). Successfully deleted: ${deletedCount}. Errors: ${errors.join('; ')}`);
+        }
+        
+        if (deletedCount !== totalToDelete) {
+          throw new Error(`Partial deletion: Expected ${totalToDelete}, deleted ${deletedCount}`);
+        }
+      } else {
+        // Use batch processing for other tabs
+        const BATCH_SIZE = 50;
+        let deletedCount = 0;
+        let failedCount = 0;
+        const errors: string[] = [];
+        
+        for (let i = 0; i < selectedCustomers.length; i += BATCH_SIZE) {
+          const batch = selectedCustomers.slice(i, i + BATCH_SIZE);
+          
+          try {
+            const { error } = await supabase
+              .from(tableName)
+              .delete()
+              .in('id', batch);
+            
+            if (error) {
+              console.error(`[Delete Multiple] Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, error);
+              failedCount += batch.length;
+              errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);
+            } else {
+              deletedCount += batch.length;
+              console.log(`[Delete Multiple] Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.length} records deleted`);
+            }
+          } catch (err) {
+            console.error(`[Delete Multiple] Batch ${Math.floor(i / BATCH_SIZE) + 1} exception:`, err);
+            failedCount += batch.length;
+            errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+        }
+        
+        if (failedCount > 0) {
+          throw new Error(`Failed to delete ${failedCount} record(s). Successfully deleted: ${deletedCount}. Errors: ${errors.join('; ')}`);
+        }
+        
+        if (deletedCount !== totalToDelete) {
+          throw new Error(`Partial deletion: Expected ${totalToDelete}, deleted ${deletedCount}`);
+        }
       }
 
       setShowDeleteMultipleConfirmModal(false);
       setSelectedCustomers([]);
       fetchCustomers(); // Refresh data
-      alert(`${selectedCustomers.length} customer(s) deleted successfully!`);
+      alert(`${totalToDelete} customer(s) deleted successfully!`);
     } catch (error) {
       console.error('Delete error', error);
-      alert('An error occurred during deletion. Please try again.');
+      alert('Failed to delete customers: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setDeletingMultiple(false);
     }
