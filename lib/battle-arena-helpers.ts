@@ -478,91 +478,109 @@ export async function calculateBattleScores(
     }
 
     // ============================================
-    // 2. REACTIVATION: Process with cached play dates
+    // 2. REACTIVATION: Use same logic as Reports (blue_whale_sgd with deposit_cases > 0)
     // ============================================
     console.log('\n=== CALCULATING REACTIVATION ===');
     console.log(`[Reactivation] Total records from customer listing: ${reactivationData?.length || 0}`);
 
     if (reactivationData && reactivationData.length > 0) {
-      // Process reactivation data using cached play dates
-      // ✅ CRITICAL: Dedup by unique_code ONLY (not unique_code + brand)
-      // Because one customer (unique_code) should only be counted once, regardless of brand
-      const reactivationSeen = new Set<string>();
+      // ✅ SAME LOGIC AS REPORTS: Group by brand, check in blue_whale_sgd with deposit_cases > 0
+      // 1. Group reactivation by brand (squad A or squad B)
+      // 2. For each brand, get unique codes
+      // 3. Check unique_code in blue_whale_sgd with deposit_cases > 0 in cycle date range
+      // 4. Count total active reactivation per squad
+      // 5. Multiply by PK Score Rule points
+      // 6. Reduce opponent squad
+      
       const baseReactivationPoints = scoreRules.reactivation.points;
       const opponentEffect = scoreRules.reactivation.opponent === 'decrease' ? -1 : 
                            scoreRules.reactivation.opponent === 'increase' ? 1 : 0;
 
-      // Count reactivation customers per squad
-      let squadAReactivationCount = 0;
-      let squadBReactivationCount = 0;
-      let skippedNoPlayDates = 0;
-      let skippedNoBrandDates = 0;
-      let skippedDuplicate = 0;
-      let processedCount = 0;
+      // Group by brand and determine squad (same as Reports)
+      const squadAReactivationByBrand = new Map<string, Set<string>>(); // brand -> unique_codes
+      const squadBReactivationByBrand = new Map<string, Set<string>>(); // brand -> unique_codes
 
       reactivationData.forEach((record: any) => {
         const uniqueCode = String(record.unique_code || '').trim();
-        if (!uniqueCode) {
-          return; // Skip if no unique_code
-        }
+        if (!uniqueCode) return;
 
-        // ✅ CRITICAL: Dedup by unique_code ONLY (one customer = one count)
-        if (reactivationSeen.has(uniqueCode)) {
-          skippedDuplicate++;
-          return;
-        }
-
-        // Get play dates from cache
-        const brandDatesMap = allPlayDatesMap.get(uniqueCode);
-        if (!brandDatesMap) {
-          skippedNoBrandDates++;
-          return; // Skip if no play dates found
-        }
+        let brand = String(record.brand || '').trim();
+        // Normalize brand for database (OK188SG -> OK188)
+        const normalizedBrandForDB = brand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : brand.toUpperCase().trim();
+        // Normalize brand for mapping (OK188 -> OK188SG)
+        const normalizedBrandForMapping = brand.toUpperCase().trim() === 'OK188' ? 'OK188SG' : brand.toUpperCase().trim();
+        const squad = getSquad(normalizedBrandForMapping, squadMapping);
         
-        // Check if ANY brand has play dates in cycle range
-        let hasValidPlayDate = false;
-        let squadForThisCustomer: 'A' | 'B' | null = null;
-
-        for (const [brand, dates] of brandDatesMap.entries()) {
-          const normalizedBrand = brand.toUpperCase().trim() === 'OK188' ? 'OK188SG' : brand;
-          // Filter by cycle date range
-          const playDates = dates.filter((date: string) => date >= startDateStr && date <= endDateStr);
-          
-          if (playDates.length > 0) {
-            hasValidPlayDate = true;
-            // Determine squad from brand
-            const squad = getSquad(normalizedBrand, squadMapping);
-            if (squad && !squadForThisCustomer) {
-              squadForThisCustomer = squad;
-            }
+        if (squad === 'A') {
+          if (!squadAReactivationByBrand.has(normalizedBrandForDB)) {
+            squadAReactivationByBrand.set(normalizedBrandForDB, new Set());
           }
-        }
-        
-        if (!hasValidPlayDate) {
-          skippedNoPlayDates++;
-          return; // Skip if no play dates in cycle
-        }
-
-        if (!squadForThisCustomer) {
-          return; // Skip if no squad found
-        }
-
-        // Mark as seen (dedup by unique_code only)
-        reactivationSeen.add(uniqueCode);
-        processedCount++;
-
-        // Count customer per squad (one customer = one count)
-        if (squadForThisCustomer === 'A') {
-          squadAReactivationCount++;
-        } else if (squadForThisCustomer === 'B') {
-          squadBReactivationCount++;
+          squadAReactivationByBrand.get(normalizedBrandForDB)!.add(uniqueCode);
+        } else if (squad === 'B') {
+          if (!squadBReactivationByBrand.has(normalizedBrandForDB)) {
+            squadBReactivationByBrand.set(normalizedBrandForDB, new Set());
+          }
+          squadBReactivationByBrand.get(normalizedBrandForDB)!.add(uniqueCode);
         }
       });
 
-      // Calculate total points: Total customer × points per customer
+      // Check which codes are ACTIVE (deposit_cases > 0) in cycle date range per brand
+      // Same logic as Reports: check in blue_whale_sgd with line = brand
+      let squadAActiveReactivation = 0;
+      let squadBActiveReactivation = 0;
+
+      // Check Squad A reactivation codes per brand
+      for (const [brand, codes] of squadAReactivationByBrand.entries()) {
+        const codesArray = Array.from(codes);
+        // Batch process if > 1000
+        const batchSize = 1000;
+        for (let i = 0; i < codesArray.length; i += batchSize) {
+          const batch = codesArray.slice(i, i + batchSize);
+          const { data: activeData } = await supabase2
+            .from('blue_whale_sgd')
+            .select('unique_code')
+            .in('unique_code', batch)
+            .eq('line', brand)
+            .gte('date', startDateStr)
+            .lte('date', endDateStr)
+            .gt('deposit_cases', 0)
+            .limit(50000);
+
+          if (activeData) {
+            const activeCodes = new Set(activeData.map((r: any) => String(r.unique_code || '').trim()).filter(Boolean));
+            squadAActiveReactivation += batch.filter(code => activeCodes.has(code)).length;
+          }
+        }
+      }
+
+      // Check Squad B reactivation codes per brand
+      for (const [brand, codes] of squadBReactivationByBrand.entries()) {
+        const codesArray = Array.from(codes);
+        // Batch process if > 1000
+        const batchSize = 1000;
+        for (let i = 0; i < codesArray.length; i += batchSize) {
+          const batch = codesArray.slice(i, i + batchSize);
+          const { data: activeData } = await supabase2
+            .from('blue_whale_sgd')
+            .select('unique_code')
+            .in('unique_code', batch)
+            .eq('line', brand)
+            .gte('date', startDateStr)
+            .lte('date', endDateStr)
+            .gt('deposit_cases', 0)
+            .limit(50000);
+
+          if (activeData) {
+            const activeCodes = new Set(activeData.map((r: any) => String(r.unique_code || '').trim()).filter(Boolean));
+            squadBActiveReactivation += batch.filter(code => activeCodes.has(code)).length;
+          }
+        }
+      }
+
+      // Calculate total points: Total active reactivation × points per customer
       // Squad yang punya reactivation → lawan dikurangi
-      const squadAPoints = squadAReactivationCount * baseReactivationPoints * opponentEffect;
-      const squadBPoints = squadBReactivationCount * baseReactivationPoints * opponentEffect;
+      const squadAPoints = squadAActiveReactivation * baseReactivationPoints * opponentEffect;
+      const squadBPoints = squadBActiveReactivation * baseReactivationPoints * opponentEffect;
 
       // Apply to opponent squad
       if (squadAPoints !== 0) {
@@ -574,12 +592,11 @@ export async function calculateBattleScores(
         breakdown.reactivation.squadA += squadBPoints;
       }
 
-      console.log(`[Reactivation] Processed: ${processedCount}, Skipped (no play dates): ${skippedNoPlayDates}, Skipped (no brand dates): ${skippedNoBrandDates}, Skipped (duplicate): ${skippedDuplicate}`);
-      console.log(`[Reactivation] Squad A customers: ${squadAReactivationCount}, Squad B customers: ${squadBReactivationCount}`);
-      console.log(`[Reactivation] Squad A points calculation: ${squadAReactivationCount} × ${baseReactivationPoints} × ${opponentEffect} = ${squadAPoints}`);
-      console.log(`[Reactivation] Squad B points calculation: ${squadBReactivationCount} × ${baseReactivationPoints} × ${opponentEffect} = ${squadBPoints}`);
+      console.log(`[Reactivation] Squad A brands: ${squadAReactivationByBrand.size}, Total codes: ${Array.from(squadAReactivationByBrand.values()).reduce((sum, codes) => sum + codes.size, 0)}, Active: ${squadAActiveReactivation}`);
+      console.log(`[Reactivation] Squad B brands: ${squadBReactivationByBrand.size}, Total codes: ${Array.from(squadBReactivationByBrand.values()).reduce((sum, codes) => sum + codes.size, 0)}, Active: ${squadBActiveReactivation}`);
+      console.log(`[Reactivation] Squad A points calculation: ${squadAActiveReactivation} × ${baseReactivationPoints} × ${opponentEffect} = ${squadAPoints}`);
+      console.log(`[Reactivation] Squad B points calculation: ${squadBActiveReactivation} × ${baseReactivationPoints} × ${opponentEffect} = ${squadBPoints}`);
       console.log(`[Reactivation] Squad A penalty: ${breakdown.reactivation.squadA}, Squad B penalty: ${breakdown.reactivation.squadB}`);
-      console.log(`[Reactivation] Total unique customers: ${reactivationSeen.size}`);
     }
 
     // ============================================
@@ -646,6 +663,7 @@ export async function calculateBattleScores(
         if (!hasValidPlayDate) {
           skippedNoPlayDates++;
           return; // Skip if no play dates in cycle
+
         }
 
         if (!squadForThisCustomer) {
