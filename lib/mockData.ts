@@ -105,7 +105,7 @@ function generateMockTopPerformers(): TopPerformer[] {
   const categories: TopPerformer['category'][] = [
     'Highest Deposit',
     'Highest Retention',
-    'Most Activated Customers',
+    'Most Reactivation',
     'Most Referrals',
     'Repeat 4 - 7 Days',
     'Repeat 8 - 11 Days',
