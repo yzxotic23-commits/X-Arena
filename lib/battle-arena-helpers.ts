@@ -71,7 +71,7 @@ export async function getSquadMapping(): Promise<SquadMapping> {
 
     console.log(`[getSquadMapping] Received ${data?.length || 0} brand mappings`);
     const mapping: SquadMapping = {};
-    (data || []).forEach(item => {
+    (data || []).forEach((item: any) => {
       if (item.brand && item.squad) {
         // Normalize brand names
         const normalizedBrand = item.brand.toUpperCase().trim();
@@ -302,7 +302,7 @@ async function getMonthlyData(monthStr: string): Promise<{
           }
         });
         
-        playDatesData.forEach(item => {
+        playDatesData.forEach((item: any) => {
           // ✅ CRITICAL: Use update_unique_code from blue_whale_sgd, but match with unique_code from customer listing
           const uniqueCode = String(item.update_unique_code || '').trim();
           if (uniqueCode && item.date) {
@@ -318,7 +318,7 @@ async function getMonthlyData(monthStr: string): Promise<{
               brands.add(lineBrand);
             }
             
-            brands.forEach(brand => {
+            brands.forEach((brand: string) => {
               if (!playDatesMap.has(uniqueCode)) {
                 playDatesMap.set(uniqueCode, new Map());
               }
@@ -451,7 +451,7 @@ export async function calculateBattleScores(
       let squadADeposits = 0;
       let squadBDeposits = 0;
 
-      (activeMemberResult.data || []).forEach(deposit => {
+      (activeMemberResult.data || []).forEach((deposit: any) => {
         let depositLine = deposit.line || '';
         if (depositLine.toUpperCase().trim() === 'OK188') {
           depositLine = 'OK188SG';
@@ -489,7 +489,7 @@ export async function calculateBattleScores(
       const opponentEffect = scoreRules.reactivation.opponent === 'decrease' ? -1 : 
                            scoreRules.reactivation.opponent === 'increase' ? 1 : 0;
 
-      reactivationData.forEach(record => {
+      reactivationData.forEach((record: any) => {
         const uniqueCode = record.unique_code || '';
         let brand = record.brand || '';
         if (brand.toUpperCase().trim() === 'OK188') {
@@ -548,7 +548,7 @@ export async function calculateBattleScores(
       const opponentEffect = scoreRules.recommend.opponent === 'decrease' ? -1 : 
                            scoreRules.recommend.opponent === 'increase' ? 1 : 0;
 
-      recommendData.forEach(record => {
+      recommendData.forEach((record: any) => {
         const uniqueCode = record.unique_code || '';
         let brand = record.brand || '';
         if (brand.toUpperCase().trim() === 'OK188') {
@@ -619,11 +619,11 @@ export async function calculateBattleScores(
         let squadBAdjustment = 0;
         
         console.log(`✅ Found ${adjustmentData.length} PK-Tracking adjustment records for month ${monthStr}:`);
-        adjustmentData.forEach(item => {
+        adjustmentData.forEach((item: any) => {
           console.log(`  - Type: ${item.type}, Squad: ${item.squad}, Score: ${item.score}, Month: ${item.month}`);
         });
         
-        adjustmentData.forEach(item => {
+        adjustmentData.forEach((item: any) => {
           const adjustmentScore = parseFloat(String(item.score || 0)) || 0;
           const squad = (item.squad || '').trim();
           
