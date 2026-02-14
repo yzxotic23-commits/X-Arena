@@ -481,9 +481,12 @@ export async function calculateBattleScores(
     // 2. REACTIVATION: Process with cached play dates
     // ============================================
     console.log('\n=== CALCULATING REACTIVATION ===');
+    console.log(`[Reactivation] Total records from customer listing: ${reactivationData?.length || 0}`);
 
     if (reactivationData && reactivationData.length > 0) {
       // Process reactivation data using cached play dates
+      // ✅ CRITICAL: Dedup by unique_code ONLY (not unique_code + brand)
+      // Because one customer (unique_code) should only be counted once, regardless of brand
       const reactivationSeen = new Set<string>();
       const baseReactivationPoints = scoreRules.reactivation.points;
       const opponentEffect = scoreRules.reactivation.opponent === 'decrease' ? -1 : 
@@ -492,42 +495,66 @@ export async function calculateBattleScores(
       // Count reactivation customers per squad
       let squadAReactivationCount = 0;
       let squadBReactivationCount = 0;
+      let skippedNoPlayDates = 0;
+      let skippedNoBrandDates = 0;
+      let skippedDuplicate = 0;
+      let processedCount = 0;
 
       reactivationData.forEach((record: any) => {
-        const uniqueCode = record.unique_code || '';
-        let brand = record.brand || '';
-        if (brand.toUpperCase().trim() === 'OK188') {
-          brand = 'OK188SG';
+        const uniqueCode = String(record.unique_code || '').trim();
+        if (!uniqueCode) {
+          return; // Skip if no unique_code
         }
 
-        // Get play dates from cache and filter by cycle date range
+        // ✅ CRITICAL: Dedup by unique_code ONLY (one customer = one count)
+        if (reactivationSeen.has(uniqueCode)) {
+          skippedDuplicate++;
+          return;
+        }
+
+        // Get play dates from cache
         const brandDatesMap = allPlayDatesMap.get(uniqueCode);
         if (!brandDatesMap) {
+          skippedNoBrandDates++;
           return; // Skip if no play dates found
         }
         
-        const allDates = brandDatesMap.get(brand) || [];
-        // Filter by cycle date range
-        const playDates = allDates.filter((date: string) => date >= startDateStr && date <= endDateStr);
+        // Check if ANY brand has play dates in cycle range
+        let hasValidPlayDate = false;
+        let squadForThisCustomer: 'A' | 'B' | null = null;
+
+        for (const [brand, dates] of brandDatesMap.entries()) {
+          const normalizedBrand = brand.toUpperCase().trim() === 'OK188' ? 'OK188SG' : brand;
+          // Filter by cycle date range
+          const playDates = dates.filter((date: string) => date >= startDateStr && date <= endDateStr);
+          
+          if (playDates.length > 0) {
+            hasValidPlayDate = true;
+            // Determine squad from brand
+            const squad = getSquad(normalizedBrand, squadMapping);
+            if (squad && !squadForThisCustomer) {
+              squadForThisCustomer = squad;
+            }
+          }
+        }
         
-        if (playDates.length === 0) {
+        if (!hasValidPlayDate) {
+          skippedNoPlayDates++;
           return; // Skip if no play dates in cycle
         }
 
-        // Dedup by unique_code + brand
-        const dedupKey = `${uniqueCode}__${brand}`;
-        if (reactivationSeen.has(dedupKey)) {
-          return;
+        if (!squadForThisCustomer) {
+          return; // Skip if no squad found
         }
-        reactivationSeen.add(dedupKey);
 
-        const squad = getSquad(brand, squadMapping);
-        if (!squad) return;
+        // Mark as seen (dedup by unique_code only)
+        reactivationSeen.add(uniqueCode);
+        processedCount++;
 
-        // Count customer per squad
-        if (squad === 'A') {
+        // Count customer per squad (one customer = one count)
+        if (squadForThisCustomer === 'A') {
           squadAReactivationCount++;
-        } else if (squad === 'B') {
+        } else if (squadForThisCustomer === 'B') {
           squadBReactivationCount++;
         }
       });
@@ -547,18 +574,24 @@ export async function calculateBattleScores(
         breakdown.reactivation.squadA += squadBPoints;
       }
 
-      console.log(`Reactivation - Squad A customers: ${squadAReactivationCount}, Squad B customers: ${squadBReactivationCount}`);
-      console.log(`Reactivation - Squad A penalty: ${breakdown.reactivation.squadA}, Squad B penalty: ${breakdown.reactivation.squadB}`);
-      console.log(`Reactivation - Total unique reactivations: ${reactivationSeen.size}`);
+      console.log(`[Reactivation] Processed: ${processedCount}, Skipped (no play dates): ${skippedNoPlayDates}, Skipped (no brand dates): ${skippedNoBrandDates}, Skipped (duplicate): ${skippedDuplicate}`);
+      console.log(`[Reactivation] Squad A customers: ${squadAReactivationCount}, Squad B customers: ${squadBReactivationCount}`);
+      console.log(`[Reactivation] Squad A points calculation: ${squadAReactivationCount} × ${baseReactivationPoints} × ${opponentEffect} = ${squadAPoints}`);
+      console.log(`[Reactivation] Squad B points calculation: ${squadBReactivationCount} × ${baseReactivationPoints} × ${opponentEffect} = ${squadBPoints}`);
+      console.log(`[Reactivation] Squad A penalty: ${breakdown.reactivation.squadA}, Squad B penalty: ${breakdown.reactivation.squadB}`);
+      console.log(`[Reactivation] Total unique customers: ${reactivationSeen.size}`);
     }
 
     // ============================================
     // 3. RECOMMEND: Process with cached play dates
     // ============================================
     console.log('\n=== CALCULATING RECOMMEND ===');
+    console.log(`[Recommend] Total records from customer listing: ${recommendData?.length || 0}`);
 
     if (recommendData && recommendData.length > 0) {
       // Process recommend data using cached play dates
+      // ✅ CRITICAL: Dedup by unique_code ONLY (not unique_code + brand)
+      // Because one customer (unique_code) should only be counted once, regardless of brand
       const recommendSeen = new Set<string>();
       const baseRecommendPoints = scoreRules.recommend.points;
       const opponentEffect = scoreRules.recommend.opponent === 'decrease' ? -1 : 
@@ -567,42 +600,66 @@ export async function calculateBattleScores(
       // Count recommend customers per squad
       let squadARecommendCount = 0;
       let squadBRecommendCount = 0;
+      let skippedNoPlayDates = 0;
+      let skippedNoBrandDates = 0;
+      let skippedDuplicate = 0;
+      let processedCount = 0;
 
       recommendData.forEach((record: any) => {
-        const uniqueCode = record.unique_code || '';
-        let brand = record.brand || '';
-        if (brand.toUpperCase().trim() === 'OK188') {
-          brand = 'OK188SG';
+        const uniqueCode = String(record.unique_code || '').trim();
+        if (!uniqueCode) {
+          return; // Skip if no unique_code
         }
 
-        // Get play dates from cache and filter by cycle date range
+        // ✅ CRITICAL: Dedup by unique_code ONLY (one customer = one count)
+        if (recommendSeen.has(uniqueCode)) {
+          skippedDuplicate++;
+          return;
+        }
+
+        // Get play dates from cache
         const brandDatesMap = allPlayDatesMap.get(uniqueCode);
         if (!brandDatesMap) {
+          skippedNoBrandDates++;
           return; // Skip if no play dates found
         }
         
-        const allDates = brandDatesMap.get(brand) || [];
-        // Filter by cycle date range
-        const playDates = allDates.filter((date: string) => date >= startDateStr && date <= endDateStr);
+        // Check if ANY brand has play dates in cycle range
+        let hasValidPlayDate = false;
+        let squadForThisCustomer: 'A' | 'B' | null = null;
+
+        for (const [brand, dates] of brandDatesMap.entries()) {
+          const normalizedBrand = brand.toUpperCase().trim() === 'OK188' ? 'OK188SG' : brand;
+          // Filter by cycle date range
+          const playDates = dates.filter((date: string) => date >= startDateStr && date <= endDateStr);
+          
+          if (playDates.length > 0) {
+            hasValidPlayDate = true;
+            // Determine squad from brand
+            const squad = getSquad(normalizedBrand, squadMapping);
+            if (squad && !squadForThisCustomer) {
+              squadForThisCustomer = squad;
+            }
+          }
+        }
         
-        if (playDates.length === 0) {
+        if (!hasValidPlayDate) {
+          skippedNoPlayDates++;
           return; // Skip if no play dates in cycle
         }
 
-        // Dedup by unique_code + brand
-        const dedupKey = `${uniqueCode}__${brand}`;
-        if (recommendSeen.has(dedupKey)) {
-          return;
+        if (!squadForThisCustomer) {
+          return; // Skip if no squad found
         }
-        recommendSeen.add(dedupKey);
 
-        const squad = getSquad(brand, squadMapping);
-        if (!squad) return;
+        // Mark as seen (dedup by unique_code only)
+        recommendSeen.add(uniqueCode);
+        processedCount++;
 
-        // Count customer per squad
-        if (squad === 'A') {
+        // Count customer per squad (one customer = one count)
+        if (squadForThisCustomer === 'A') {
           squadARecommendCount++;
-        } else if (squad === 'B') {
+        } else if (squadForThisCustomer === 'B') {
           squadBRecommendCount++;
         }
       });
@@ -622,9 +679,12 @@ export async function calculateBattleScores(
         breakdown.recommend.squadA += squadBPoints;
       }
 
-      console.log(`Recommend - Squad A customers: ${squadARecommendCount}, Squad B customers: ${squadBRecommendCount}`);
-      console.log(`Recommend - Squad A penalty: ${breakdown.recommend.squadA}, Squad B penalty: ${breakdown.recommend.squadB}`);
-      console.log(`Recommend - Total unique recommends: ${recommendSeen.size}`);
+      console.log(`[Recommend] Processed: ${processedCount}, Skipped (no play dates): ${skippedNoPlayDates}, Skipped (no brand dates): ${skippedNoBrandDates}, Skipped (duplicate): ${skippedDuplicate}`);
+      console.log(`[Recommend] Squad A customers: ${squadARecommendCount}, Squad B customers: ${squadBRecommendCount}`);
+      console.log(`[Recommend] Squad A points calculation: ${squadARecommendCount} × ${baseRecommendPoints} × ${opponentEffect} = ${squadAPoints}`);
+      console.log(`[Recommend] Squad B points calculation: ${squadBRecommendCount} × ${baseRecommendPoints} × ${opponentEffect} = ${squadBPoints}`);
+      console.log(`[Recommend] Squad A penalty: ${breakdown.recommend.squadA}, Squad B penalty: ${breakdown.recommend.squadB}`);
+      console.log(`[Recommend] Total unique customers: ${recommendSeen.size}`);
     }
 
     // ============================================
