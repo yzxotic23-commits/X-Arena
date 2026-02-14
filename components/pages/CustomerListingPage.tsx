@@ -2108,16 +2108,40 @@ export function CustomerListingPage() {
         ? 'customer_adjustment'
         : 'customer_recommend';
 
-      // Insert data to Supabase
-      const { error } = await supabase
-        .from(tableName)
-        .insert(valid);
+      // Use API route for tables that need RLS bypass (extra, adjustment)
+      // For other tables, use direct Supabase insert
+      if (activeTab === 'extra' || activeTab === 'adjustment') {
+        const response = await fetch('/api/customer-upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tableName,
+            data: valid
+          })
+        });
 
-      if (error) {
-        console.error('Failed to insert customers', error);
-        setUploadError(`Failed to upload: ${error.message}`);
-        setIsUploading(false);
-        return;
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          console.error('Failed to upload customers', result);
+          setUploadError(`Failed to upload: ${result.error || result.details || 'Unknown error'}`);
+          setIsUploading(false);
+          return;
+        }
+      } else {
+        // Insert data to Supabase directly for other tables
+        const { error } = await supabase
+          .from(tableName)
+          .insert(valid);
+
+        if (error) {
+          console.error('Failed to insert customers', error);
+          setUploadError(`Failed to upload: ${error.message}`);
+          setIsUploading(false);
+          return;
+        }
       }
 
       setUploadSuccess(true);

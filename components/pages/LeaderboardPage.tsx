@@ -1032,21 +1032,21 @@ export function LeaderboardPage() {
         }));
       topPerformers.push(...highestRetention);
 
-      // 3. Most Activated Customers - total active customers
-      const mostActivated = [...allBrandsWithScores]
+      // 3. Most Reactivation - only reactivation data (dormant = reactivation count)
+      const mostReactivation = [...allBrandsWithScores]
         .map(item => ({
           ...item,
-          totalActive: item.scoreData.retention + item.scoreData.dormant + item.scoreData.referrals,
+          reactivationCount: item.scoreData.dormant, // dormant is reactivation count
         }))
-        .sort((a, b) => b.totalActive - a.totalActive)
+        .sort((a, b) => b.reactivationCount - a.reactivationCount)
         .slice(0, 3)
         .map((item, index) => ({
           rank: index + 1,
           name: item.brand,
-          value: item.totalActive,
-          category: 'Most Activated Customers' as TopPerformer['category'],
+          value: item.reactivationCount,
+          category: 'Most Reactivation' as TopPerformer['category'],
         }));
-      topPerformers.push(...mostActivated);
+      topPerformers.push(...mostReactivation);
 
       // 4. Most Referrals - sort by referrals count descending
       const mostReferrals = [...allBrandsWithScores]
@@ -1170,21 +1170,21 @@ export function LeaderboardPage() {
       }));
     topPerformers.push(...highestRetention);
 
-    // 3. Most Activated Customers - total active customers (retention + reactivation + recommend)
-    const mostActivated = [...allMembersWithScores]
+    // 3. Most Reactivation - only reactivation data (dormant = reactivation count)
+    const mostReactivation = [...allMembersWithScores]
       .map(member => ({
         ...member,
-        totalActive: member.scoreData.retention + member.scoreData.dormant + member.scoreData.referrals,
+        reactivationCount: member.scoreData.dormant, // dormant is reactivation count
       }))
-      .sort((a, b) => b.totalActive - a.totalActive)
+      .sort((a, b) => b.reactivationCount - a.reactivationCount)
       .slice(0, 3)
       .map((member, index) => ({
         rank: index + 1,
         name: member.mapping.username,
-        value: member.totalActive,
-        category: 'Most Activated Customers' as TopPerformer['category'],
+        value: member.reactivationCount,
+        category: 'Most Reactivation' as TopPerformer['category'],
       }));
-    topPerformers.push(...mostActivated);
+    topPerformers.push(...mostReactivation);
 
     // 4. Most Referrals - sort by referrals (recommend) count descending
     const mostReferrals = [...allMembersWithScores]
@@ -1271,7 +1271,7 @@ export function LeaderboardPage() {
         return <DollarSign className="w-5 h-5" />;
       case 'Highest Retention':
         return <Repeat className="w-5 h-5" />;
-      case 'Most Activated Customers':
+      case 'Most Reactivation':
         return <RefreshCw className="w-5 h-5" />;
       case 'Most Referrals':
         return <UserPlus className="w-5 h-5" />;
@@ -1742,7 +1742,7 @@ export function LeaderboardPage() {
               <Card className="bg-card-glass">
                 <CardContent className="p-6">
                   <div className="space-y-8">
-                    {(['Highest Deposit', 'Highest Retention', 'Most Activated Customers', 'Most Referrals', 'Repeat 4 - 7 Days', 'Repeat 8 - 11 Days', 'Repeat 12 - 15 Days', 'Repeat 16 - 19 Days', 'Repeat 20 Days & Above'] as TopPerformer['category'][]).map((category, categoryIndex) => {
+                    {(['Highest Deposit', 'Highest Retention', 'Most Reactivation', 'Most Referrals', 'Repeat 4 - 7 Days', 'Repeat 8 - 11 Days', 'Repeat 12 - 15 Days', 'Repeat 16 - 19 Days', 'Repeat 20 Days & Above'] as TopPerformer['category'][]).map((category, categoryIndex) => {
                       const performers = getTopPerformersByCategory(category);
                       const reorderedPerformers = [
                         performers.find(p => p.rank === 2),

@@ -119,17 +119,24 @@ export function BattleArenaPage() {
 
   // Fetch battle data
   const fetchBattleData = useCallback(async () => {
+    console.log(`[BattleArenaPage] fetchBattleData START - Month: ${selectedMonth}, Cycle: ${selectedCycle}`);
     setLoading(true);
     try {
+      console.log(`[BattleArenaPage] Step 1: Getting PK Score Rules`);
       // Get score rules and squad mapping
       const scoreRules = getPKScoreRules();
+      console.log(`[BattleArenaPage] Step 2: Getting Squad Mapping`);
       const mapping = await getSquadMapping();
+      console.log(`[BattleArenaPage] Step 2 completed - Squad Mapping received`);
       setSquadMapping(mapping);
 
       // Calculate current cycle score (or monthly if "All")
+      console.log(`[BattleArenaPage] Step 3: Calculating battle scores`);
       let cycleResult;
       if (selectedCycle !== 'All') {
+        console.log(`[BattleArenaPage] Calculating for cycle: ${selectedCycle}`);
         cycleResult = await calculateBattleScores(selectedMonth, selectedCycle, scoreRules, mapping);
+        console.log(`[BattleArenaPage] Cycle result received - Squad A: ${cycleResult.squadA}, Squad B: ${cycleResult.squadB}`);
         setCycleScore({
           cycle: selectedCycle,
           squadA: cycleResult.squadA,
@@ -137,26 +144,134 @@ export function BattleArenaPage() {
         });
       } else {
         // If "All", use monthly score for cycle display
+        console.log(`[BattleArenaPage] Calculating for all cycles (monthly)`);
         cycleResult = await calculateBattleScores(selectedMonth, null, scoreRules, mapping);
+        console.log(`[BattleArenaPage] Monthly result received - Squad A: ${cycleResult.squadA}, Squad B: ${cycleResult.squadB}`);
         setCycleScore({
           cycle: 'All',
           squadA: cycleResult.squadA,
           squadB: cycleResult.squadB
         });
       }
+      console.log(`[BattleArenaPage] Step 4: Setting breakdown and achievements`);
       setCycleBreakdown([
         { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': cycleResult.breakdown.reactivation.squadA, 'Squad B': cycleResult.breakdown.reactivation.squadB },
         { 'Metrics': 'Recommend', 'Squad A': cycleResult.breakdown.recommend.squadA, 'Squad B': cycleResult.breakdown.recommend.squadB },
         { 'Metrics': 'Active Member', 'Squad A': cycleResult.breakdown.activeMember.squadA, 'Squad B': cycleResult.breakdown.activeMember.squadB }
       ]);
 
-      // Set achievements (empty for now)
-      setAchievements([]);
+      // Calculate achievements based on scores and breakdown
+      const calculatedAchievements: Array<{ id: string; badge: string; text: string; type: string }> = [];
+      
+      // Squad Achievements (Leader)
+      const cycleLeader = cycleResult.squadA > cycleResult.squadB ? 'Squad A' : cycleResult.squadB > cycleResult.squadA ? 'Squad B' : null;
+      const leadDiff = Math.abs(cycleResult.squadA - cycleResult.squadB);
+      
+      if (cycleLeader && leadDiff > 0) {
+        calculatedAchievements.push({
+          id: `squad-leader-${selectedMonth}-${selectedCycle}`,
+          badge: '🔥',
+          text: `<strong>${cycleLeader}</strong> leads ${selectedCycle !== 'All' ? selectedCycle : 'the month'} by ${leadDiff.toLocaleString()} points!`,
+          type: 'squad'
+        });
+      }
+      
+      // Performance Achievements (Active Member)
+      if (cycleResult.breakdown.activeMember.squadA >= 1000) {
+        calculatedAchievements.push({
+          id: `performance-active-a-${selectedMonth}-${selectedCycle}`,
+          badge: '⚡',
+          text: `<strong>Squad A</strong> achieved ${cycleResult.breakdown.activeMember.squadA.toLocaleString()} Active Member points!`,
+          type: 'performance'
+        });
+      }
+      if (cycleResult.breakdown.activeMember.squadB >= 1000) {
+        calculatedAchievements.push({
+          id: `performance-active-b-${selectedMonth}-${selectedCycle}`,
+          badge: '⚡',
+          text: `<strong>Squad B</strong> achieved ${cycleResult.breakdown.activeMember.squadB.toLocaleString()} Active Member points!`,
+          type: 'performance'
+        });
+      }
+      
+      // Transaction Achievements (Reactivation/Recommend)
+      const reactivationA = Math.abs(cycleResult.breakdown.reactivation.squadA);
+      const reactivationB = Math.abs(cycleResult.breakdown.reactivation.squadB);
+      if (reactivationA >= 50) {
+        calculatedAchievements.push({
+          id: `transaction-reactivation-a-${selectedMonth}-${selectedCycle}`,
+          badge: '🔄',
+          text: `<strong>Squad A</strong> scored ${reactivationA.toLocaleString()} Reactivation points!`,
+          type: 'transaction'
+        });
+      }
+      if (reactivationB >= 50) {
+        calculatedAchievements.push({
+          id: `transaction-reactivation-b-${selectedMonth}-${selectedCycle}`,
+          badge: '🔄',
+          text: `<strong>Squad B</strong> scored ${reactivationB.toLocaleString()} Reactivation points!`,
+          type: 'transaction'
+        });
+      }
+      
+      const recommendA = Math.abs(cycleResult.breakdown.recommend.squadA);
+      const recommendB = Math.abs(cycleResult.breakdown.recommend.squadB);
+      if (recommendA >= 25) {
+        calculatedAchievements.push({
+          id: `transaction-recommend-a-${selectedMonth}-${selectedCycle}`,
+          badge: '⭐',
+          text: `<strong>Squad A</strong> scored ${recommendA.toLocaleString()} Recommend points!`,
+          type: 'transaction'
+        });
+      }
+      if (recommendB >= 25) {
+        calculatedAchievements.push({
+          id: `transaction-recommend-b-${selectedMonth}-${selectedCycle}`,
+          badge: '⭐',
+          text: `<strong>Squad B</strong> scored ${recommendB.toLocaleString()} Recommend points!`,
+          type: 'transaction'
+        });
+      }
+      
+      // Milestone Achievements (Total Score)
+      const milestones = [5000, 10000, 20000, 30000, 50000, 100000];
+      milestones.forEach(milestone => {
+        if (cycleResult.squadA >= milestone) {
+          calculatedAchievements.push({
+            id: `milestone-a-${milestone}-${selectedMonth}-${selectedCycle}`,
+            badge: '🏆',
+            text: `<strong>Squad A</strong> reached ${milestone.toLocaleString()} points milestone!`,
+            type: 'milestone'
+          });
+        }
+        if (cycleResult.squadB >= milestone) {
+          calculatedAchievements.push({
+            id: `milestone-b-${milestone}-${selectedMonth}-${selectedCycle}`,
+            badge: '🏆',
+            text: `<strong>Squad B</strong> reached ${milestone.toLocaleString()} points milestone!`,
+            type: 'milestone'
+          });
+        }
+      });
+      
+      // Sort achievements: squad first, then milestone, then performance, then transaction
+      const typeOrder = { squad: 0, milestone: 1, performance: 2, transaction: 3 };
+      calculatedAchievements.sort((a, b) => (typeOrder[a.type as keyof typeof typeOrder] ?? 4) - (typeOrder[b.type as keyof typeof typeOrder] ?? 4));
+      
+      // Limit to 15 achievements max
+      setAchievements(calculatedAchievements.slice(0, 15));
 
       // Set customer stats (placeholder)
       setCustomerStats({ totalCustomers: 0, squadACustomers: 0, squadBCustomers: 0 });
+      console.log(`[BattleArenaPage] fetchBattleData COMPLETED successfully`);
     } catch (error) {
-      console.error('Error fetching battle data:', error);
+      console.error('[BattleArenaPage] Error fetching battle data:', error);
+      console.error('[BattleArenaPage] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        month: selectedMonth,
+        cycle: selectedCycle
+      });
       // Set default values on error to prevent stuck loading
       setCycleScore({ cycle: selectedCycle !== 'All' ? selectedCycle : 'Cycle 1', squadA: 0, squadB: 0 });
       setMonthlyScore({ month: selectedMonth, squadA: 0, squadB: 0 });
@@ -206,6 +321,30 @@ export function BattleArenaPage() {
         'Squad B': result.squadB
       }));
       setCycleOverview(cycleOverviewData);
+      
+      // Add monthly achievements
+      const monthlyAchievements: Array<{ id: string; badge: string; text: string; type: string }> = [];
+      const monthlyLeader = monthlyResult.squadA > monthlyResult.squadB ? 'Squad A' : monthlyResult.squadB > monthlyResult.squadA ? 'Squad B' : null;
+      const monthlyLeadDiff = Math.abs(monthlyResult.squadA - monthlyResult.squadB);
+      
+      if (monthlyLeader && monthlyLeadDiff > 0) {
+        monthlyAchievements.push({
+          id: `squad-monthly-leader-${selectedMonth}`,
+          badge: '👑',
+          text: `<strong>${monthlyLeader}</strong> leads the month with ${monthlyLeadDiff.toLocaleString()} points!`,
+          type: 'squad'
+        });
+      }
+      
+      // Combine with existing achievements
+      setAchievements(prev => {
+        const cycleAchievements = prev.filter(a => !a.id.includes('monthly-leader'));
+        const combined = [...cycleAchievements, ...monthlyAchievements];
+        const typeOrder = { squad: 0, milestone: 1, performance: 2, transaction: 3 };
+        const unique = Array.from(new Map(combined.map(a => [a.id, a])).values());
+        unique.sort((a, b) => (typeOrder[a.type as keyof typeof typeOrder] ?? 4) - (typeOrder[b.type as keyof typeof typeOrder] ?? 4));
+        return unique.slice(0, 15);
+      });
     } catch (error) {
       console.error('Error fetching monthly data:', error);
       setMonthlyScore({ month: selectedMonth, squadA: 0, squadB: 0 });
@@ -226,9 +365,10 @@ export function BattleArenaPage() {
     fetchMonthlyData();
   }, [fetchMonthlyData]);
 
+  // Reset achievements when month changes
   useEffect(() => {
-    fetchBattleData();
-  }, [fetchBattleData]);
+    setAchievements([]);
+  }, [selectedMonth]);
 
   const currentCycle = cycleScore.cycle;
 
@@ -236,11 +376,14 @@ export function BattleArenaPage() {
   const monthlyLeader = monthlyScore.squadA === monthlyScore.squadB ? 'Tie' : monthlyScore.squadA > monthlyScore.squadB ? 'Squad A' : 'Squad B';
   const cycleLeadDiff = Math.abs(cycleScore.squadA - cycleScore.squadB);
   const combinedCycleScore = cycleScore.squadA + cycleScore.squadB;
-  const squadAShare = customerStats.totalCustomers > 0
-    ? parseFloat(((cycleScore.squadA / customerStats.totalCustomers) * 100).toFixed(1))
+  const combinedMonthlyScore = monthlyScore.squadA + monthlyScore.squadB;
+  
+  // Calculate shares based on total score (not total customers)
+  const squadAShare = combinedCycleScore > 0
+    ? parseFloat(((cycleScore.squadA / combinedCycleScore) * 100).toFixed(1))
     : 0;
-  const squadBShare = customerStats.totalCustomers > 0
-    ? parseFloat(((cycleScore.squadB / customerStats.totalCustomers) * 100).toFixed(1))
+  const squadBShare = combinedCycleScore > 0
+    ? parseFloat(((cycleScore.squadB / combinedCycleScore) * 100).toFixed(1))
     : 0;
 
   const getContributionScore = (data: Record<string, string | number>[], metric: string, squad: string) => {
@@ -264,8 +407,14 @@ export function BattleArenaPage() {
     const cycleValue = squad === 'Squad A' ? cycleScore.squadA : cycleScore.squadB;
     const monthlyValue = squad === 'Squad A' ? monthlyScore.squadA : monthlyScore.squadB;
     const isLeader = squad === 'Squad A' ? cycleScore.squadA >= cycleScore.squadB : cycleScore.squadB >= cycleScore.squadA;
-    const cycleShare = customerStats.totalCustomers > 0 ? parseFloat(((cycleValue / customerStats.totalCustomers) * 100).toFixed(1)) : 0;
-    const monthlyShare = customerStats.totalCustomers > 0 ? parseFloat(((monthlyValue / customerStats.totalCustomers) * 100).toFixed(1)) : 0;
+    
+    // Calculate Cycle Share and Monthly Share based on total score
+    const cycleShare = combinedCycleScore > 0 
+      ? parseFloat(((cycleValue / combinedCycleScore) * 100).toFixed(1)) 
+      : 0;
+    const monthlyShare = combinedMonthlyScore > 0 
+      ? parseFloat(((monthlyValue / combinedMonthlyScore) * 100).toFixed(1)) 
+      : 0;
     const metrics = combinedMetrics.map(m => ({
       label: m.metric,
       cycle: squad === 'Squad A' ? (m.cycleA ?? 0) : (m.cycleB ?? 0),

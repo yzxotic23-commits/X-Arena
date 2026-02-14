@@ -56,6 +56,7 @@ export function getPKScoreRules(): ScoreRules {
  * Get Squad Mapping from brand_mapping table
  */
 export async function getSquadMapping(): Promise<SquadMapping> {
+  console.log('[getSquadMapping] START - Fetching brand mapping');
   try {
     const { data, error } = await supabase
       .from('brand_mapping')
@@ -63,10 +64,12 @@ export async function getSquadMapping(): Promise<SquadMapping> {
       .eq('status', 'active');
 
     if (error) {
-      console.error('Error fetching brand mapping:', error);
+      console.error('[getSquadMapping] Error fetching brand mapping:', error);
+      console.log('[getSquadMapping] Using default mapping due to error');
       return getDefaultSquadMapping();
     }
 
+    console.log(`[getSquadMapping] Received ${data?.length || 0} brand mappings`);
     const mapping: SquadMapping = {};
     (data || []).forEach(item => {
       if (item.brand && item.squad) {
@@ -80,9 +83,12 @@ export async function getSquadMapping(): Promise<SquadMapping> {
       }
     });
 
-    return Object.keys(mapping).length > 0 ? mapping : getDefaultSquadMapping();
+    const finalMapping = Object.keys(mapping).length > 0 ? mapping : getDefaultSquadMapping();
+    console.log(`[getSquadMapping] COMPLETED - Using ${Object.keys(finalMapping).length} brand mappings`);
+    return finalMapping;
   } catch (error) {
-    console.error('Error in getSquadMapping:', error);
+    console.error('[getSquadMapping] Exception in getSquadMapping:', error);
+    console.log('[getSquadMapping] Using default mapping due to exception');
     return getDefaultSquadMapping();
   }
 }
@@ -173,13 +179,14 @@ async function getMonthlyData(monthStr: string): Promise<{
   recommendData: any[];
   playDatesMap: Map<string, Map<string, string[]>>;
 }> {
+  console.log(`[getMonthlyData] START - Month: ${monthStr}`);
   const cacheKey = monthStr;
   const cached = monthlyDataCache.get(cacheKey);
   const now = Date.now();
   
   // Return cached data if still valid
   if (cached && (now - cached.timestamp) < CACHE_TTL) {
-    console.log(`[Cache] Using cached data for ${monthStr}`);
+    console.log(`[getMonthlyData] Using cached data for ${monthStr}`);
     return {
       reactivationData: cached.reactivationData,
       recommendData: cached.recommendData,
@@ -187,22 +194,32 @@ async function getMonthlyData(monthStr: string): Promise<{
     };
   }
   
-  console.log(`[Cache] Fetching fresh data for ${monthStr}`);
+  console.log(`[getMonthlyData] Fetching fresh data for ${monthStr}`);
   const monthDateRange = getMonthDateRange(monthStr);
   const monthStartStr = monthDateRange.start.toISOString().split('T')[0];
   const monthEndStr = monthDateRange.end.toISOString().split('T')[0];
   
+  console.log(`[getMonthlyData] Step 1: Fetching reactivation and recommend data`);
   // Fetch reactivation and recommend data in parallel
-  const [reactivationResult, recommendResult] = await Promise.all([
-    supabase
-      .from('customer_reactivation')
-      .select('unique_code, brand, month')
-      .eq('month', monthStr),
-    supabase
-      .from('customer_recommend')
-      .select('unique_code, brand, month')
-      .eq('month', monthStr)
-  ]);
+  let reactivationResult: any;
+  let recommendResult: any;
+  
+  try {
+    [reactivationResult, recommendResult] = await Promise.all([
+      supabase
+        .from('customer_reactivation')
+        .select('unique_code, brand, month')
+        .eq('month', monthStr),
+      supabase
+        .from('customer_recommend')
+        .select('unique_code, brand, month')
+        .eq('month', monthStr)
+    ]);
+    console.log(`[getMonthlyData] Step 1 completed - Reactivation: ${reactivationResult.data?.length || 0}, Recommend: ${recommendResult.data?.length || 0}`);
+  } catch (error) {
+    console.error(`[getMonthlyData] Error fetching reactivation/recommend:`, error);
+    return { reactivationData: [], recommendData: [], playDatesMap: new Map() };
+  }
   
   const reactivationData = reactivationResult.data || [];
   const recommendData = recommendResult.data || [];
@@ -215,48 +232,107 @@ async function getMonthlyData(monthStr: string): Promise<{
   const uniqueCodesSet = new Set(allUniqueCodes);
   
   // Fetch all play dates for the month once
+  // ✅ CRITICAL: Use update_unique_code (blue_whale_sgd now uses update_unique_code column, not unique_code)
   const playDatesMap = new Map<string, Map<string, string[]>>();
   if (uniqueCodesSet.size > 0) {
-    const { data: playDatesData, error: playDatesError } = await supabase2
-      .from('blue_whale_sgd')
-      .select('unique_code, date')
-      .in('unique_code', Array.from(uniqueCodesSet))
-      .gte('date', monthStartStr)
-      .lte('date', monthEndStr);
-    
-    if (!playDatesError && playDatesData) {
-      // Group by unique_code and brand (from reactivation/recommend data)
-      const brandMap = new Map<string, Set<string>>(); // unique_code -> brands
-      reactivationData.forEach(r => {
-        if (r.unique_code) {
-          const brands = brandMap.get(r.unique_code) || new Set();
-          brands.add(r.brand || '');
-          brandMap.set(r.unique_code, brands);
-        }
-      });
-      recommendData.forEach(r => {
-        if (r.unique_code) {
-          const brands = brandMap.get(r.unique_code) || new Set();
-          brands.add(r.brand || '');
-          brandMap.set(r.unique_code, brands);
-        }
-      });
+    try {
+      console.log(`[getMonthlyData] Step 2: Fetching play dates for ${uniqueCodesSet.size} unique codes`);
+      const uniqueCodesArray = Array.from(uniqueCodesSet);
+      console.log(`[getMonthlyData] Unique codes array length: ${uniqueCodesArray.length}`);
       
-      playDatesData.forEach(item => {
-        if (item.unique_code && item.date) {
-          const brands = brandMap.get(item.unique_code) || new Set(['']);
-          brands.forEach(brand => {
-            if (!playDatesMap.has(item.unique_code!)) {
-              playDatesMap.set(item.unique_code!, new Map());
-            }
-            const brandDatesMap = playDatesMap.get(item.unique_code!)!;
-            if (!brandDatesMap.has(brand)) {
-              brandDatesMap.set(brand, []);
-            }
-            brandDatesMap.get(brand)!.push(item.date);
-          });
+      // Supabase .in() has a limit of ~1000 items, so we need to batch if needed
+      let playDatesData: any[] = [];
+      let playDatesError: any = null;
+      
+      if (uniqueCodesArray.length > 1000) {
+        console.log(`[getMonthlyData] Batch processing ${uniqueCodesArray.length} unique codes (exceeds 1000 limit)`);
+        // Process in batches of 1000
+        for (let i = 0; i < uniqueCodesArray.length; i += 1000) {
+          const batch = uniqueCodesArray.slice(i, i + 1000);
+          console.log(`[getMonthlyData] Processing batch ${Math.floor(i / 1000) + 1}: ${batch.length} codes`);
+          const { data: batchData, error: batchError } = await supabase2
+            .from('blue_whale_sgd')
+            .select('update_unique_code, date, line')
+            .in('update_unique_code', batch)
+            .gte('date', monthStartStr)
+            .lte('date', monthEndStr)
+            .limit(50000);
+          
+          if (batchError) {
+            console.error(`[getMonthlyData] Error in batch ${Math.floor(i / 1000) + 1}:`, batchError);
+            playDatesError = batchError;
+            break;
+          }
+          
+          if (batchData) {
+            playDatesData = [...playDatesData, ...batchData];
+          }
         }
-      });
+        console.log(`[getMonthlyData] Batch processing completed: ${playDatesData.length} total records`);
+      } else {
+        const { data, error } = await supabase2
+          .from('blue_whale_sgd')
+          .select('update_unique_code, date, line')
+          .in('update_unique_code', uniqueCodesArray)
+          .gte('date', monthStartStr)
+          .lte('date', monthEndStr)
+          .limit(50000);
+        
+        playDatesData = data || [];
+        playDatesError = error;
+      }
+      
+      if (playDatesError) {
+        console.error(`[getMonthlyData] Error fetching play dates for ${monthStr}:`, playDatesError);
+      } else if (playDatesData) {
+        // Group by unique_code and brand (from reactivation/recommend data)
+        const brandMap = new Map<string, Set<string>>(); // unique_code -> brands
+        reactivationData.forEach(r => {
+          if (r.unique_code) {
+            const brands = brandMap.get(r.unique_code) || new Set();
+            brands.add(r.brand || '');
+            brandMap.set(r.unique_code, brands);
+          }
+        });
+        recommendData.forEach(r => {
+          if (r.unique_code) {
+            const brands = brandMap.get(r.unique_code) || new Set();
+            brands.add(r.brand || '');
+            brandMap.set(r.unique_code, brands);
+          }
+        });
+        
+        playDatesData.forEach(item => {
+          // ✅ CRITICAL: Use update_unique_code from blue_whale_sgd, but match with unique_code from customer listing
+          const uniqueCode = String(item.update_unique_code || '').trim();
+          if (uniqueCode && item.date) {
+            // Get brands for this unique_code from customer listing
+            const brands = brandMap.get(uniqueCode) || new Set(['']);
+            
+            // Also check by line/brand from blue_whale_sgd if available
+            let lineBrand = item.line || '';
+            if (lineBrand.toUpperCase().trim() === 'OK188') {
+              lineBrand = 'OK188SG';
+            }
+            if (lineBrand && !brands.has(lineBrand)) {
+              brands.add(lineBrand);
+            }
+            
+            brands.forEach(brand => {
+              if (!playDatesMap.has(uniqueCode)) {
+                playDatesMap.set(uniqueCode, new Map());
+              }
+              const brandDatesMap = playDatesMap.get(uniqueCode)!;
+              if (!brandDatesMap.has(brand)) {
+                brandDatesMap.set(brand, []);
+              }
+              brandDatesMap.get(brand)!.push(item.date);
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.error(`[getMonthlyData] Exception fetching play dates for ${monthStr}:`, error);
     }
   }
   
@@ -282,6 +358,7 @@ export async function calculateBattleScores(
   scoreRules: ScoreRules,
   squadMapping: SquadMapping
 ): Promise<{ squadA: number; squadB: number; breakdown: ScoreBreakdown }> {
+  console.log(`[calculateBattleScores] START - Month: ${monthStr}, Cycle: ${cycle || 'All'}`);
   try {
     // Determine date range
     const dateRange = cycle && cycle !== 'All' 
@@ -289,6 +366,7 @@ export async function calculateBattleScores(
       : getMonthDateRange(monthStr);
     
     if (!dateRange) {
+      console.log(`[calculateBattleScores] No date range found, returning zeros`);
       return { squadA: 0, squadB: 0, breakdown: { reactivation: { squadA: 0, squadB: 0 }, recommend: { squadA: 0, squadB: 0 }, activeMember: { squadA: 0, squadB: 0 } } };
     }
 
@@ -313,26 +391,51 @@ export async function calculateBattleScores(
     // OPTIMIZED: Fetch all data in parallel with caching
     // ============================================
     console.log('\n=== FETCHING DATA IN PARALLEL ===');
+    console.log(`[calculateBattleScores] Step 1: Getting monthly data for ${monthStr}`);
     
     // Get cached monthly data (reactivation, recommend, play dates)
     const monthlyDataPromise = getMonthlyData(monthStr);
     
+    console.log(`[calculateBattleScores] Step 2: Fetching active member data`);
+    
     // Fetch active member data in parallel
-    const [
-      activeMemberResult,
-      monthlyData
-    ] = await Promise.all([
-      // 1. Active Member: Fetch deposit data
-      supabase2
-        .from('blue_whale_sgd')
-        .select('line, date')
-        .gt('deposit_cases', 0)
-        .gte('date', startDateStr)
-        .lte('date', endDateStr),
+    let activeMemberResult: any;
+    let monthlyData: any;
+    
+    try {
+      console.log(`[calculateBattleScores] Step 3: Executing Promise.all`);
       
-      // 2. Get cached monthly data (reactivation, recommend, play dates)
-      monthlyDataPromise
-    ]);
+      // Add timeout wrapper to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout after 60 seconds')), 60000)
+      );
+      
+      const result = await Promise.race([
+        Promise.all([
+          // 1. Active Member: Fetch deposit data
+          supabase2
+            .from('blue_whale_sgd')
+            .select('line, date')
+            .gt('deposit_cases', 0)
+            .gte('date', startDateStr)
+            .lte('date', endDateStr)
+            .limit(50000),
+          
+          // 2. Get cached monthly data (reactivation, recommend, play dates)
+          monthlyDataPromise
+        ]),
+        timeoutPromise
+      ]) as [any, any];
+      
+      [activeMemberResult, monthlyData] = result;
+      console.log(`[calculateBattleScores] Step 4: Promise.all completed`);
+    } catch (error) {
+      console.error('[calculateBattleScores] Error fetching data in parallel:', error);
+      console.error('[calculateBattleScores] Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('[calculateBattleScores] Error message:', error instanceof Error ? error.message : String(error));
+      // Return default values on error
+      return { squadA: 0, squadB: 0, breakdown: { reactivation: { squadA: 0, squadB: 0 }, recommend: { squadA: 0, squadB: 0 }, activeMember: { squadA: 0, squadB: 0 } } };
+    }
     
     const { reactivationData, recommendData, playDatesMap: allPlayDatesMap } = monthlyData;
 
