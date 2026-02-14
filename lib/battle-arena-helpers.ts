@@ -504,7 +504,7 @@ export async function calculateBattleScores(
         
         const allDates = brandDatesMap.get(brand) || [];
         // Filter by cycle date range
-        const playDates = allDates.filter(date => date >= startDateStr && date <= endDateStr);
+        const playDates = allDates.filter((date: string) => date >= startDateStr && date <= endDateStr);
         
         if (playDates.length === 0) {
           return; // Skip if no play dates in cycle
@@ -563,7 +563,7 @@ export async function calculateBattleScores(
         
         const allDates = brandDatesMap.get(brand) || [];
         // Filter by cycle date range
-        const playDates = allDates.filter(date => date >= startDateStr && date <= endDateStr);
+        const playDates = allDates.filter((date: string) => date >= startDateStr && date <= endDateStr);
         
         if (playDates.length === 0) {
           return; // Skip if no play dates in cycle
