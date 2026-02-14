@@ -287,14 +287,14 @@ async function getMonthlyData(monthStr: string): Promise<{
       } else if (playDatesData) {
         // Group by unique_code and brand (from reactivation/recommend data)
         const brandMap = new Map<string, Set<string>>(); // unique_code -> brands
-        reactivationData.forEach(r => {
+        reactivationData.forEach((r: any) => {
           if (r.unique_code) {
             const brands = brandMap.get(r.unique_code) || new Set();
             brands.add(r.brand || '');
             brandMap.set(r.unique_code, brands);
           }
         });
-        recommendData.forEach(r => {
+        recommendData.forEach((r: any) => {
           if (r.unique_code) {
             const brands = brandMap.get(r.unique_code) || new Set();
             brands.add(r.brand || '');
