@@ -489,6 +489,10 @@ export async function calculateBattleScores(
       const opponentEffect = scoreRules.reactivation.opponent === 'decrease' ? -1 : 
                            scoreRules.reactivation.opponent === 'increase' ? 1 : 0;
 
+      // Count reactivation customers per squad
+      let squadAReactivationCount = 0;
+      let squadBReactivationCount = 0;
+
       reactivationData.forEach((record: any) => {
         const uniqueCode = record.unique_code || '';
         let brand = record.brand || '';
@@ -520,20 +524,32 @@ export async function calculateBattleScores(
         const squad = getSquad(brand, squadMapping);
         if (!squad) return;
 
-        // Apply points: Squad yang punya reactivation → lawan dikurangi
-        const points = opponentEffect * baseReactivationPoints;
-
+        // Count customer per squad
         if (squad === 'A') {
-          squadB += points;
-          breakdown.reactivation.squadB += points;
+          squadAReactivationCount++;
         } else if (squad === 'B') {
-          squadA += points;
-          breakdown.reactivation.squadA += points;
+          squadBReactivationCount++;
         }
       });
 
-      console.log(`Reactivation - Found ${reactivationSeen.size} unique reactivations`);
+      // Calculate total points: Total customer × points per customer
+      // Squad yang punya reactivation → lawan dikurangi
+      const squadAPoints = squadAReactivationCount * baseReactivationPoints * opponentEffect;
+      const squadBPoints = squadBReactivationCount * baseReactivationPoints * opponentEffect;
+
+      // Apply to opponent squad
+      if (squadAPoints !== 0) {
+        squadB += squadAPoints;
+        breakdown.reactivation.squadB += squadAPoints;
+      }
+      if (squadBPoints !== 0) {
+        squadA += squadBPoints;
+        breakdown.reactivation.squadA += squadBPoints;
+      }
+
+      console.log(`Reactivation - Squad A customers: ${squadAReactivationCount}, Squad B customers: ${squadBReactivationCount}`);
       console.log(`Reactivation - Squad A penalty: ${breakdown.reactivation.squadA}, Squad B penalty: ${breakdown.reactivation.squadB}`);
+      console.log(`Reactivation - Total unique reactivations: ${reactivationSeen.size}`);
     }
 
     // ============================================
@@ -547,6 +563,10 @@ export async function calculateBattleScores(
       const baseRecommendPoints = scoreRules.recommend.points;
       const opponentEffect = scoreRules.recommend.opponent === 'decrease' ? -1 : 
                            scoreRules.recommend.opponent === 'increase' ? 1 : 0;
+
+      // Count recommend customers per squad
+      let squadARecommendCount = 0;
+      let squadBRecommendCount = 0;
 
       recommendData.forEach((record: any) => {
         const uniqueCode = record.unique_code || '';
@@ -579,20 +599,32 @@ export async function calculateBattleScores(
         const squad = getSquad(brand, squadMapping);
         if (!squad) return;
 
-        // Apply points: Squad yang punya recommend → lawan dikurangi
-        const points = opponentEffect * baseRecommendPoints;
-
+        // Count customer per squad
         if (squad === 'A') {
-          squadB += points;
-          breakdown.recommend.squadB += points;
+          squadARecommendCount++;
         } else if (squad === 'B') {
-          squadA += points;
-          breakdown.recommend.squadA += points;
+          squadBRecommendCount++;
         }
       });
 
-      console.log(`Recommend - Found ${recommendSeen.size} unique recommends`);
+      // Calculate total points: Total customer × points per customer
+      // Squad yang punya recommend → lawan dikurangi
+      const squadAPoints = squadARecommendCount * baseRecommendPoints * opponentEffect;
+      const squadBPoints = squadBRecommendCount * baseRecommendPoints * opponentEffect;
+
+      // Apply to opponent squad
+      if (squadAPoints !== 0) {
+        squadB += squadAPoints;
+        breakdown.recommend.squadB += squadAPoints;
+      }
+      if (squadBPoints !== 0) {
+        squadA += squadBPoints;
+        breakdown.recommend.squadA += squadBPoints;
+      }
+
+      console.log(`Recommend - Squad A customers: ${squadARecommendCount}, Squad B customers: ${squadBRecommendCount}`);
       console.log(`Recommend - Squad A penalty: ${breakdown.recommend.squadA}, Squad B penalty: ${breakdown.recommend.squadB}`);
+      console.log(`Recommend - Total unique recommends: ${recommendSeen.size}`);
     }
 
     // ============================================
