@@ -165,6 +165,7 @@ export function getMonthDateRange(monthStr: string): { start: Date; end: Date } 
 const monthlyDataCache = new Map<string, {
   reactivationData: any[];
   recommendData: any[];
+  retentionData: any[];
   playDatesMap: Map<string, Map<string, string[]>>; // unique_code -> brand -> dates
   timestamp: number;
 }>();
@@ -178,6 +179,7 @@ async function getMonthlyData(monthStr: string): Promise<{
   reactivationData: any[];
   recommendData: any[];
   playDatesMap: Map<string, Map<string, string[]>>;
+  retentionData: any[];
 }> {
   console.log(`[getMonthlyData] START - Month: ${monthStr}`);
   const cacheKey = monthStr;
@@ -190,6 +192,7 @@ async function getMonthlyData(monthStr: string): Promise<{
     return {
       reactivationData: cached.reactivationData,
       recommendData: cached.recommendData,
+      retentionData: cached.retentionData || [],
       playDatesMap: cached.playDatesMap
     };
   }
@@ -199,30 +202,36 @@ async function getMonthlyData(monthStr: string): Promise<{
   const monthStartStr = monthDateRange.start.toISOString().split('T')[0];
   const monthEndStr = monthDateRange.end.toISOString().split('T')[0];
   
-  console.log(`[getMonthlyData] Step 1: Fetching reactivation and recommend data`);
-  // Fetch reactivation and recommend data in parallel
+  console.log(`[getMonthlyData] Step 1: Fetching reactivation, recommend, and retention data`);
+  // Fetch reactivation, recommend, and retention data in parallel
   let reactivationResult: any;
   let recommendResult: any;
+  let retentionResult: any;
   
   try {
-    [reactivationResult, recommendResult] = await Promise.all([
+    [reactivationResult, recommendResult, retentionResult] = await Promise.all([
       supabase
         .from('customer_reactivation')
-        .select('unique_code, brand, month')
+        .select('unique_code, brand, month, handler')
         .eq('month', monthStr),
       supabase
         .from('customer_recommend')
         .select('unique_code, brand, month')
+        .eq('month', monthStr),
+      supabase
+        .from('customer_retention')
+        .select('unique_code, brand, month, handler')
         .eq('month', monthStr)
     ]);
-    console.log(`[getMonthlyData] Step 1 completed - Reactivation: ${reactivationResult.data?.length || 0}, Recommend: ${recommendResult.data?.length || 0}`);
+    console.log(`[getMonthlyData] Step 1 completed - Reactivation: ${reactivationResult.data?.length || 0}, Recommend: ${recommendResult.data?.length || 0}, Retention: ${retentionResult.data?.length || 0}`);
   } catch (error) {
-    console.error(`[getMonthlyData] Error fetching reactivation/recommend:`, error);
-    return { reactivationData: [], recommendData: [], playDatesMap: new Map() };
+    console.error(`[getMonthlyData] Error fetching reactivation/recommend/retention:`, error);
+    return { reactivationData: [], recommendData: [], playDatesMap: new Map(), retentionData: [] };
   }
   
   const reactivationData = reactivationResult.data || [];
   const recommendData = recommendResult.data || [];
+  const retentionData = retentionResult.data || [];
   
   // Get all unique codes from both
   const allUniqueCodes = [
@@ -340,11 +349,12 @@ async function getMonthlyData(monthStr: string): Promise<{
   monthlyDataCache.set(cacheKey, {
     reactivationData,
     recommendData,
+    retentionData,
     playDatesMap,
     timestamp: now
   });
   
-  return { reactivationData, recommendData, playDatesMap };
+  return { reactivationData, recommendData, playDatesMap, retentionData };
 }
 
 /**
@@ -377,6 +387,7 @@ export async function calculateBattleScores(
     const monthEndStr = monthDateRange.end.toISOString().split('T')[0];
 
     console.log(`[calculateBattleScores] Month: ${monthStr}, Cycle: ${cycle || 'All'}, Date Range: ${startDateStr} to ${endDateStr}`);
+    console.log(`[calculateBattleScores] Month Date Range: ${monthStartStr} to ${monthEndStr}`);
 
     // Initialize scores
     let squadA = 0;
@@ -393,7 +404,7 @@ export async function calculateBattleScores(
     console.log('\n=== FETCHING DATA IN PARALLEL ===');
     console.log(`[calculateBattleScores] Step 1: Getting monthly data for ${monthStr}`);
     
-    // Get cached monthly data (reactivation, recommend, play dates)
+    // Get cached monthly data (reactivation, recommend, retention, play dates)
     const monthlyDataPromise = getMonthlyData(monthStr);
     
     console.log(`[calculateBattleScores] Step 2: Fetching active member data`);
@@ -437,7 +448,7 @@ export async function calculateBattleScores(
       return { squadA: 0, squadB: 0, breakdown: { reactivation: { squadA: 0, squadB: 0 }, recommend: { squadA: 0, squadB: 0 }, activeMember: { squadA: 0, squadB: 0 } } };
     }
     
-    const { reactivationData, recommendData, playDatesMap: allPlayDatesMap } = monthlyData;
+    const { reactivationData, recommendData, retentionData, playDatesMap: allPlayDatesMap } = monthlyData;
 
     // ============================================
     // 1. ACTIVE MEMBER: Process deposit data
@@ -484,97 +495,397 @@ export async function calculateBattleScores(
     console.log(`[Reactivation] Total records from customer listing: ${reactivationData?.length || 0}`);
 
     if (reactivationData && reactivationData.length > 0) {
-      // ✅ SAME LOGIC AS REPORTS: Group by brand, check in blue_whale_sgd with deposit_cases > 0
-      // 1. Group reactivation by brand (squad A or squad B)
-      // 2. For each brand, get unique codes
-      // 3. Check unique_code in blue_whale_sgd with deposit_cases > 0 in cycle date range
-      // 4. Count total active reactivation per squad
-      // 5. Multiply by PK Score Rule points
-      // 6. Reduce opponent squad
+      // ✅ SAME LOGIC AS REPORTS: Calculate reactivation per member (handler + brand), then sum per squad
+      // 1. Group reactivation by (handler, brand) for each squad
+      // 2. For each member (handler + brand), calculate reactivation count (same as calculateMemberScoreLib)
+      // 3. Sum all members' reactivation counts per squad
+      // 4. Multiply by PK Score Rule points
+      // 5. Reduce opponent squad
       
       const baseReactivationPoints = scoreRules.reactivation.points;
       const opponentEffect = scoreRules.reactivation.opponent === 'decrease' ? -1 : 
                            scoreRules.reactivation.opponent === 'increase' ? 1 : 0;
 
-      // Group by brand and determine squad (same as Reports)
-      const squadAReactivationByBrand = new Map<string, Set<string>>(); // brand -> unique_codes
-      const squadBReactivationByBrand = new Map<string, Set<string>>(); // brand -> unique_codes
+      // Group by (handler, brand) and determine squad (same as Reports per member calculation)
+      // Map: (handler, brand) -> unique_codes
+      const squadAReactivationByMember = new Map<string, Set<string>>(); // "handler|brand" -> unique_codes
+      const squadBReactivationByMember = new Map<string, Set<string>>(); // "handler|brand" -> unique_codes
 
       reactivationData.forEach((record: any) => {
         const uniqueCode = String(record.unique_code || '').trim();
         if (!uniqueCode) return;
 
+        const handler = String(record.handler || '').trim();
         let brand = String(record.brand || '').trim();
+        
+        // ✅ DEBUG: Log if handler is missing
+        if (!handler) {
+          console.warn(`[Reactivation] Missing handler for record:`, { uniqueCode, brand, month: monthStr });
+        }
+        
         // Normalize brand for database (OK188SG -> OK188)
         const normalizedBrandForDB = brand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : brand.toUpperCase().trim();
         // Normalize brand for mapping (OK188 -> OK188SG)
         const normalizedBrandForMapping = brand.toUpperCase().trim() === 'OK188' ? 'OK188SG' : brand.toUpperCase().trim();
         const squad = getSquad(normalizedBrandForMapping, squadMapping);
         
+        // Create member key: "handler|brand"
+        const memberKey = `${handler || 'UNKNOWN'}|${normalizedBrandForDB}`;
+        
         if (squad === 'A') {
-          if (!squadAReactivationByBrand.has(normalizedBrandForDB)) {
-            squadAReactivationByBrand.set(normalizedBrandForDB, new Set());
+          if (!squadAReactivationByMember.has(memberKey)) {
+            squadAReactivationByMember.set(memberKey, new Set());
           }
-          squadAReactivationByBrand.get(normalizedBrandForDB)!.add(uniqueCode);
+          squadAReactivationByMember.get(memberKey)!.add(uniqueCode);
         } else if (squad === 'B') {
-          if (!squadBReactivationByBrand.has(normalizedBrandForDB)) {
-            squadBReactivationByBrand.set(normalizedBrandForDB, new Set());
+          if (!squadBReactivationByMember.has(memberKey)) {
+            squadBReactivationByMember.set(memberKey, new Set());
           }
-          squadBReactivationByBrand.get(normalizedBrandForDB)!.add(uniqueCode);
+          squadBReactivationByMember.get(memberKey)!.add(uniqueCode);
+        } else {
+          // ✅ DEBUG: Log if squad is not determined
+          console.warn(`[Reactivation] Squad not determined for record:`, { uniqueCode, brand, normalizedBrandForMapping, memberKey });
         }
       });
+      
+      console.log(`[Reactivation] Grouped by member - Squad A: ${squadAReactivationByMember.size} members, Squad B: ${squadBReactivationByMember.size} members`);
 
-      // Check which codes are ACTIVE (deposit_cases > 0) in cycle date range per brand
-      // Same logic as Reports: check in blue_whale_sgd with line = brand
+      // ✅ SAME LOGIC AS REPORTS: Calculate reactivation per member (handler + brand)
+      // For each member, get reactivation codes, check in blue_whale_sgd with update_unique_code
+      // Count codes that are active (deposit_cases > 0) in cycle date range
+      // ✅ CRITICAL: For cycle-specific, exclude codes that were already active in previous cycles
+      // Sum all members' counts per squad
       let squadAActiveReactivation = 0;
       let squadBActiveReactivation = 0;
 
-      // Check Squad A reactivation codes per brand
-      for (const [brand, codes] of squadAReactivationByBrand.entries()) {
-        const codesArray = Array.from(codes);
-        // Batch process if > 1000
-        const batchSize = 1000;
-        for (let i = 0; i < codesArray.length; i += batchSize) {
-          const batch = codesArray.slice(i, i + batchSize);
-          const { data: activeData } = await supabase2
-            .from('blue_whale_sgd')
-            .select('unique_code')
-            .in('unique_code', batch)
-            .eq('line', brand)
-            .gte('date', startDateStr)
-            .lte('date', endDateStr)
-            .gt('deposit_cases', 0)
-            .limit(50000);
-
-          if (activeData) {
-            const activeCodes = new Set(activeData.map((r: any) => String(r.unique_code || '').trim()).filter(Boolean));
-            squadAActiveReactivation += batch.filter(code => activeCodes.has(code)).length;
+      // If cycle is specific (not "All"), get codes that were active in previous cycles per member
+      const squadAPreviousCyclesCodesByMember = new Map<string, Set<string>>(); // "handler|brand" -> Set of codes
+      const squadBPreviousCyclesCodesByMember = new Map<string, Set<string>>(); // "handler|brand" -> Set of codes
+      
+      if (cycle && cycle !== 'All') {
+        const cycleMatch = cycle.match(/Cycle\s+(\d+)/i);
+        if (cycleMatch) {
+          const currentCycleNumber = parseInt(cycleMatch[1], 10);
+          
+          // Get all previous cycles (1 to currentCycleNumber - 1)
+          for (let prevCycleNum = 1; prevCycleNum < currentCycleNumber; prevCycleNum++) {
+            const prevCycleRange = getCycleDateRange(`Cycle ${prevCycleNum}`, monthStr);
+            if (prevCycleRange) {
+              const prevStartStr = prevCycleRange.start.toISOString().split('T')[0];
+              const prevEndStr = prevCycleRange.end.toISOString().split('T')[0];
+              
+              // Check Squad A codes in previous cycles per member
+              for (const [memberKey, codes] of squadAReactivationByMember.entries()) {
+                const [handler, brand] = memberKey.split('|');
+                const codesArray = Array.from(codes);
+                
+                // Handle brand variants
+                const brandVariants = brand === 'OK188' ? ['OK188', 'OK188SG'] : [brand];
+                
+                // Get all codes for this member (including retention and recommend for activeSet)
+                const allMemberCodes = new Set<string>(codesArray);
+                
+                // Add retention and recommend codes for this member
+                if (retentionData && retentionData.length > 0) {
+                  retentionData.forEach((record: any) => {
+                    const recordHandler = String(record.handler || '').trim();
+                    const recordBrand = String(record.brand || '').trim();
+                    const normalizedRecordBrand = recordBrand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : recordBrand.toUpperCase().trim();
+                    if (recordHandler === handler && brandVariants.includes(normalizedRecordBrand)) {
+                      const code = String(record.unique_code || '').trim();
+                      if (code) {
+                        allMemberCodes.add(code);
+                      }
+                    }
+                  });
+                }
+                if (recommendData && recommendData.length > 0) {
+                  recommendData.forEach((record: any) => {
+                    const recordBrand = String(record.brand || '').trim();
+                    const normalizedRecordBrand = recordBrand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : recordBrand.toUpperCase().trim();
+                    if (brandVariants.includes(normalizedRecordBrand)) {
+                      const code = String(record.unique_code || '').trim();
+                      if (code) {
+                        allMemberCodes.add(code);
+                      }
+                    }
+                  });
+                }
+                
+                // Query previous cycle active codes for this member
+                const allMemberCodesArray = Array.from(allMemberCodes);
+                if (allMemberCodesArray.length > 0) {
+                  const batchSize = 1000;
+                  for (let i = 0; i < allMemberCodesArray.length; i += batchSize) {
+                    const batch = allMemberCodesArray.slice(i, i + batchSize);
+                    const { data: prevActiveData } = await supabase2
+                      .from('blue_whale_sgd')
+                      .select('update_unique_code')
+                      .in('update_unique_code', batch)
+                      .eq('line', brand)
+                      .gte('date', prevStartStr)
+                      .lte('date', prevEndStr)
+                      .gt('deposit_cases', 0)
+                      .limit(50000);
+                    
+                    if (prevActiveData) {
+                      if (!squadAPreviousCyclesCodesByMember.has(memberKey)) {
+                        squadAPreviousCyclesCodesByMember.set(memberKey, new Set());
+                      }
+                      prevActiveData.forEach((r: any) => {
+                        const code = String(r.update_unique_code || '').trim();
+                        if (code) {
+                          squadAPreviousCyclesCodesByMember.get(memberKey)!.add(code);
+                        }
+                      });
+                    }
+                  }
+                }
+              }
+              
+              // Check Squad B codes in previous cycles per member
+              for (const [memberKey, codes] of squadBReactivationByMember.entries()) {
+                const [handler, brand] = memberKey.split('|');
+                const codesArray = Array.from(codes);
+                
+                // Handle brand variants
+                const brandVariants = brand === 'OK188' ? ['OK188', 'OK188SG'] : [brand];
+                
+                // Get all codes for this member (including retention and recommend for activeSet)
+                const allMemberCodes = new Set<string>(codesArray);
+                
+                // Add retention and recommend codes for this member
+                if (retentionData && retentionData.length > 0) {
+                  retentionData.forEach((record: any) => {
+                    const recordHandler = String(record.handler || '').trim();
+                    const recordBrand = String(record.brand || '').trim();
+                    const normalizedRecordBrand = recordBrand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : recordBrand.toUpperCase().trim();
+                    if (recordHandler === handler && brandVariants.includes(normalizedRecordBrand)) {
+                      const code = String(record.unique_code || '').trim();
+                      if (code) {
+                        allMemberCodes.add(code);
+                      }
+                    }
+                  });
+                }
+                if (recommendData && recommendData.length > 0) {
+                  recommendData.forEach((record: any) => {
+                    const recordBrand = String(record.brand || '').trim();
+                    const normalizedRecordBrand = recordBrand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : recordBrand.toUpperCase().trim();
+                    if (brandVariants.includes(normalizedRecordBrand)) {
+                      const code = String(record.unique_code || '').trim();
+                      if (code) {
+                        allMemberCodes.add(code);
+                      }
+                    }
+                  });
+                }
+                
+                // Query previous cycle active codes for this member
+                const allMemberCodesArray = Array.from(allMemberCodes);
+                if (allMemberCodesArray.length > 0) {
+                  const batchSize = 1000;
+                  for (let i = 0; i < allMemberCodesArray.length; i += batchSize) {
+                    const batch = allMemberCodesArray.slice(i, i + batchSize);
+                    const { data: prevActiveData } = await supabase2
+                      .from('blue_whale_sgd')
+                      .select('update_unique_code')
+                      .in('update_unique_code', batch)
+                      .eq('line', brand)
+                      .gte('date', prevStartStr)
+                      .lte('date', prevEndStr)
+                      .gt('deposit_cases', 0)
+                      .limit(50000);
+                    
+                    if (prevActiveData) {
+                      if (!squadBPreviousCyclesCodesByMember.has(memberKey)) {
+                        squadBPreviousCyclesCodesByMember.set(memberKey, new Set());
+                      }
+                      prevActiveData.forEach((r: any) => {
+                        const code = String(r.update_unique_code || '').trim();
+                        if (code) {
+                          squadBPreviousCyclesCodesByMember.get(memberKey)!.add(code);
+                        }
+                      });
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
 
-      // Check Squad B reactivation codes per brand
-      for (const [brand, codes] of squadBReactivationByBrand.entries()) {
+      // Calculate reactivation for Squad A members
+      for (const [memberKey, codes] of squadAReactivationByMember.entries()) {
+        const [handler, brand] = memberKey.split('|');
         const codesArray = Array.from(codes);
-        // Batch process if > 1000
-        const batchSize = 1000;
-        for (let i = 0; i < codesArray.length; i += batchSize) {
-          const batch = codesArray.slice(i, i + batchSize);
-          const { data: activeData } = await supabase2
-            .from('blue_whale_sgd')
-            .select('unique_code')
-            .in('unique_code', batch)
-            .eq('line', brand)
-            .gte('date', startDateStr)
-            .lte('date', endDateStr)
-            .gt('deposit_cases', 0)
-            .limit(50000);
-
-          if (activeData) {
-            const activeCodes = new Set(activeData.map((r: any) => String(r.unique_code || '').trim()).filter(Boolean));
-            squadBActiveReactivation += batch.filter(code => activeCodes.has(code)).length;
+        
+        // Handle brand variants (OK188 <-> OK188SG)
+        const brandVariants = brand === 'OK188' ? ['OK188', 'OK188SG'] : [brand];
+        
+        // Get all codes for this member (including retention and recommend for activeSet)
+        const allMemberCodes = new Set<string>(codesArray);
+        
+        // Add retention and recommend codes for this member to build complete activeSet
+        if (retentionData && retentionData.length > 0) {
+          retentionData.forEach((record: any) => {
+            const recordHandler = String(record.handler || '').trim();
+            const recordBrand = String(record.brand || '').trim();
+            const normalizedRecordBrand = recordBrand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : recordBrand.toUpperCase().trim();
+            if (recordHandler === handler && brandVariants.includes(normalizedRecordBrand)) {
+              const code = String(record.unique_code || '').trim();
+              if (code) {
+                allMemberCodes.add(code);
+              }
+            }
+          });
+        }
+        if (recommendData && recommendData.length > 0) {
+          recommendData.forEach((record: any) => {
+            const recordBrand = String(record.brand || '').trim();
+            const normalizedRecordBrand = recordBrand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : recordBrand.toUpperCase().trim();
+            if (brandVariants.includes(normalizedRecordBrand)) {
+              const code = String(record.unique_code || '').trim();
+              if (code) {
+                allMemberCodes.add(code);
+              }
+            }
+          });
+        }
+        
+        // Create activeSet for this member (same as calculateMemberScoreLib)
+        const activeSet = new Set<string>();
+        const allMemberCodesArray = Array.from(allMemberCodes);
+        
+        if (allMemberCodesArray.length > 0) {
+          // Batch process if > 1000
+          const batchSize = 1000;
+          for (let i = 0; i < allMemberCodesArray.length; i += batchSize) {
+            const batch = allMemberCodesArray.slice(i, i + batchSize);
+            const { data: activeData } = await supabase2
+              .from('blue_whale_sgd')
+              .select('update_unique_code')
+              .in('update_unique_code', batch)
+              .eq('line', brand)
+              .gte('date', startDateStr)
+              .lte('date', endDateStr)
+              .gt('deposit_cases', 0)
+              .limit(50000);
+            
+            if (activeData) {
+              activeData.forEach((r: any) => {
+                const code = String(r.update_unique_code || '').trim();
+                if (code) {
+                  activeSet.add(code);
+                }
+              });
+            }
           }
         }
+        
+        // Count reactivationCodes that are in activeSet (same as calculateMemberScoreLib)
+        // ✅ CRITICAL: For cycle-specific, exclude codes from previous cycles
+        const previousCyclesCodes = squadAPreviousCyclesCodesByMember.get(memberKey) || new Set<string>();
+        const reactivationCount = codesArray.filter(code => {
+          const normalizedCode = String(code || '').trim();
+          if (!normalizedCode || !activeSet.has(normalizedCode)) {
+            return false;
+          }
+          // If cycle is specific and code was already active in previous cycles, skip it
+          if (cycle && cycle !== 'All' && previousCyclesCodes.has(normalizedCode)) {
+            return false; // Skip this code, already counted in previous cycle
+          }
+          return true;
+        }).length;
+        
+        squadAActiveReactivation += reactivationCount;
+      }
+
+      // Calculate reactivation for Squad B members
+      for (const [memberKey, codes] of squadBReactivationByMember.entries()) {
+        const [handler, brand] = memberKey.split('|');
+        const codesArray = Array.from(codes);
+        
+        // Handle brand variants (OK188 <-> OK188SG)
+        const brandVariants = brand === 'OK188' ? ['OK188', 'OK188SG'] : [brand];
+        
+        // Get all codes for this member (including retention and recommend for activeSet)
+        const allMemberCodes = new Set<string>(codesArray);
+        
+        // Add retention and recommend codes for this member to build complete activeSet
+        if (retentionData && retentionData.length > 0) {
+          retentionData.forEach((record: any) => {
+            const recordHandler = String(record.handler || '').trim();
+            const recordBrand = String(record.brand || '').trim();
+            const normalizedRecordBrand = recordBrand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : recordBrand.toUpperCase().trim();
+            if (recordHandler === handler && brandVariants.includes(normalizedRecordBrand)) {
+              const code = String(record.unique_code || '').trim();
+              if (code) {
+                allMemberCodes.add(code);
+              }
+            }
+          });
+        }
+        if (recommendData && recommendData.length > 0) {
+          recommendData.forEach((record: any) => {
+            const recordBrand = String(record.brand || '').trim();
+            const normalizedRecordBrand = recordBrand.toUpperCase().trim() === 'OK188SG' ? 'OK188' : recordBrand.toUpperCase().trim();
+            if (brandVariants.includes(normalizedRecordBrand)) {
+              const code = String(record.unique_code || '').trim();
+              if (code) {
+                allMemberCodes.add(code);
+              }
+            }
+          });
+        }
+        
+        // Create activeSet for this member (same as calculateMemberScoreLib)
+        const activeSet = new Set<string>();
+        const allMemberCodesArray = Array.from(allMemberCodes);
+        
+        if (allMemberCodesArray.length > 0) {
+          // Batch process if > 1000
+          const batchSize = 1000;
+          for (let i = 0; i < allMemberCodesArray.length; i += batchSize) {
+            const batch = allMemberCodesArray.slice(i, i + batchSize);
+            const { data: activeData } = await supabase2
+              .from('blue_whale_sgd')
+              .select('update_unique_code')
+              .in('update_unique_code', batch)
+              .eq('line', brand)
+              .gte('date', startDateStr)
+              .lte('date', endDateStr)
+              .gt('deposit_cases', 0)
+              .limit(50000);
+            
+            if (activeData) {
+              activeData.forEach((r: any) => {
+                const code = String(r.update_unique_code || '').trim();
+                if (code) {
+                  activeSet.add(code);
+                }
+              });
+            }
+          }
+        }
+        
+        // Count reactivationCodes that are in activeSet (same as calculateMemberScoreLib)
+        // ✅ CRITICAL: For cycle-specific, exclude codes from previous cycles
+        const previousCyclesCodes = squadBPreviousCyclesCodesByMember.get(memberKey) || new Set<string>();
+        const reactivationCount = codesArray.filter(code => {
+          const normalizedCode = String(code || '').trim();
+          if (!normalizedCode || !activeSet.has(normalizedCode)) {
+            return false;
+          }
+          // If cycle is specific and code was already active in previous cycles, skip it
+          if (cycle && cycle !== 'All' && previousCyclesCodes.has(normalizedCode)) {
+            return false; // Skip this code, already counted in previous cycle
+          }
+          return true;
+        }).length;
+        
+        squadBActiveReactivation += reactivationCount;
       }
 
       // Calculate total points: Total active reactivation × points per customer
@@ -592,8 +903,8 @@ export async function calculateBattleScores(
         breakdown.reactivation.squadA += squadBPoints;
       }
 
-      console.log(`[Reactivation] Squad A brands: ${squadAReactivationByBrand.size}, Total codes: ${Array.from(squadAReactivationByBrand.values()).reduce((sum, codes) => sum + codes.size, 0)}, Active: ${squadAActiveReactivation}`);
-      console.log(`[Reactivation] Squad B brands: ${squadBReactivationByBrand.size}, Total codes: ${Array.from(squadBReactivationByBrand.values()).reduce((sum, codes) => sum + codes.size, 0)}, Active: ${squadBActiveReactivation}`);
+      console.log(`[Reactivation] Squad A members: ${squadAReactivationByMember.size}, Total codes: ${Array.from(squadAReactivationByMember.values()).reduce((sum, codes) => sum + codes.size, 0)}, Active: ${squadAActiveReactivation}`);
+      console.log(`[Reactivation] Squad B members: ${squadBReactivationByMember.size}, Total codes: ${Array.from(squadBReactivationByMember.values()).reduce((sum, codes) => sum + codes.size, 0)}, Active: ${squadBActiveReactivation}`);
       console.log(`[Reactivation] Squad A points calculation: ${squadAActiveReactivation} × ${baseReactivationPoints} × ${opponentEffect} = ${squadAPoints}`);
       console.log(`[Reactivation] Squad B points calculation: ${squadBActiveReactivation} × ${baseReactivationPoints} × ${opponentEffect} = ${squadBPoints}`);
       console.log(`[Reactivation] Squad A penalty: ${breakdown.reactivation.squadA}, Squad B penalty: ${breakdown.reactivation.squadB}`);
