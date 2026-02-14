@@ -764,11 +764,15 @@ export async function GET(request: NextRequest) {
     };
 
     // 12. Fetch target_settings for the user's squad
-    const { data: targetSettingsData } = await supabase
+    const { data: targetSettingsData, error: targetSettingsError } = await supabase
       .from('target_settings')
       .select('*')
       .eq('month', selectedMonth)
       .single();
+
+    if (targetSettingsError) {
+      console.error('[API] Error fetching target_settings:', targetSettingsError);
+    }
 
     // Get squad targets (option1, option2, option3)
     const squadTargetOption1 = userSquad === 'Squad A' 
@@ -781,21 +785,43 @@ export async function GET(request: NextRequest) {
       ? parseFloat(targetSettingsData?.squad_a_ggr_option3 || '0') || 0
       : parseFloat(targetSettingsData?.squad_b_ggr_option3 || '0') || 0;
 
+    console.log('[API] Target Settings:', {
+      month: selectedMonth,
+      userSquad,
+      squadTargetOption1,
+      squadTargetOption2,
+      squadTargetOption3,
+      hasTargetSettings: !!targetSettingsData,
+      error: targetSettingsError?.message
+    });
+
     // 13. Calculate squad's total net_profit from blue_whale_sgd_summary (all brands in squad) - USING CYCLE FILTER ✅
     const year = parseInt(selectedMonth.split('-')[0]);
     const month = parseInt(selectedMonth.split('-')[1]);
     
     // Get all brands for the user's squad
-    const { data: squadBrands } = await supabase
+    const { data: squadBrands, error: squadBrandsError } = await supabase
       .from('brand_mapping')
       .select('brand')
       .eq('squad', userSquad)
       .eq('status', 'active');
 
+    if (squadBrandsError) {
+      console.error('[API] Error fetching squad brands:', squadBrandsError);
+    }
+
     const brandList = (squadBrands || []).map((b: any) => b.brand).filter(Boolean);
     
+    console.log('[API] Squad brands for net profit calculation:', {
+      userSquad,
+      brandListLength: brandList.length,
+      brandList: brandList
+    });
+    
     let squadTotalNetProfit = 0;
-    if (brandList.length > 0) {
+    if (brandList.length === 0) {
+      console.warn('[API] ⚠️ No brands found for squad:', userSquad);
+    } else if (brandList.length > 0) {
       // Get date range based on cycle ✅
       const { startDate, endDate } = getCycleDateRange(selectedMonth, normalizedCycle);
       console.log('[API] Squad net profit date range:', {
@@ -807,17 +833,63 @@ export async function GET(request: NextRequest) {
       const startDateStr = formatDateLocal(startDate);
       const endDateStr = formatDateLocal(endDate);
 
-      const { data: squadNetProfitData } = await supabase2
-        .from('blue_whale_sgd_summary')
-        .select('net_profit')
-        .in('line', brandList)
-        .gte('date', startDateStr)
-        .lte('date', endDateStr)
-        .limit(50000);
+      // Batch processing for query .in() if brandList > 1000 (unlikely but safe)
+      let squadNetProfitData: any[] = [];
+      let squadNetProfitError: any = null;
+
+      if (brandList.length > 1000) {
+        console.log('[API] Batch processing brandList (exceeds 1000 limit):', brandList.length);
+        // Process in batches of 1000
+        for (let i = 0; i < brandList.length; i += 1000) {
+          const batch = brandList.slice(i, i + 1000);
+          console.log(`[API] Processing batch ${Math.floor(i / 1000) + 1}: ${batch.length} brands`);
+          const { data: batchData, error: batchError } = await supabase2
+            .from('blue_whale_sgd_summary')
+            .select('net_profit')
+            .in('line', batch)
+            .gte('date', startDateStr)
+            .lte('date', endDateStr)
+            .limit(50000);
+          
+          if (batchError) {
+            console.error(`[API] Error in batch ${Math.floor(i / 1000) + 1}:`, batchError);
+            squadNetProfitError = batchError;
+            break;
+          }
+          
+          if (batchData) {
+            squadNetProfitData = [...squadNetProfitData, ...batchData];
+          }
+        }
+        console.log(`[API] Batch processing completed: ${squadNetProfitData.length} total records`);
+      } else {
+        const { data, error } = await supabase2
+          .from('blue_whale_sgd_summary')
+          .select('net_profit')
+          .in('line', brandList)
+          .gte('date', startDateStr)
+          .lte('date', endDateStr)
+          .limit(50000);
+        
+        squadNetProfitData = data || [];
+        squadNetProfitError = error;
+      }
+
+      if (squadNetProfitError) {
+        console.error('[API] Error fetching squad net profit:', squadNetProfitError);
+      }
 
       squadTotalNetProfit = (squadNetProfitData || []).reduce((sum: number, row: any) => {
         return sum + (parseFloat(row.net_profit || '0') || 0);
       }, 0);
+
+      console.log('[API] Squad net profit calculation:', {
+        brandListLength: brandList.length,
+        recordsFound: squadNetProfitData.length,
+        squadTotalNetProfit,
+        dateRange: `${startDateStr} to ${endDateStr}`,
+        error: squadNetProfitError?.message
+      });
     }
 
     // 14. Determine current target option and calculate gap
@@ -849,6 +921,19 @@ export async function GET(request: NextRequest) {
 
     const gap = Math.max(0, currentTarget - squadTotalNetProfit);
     const completion = currentTarget > 0 ? Math.min(100, (squadTotalNetProfit / currentTarget) * 100) : 0;
+
+    console.log('[API] Target calculation:', {
+      currentTarget,
+      currentOption,
+      squadTotalNetProfit,
+      gap,
+      completion,
+      squadTargetOption1,
+      squadTargetOption2,
+      squadTargetOption3,
+      warning: currentTarget === 0 ? '⚠️ Target is 0 - check target_settings table' : null,
+      warning2: brandList.length === 0 ? '⚠️ No brands found for squad' : null
+    });
     
     // Get cycle-based data for depositPerUser (using member's brand and cycle date range) - USING CYCLE FILTER ✅
     // Use blue_whale_sgd_summary instead of monthly_summary to support cycle filtering
@@ -920,17 +1005,42 @@ export async function GET(request: NextRequest) {
       days_20_plus: memberScore.days_20_plus,
     };
     
-    console.log('[API] BehaviorMetrics (should match Reports table):', {
-      referrals: behaviorMetrics.numberOfReferredCustomers,
-      dormant: behaviorMetrics.numberOfReactivatedDormantCustomers,
-      retention: behaviorMetrics.numberOfRetentionCustomers,
-      deposits: behaviorMetrics.depositAmountPerUser,
+    console.log('[API] ========================================');
+    console.log('[API] BehaviorMetrics (should match Reports table):');
+    console.log('[API] ========================================');
+    console.log('[API] Source: memberScore from calculateMemberScore library');
+    console.log('[API] Parameters:', {
+      username: squadUsername,
+      shift,
+      brand,
+      month: selectedMonth,
+      cycle: normalizedCycle
+    });
+    console.log('[API] Raw values from memberScore:', {
+      referrals: memberScore.referrals,
+      dormant: memberScore.dormant,
+      retention: memberScore.retention,
+      deposits: memberScore.deposits,
+      days_4_7: memberScore.days_4_7,
+      days_8_11: memberScore.days_8_11,
+      days_12_15: memberScore.days_12_15,
+      days_16_19: memberScore.days_16_19,
+      days_20_plus: memberScore.days_20_plus,
+      totalActiveCustomers: memberScore.totalActiveCustomers
+    });
+    console.log('[API] BehaviorMetrics output:', {
+      numberOfReferredCustomers: behaviorMetrics.numberOfReferredCustomers,
+      numberOfReactivatedDormantCustomers: behaviorMetrics.numberOfReactivatedDormantCustomers,
+      numberOfRetentionCustomers: behaviorMetrics.numberOfRetentionCustomers,
+      depositAmountPerUser: behaviorMetrics.depositAmountPerUser,
       days_4_7: behaviorMetrics.days_4_7,
       days_8_11: behaviorMetrics.days_8_11,
       days_12_15: behaviorMetrics.days_12_15,
       days_16_19: behaviorMetrics.days_16_19,
       days_20_plus: behaviorMetrics.days_20_plus,
     });
+    console.log('[API] ⚠️ Compare with Reports page - should match if same user/month/cycle');
+    console.log('[API] ========================================');
     
     console.log('[API] Breakdown (points, not raw values):', {
       deposit: contribution.breakdown.deposit,

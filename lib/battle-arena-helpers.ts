@@ -226,8 +226,8 @@ async function getMonthlyData(monthStr: string): Promise<{
   
   // Get all unique codes from both
   const allUniqueCodes = [
-    ...reactivationData.map(r => r.unique_code).filter(Boolean),
-    ...recommendData.map(r => r.unique_code).filter(Boolean)
+    ...reactivationData.map((r: any) => r.unique_code).filter(Boolean),
+    ...recommendData.map((r: any) => r.unique_code).filter(Boolean)
   ];
   const uniqueCodesSet = new Set(allUniqueCodes);
   
