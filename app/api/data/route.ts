@@ -4,8 +4,11 @@ import { supabase2 } from '@/lib/supabase-client-2';
 import { DashboardData, Contribution, Squad, Target, ContributionMetrics, BehaviorResultMetrics, TrafficSource } from '@/types';
 import { calculateMemberScore, type MemberScoreData, type TargetPersonal } from '@/lib/calculate-member-score';
 
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
+// Caching Strategy: Cache API responses for better performance
+// KPI cards: 5 minutes (300 seconds)
+// Chart data: 1 minute (60 seconds)
+// Using revalidate for ISR (Incremental Static Regeneration)
+export const revalidate = 60; // Cache for 60 seconds (1 minute) - can be adjusted per endpoint
 
 // Helper function to get current month
 function getCurrentMonth(): string {
@@ -1200,7 +1203,11 @@ export async function GET(request: NextRequest) {
       cycle: normalizedCycle,
     });
 
-    return NextResponse.json(responseData);
+    // Add cache headers for better performance
+    // Cache for 60 seconds (1 minute) - matches revalidate setting
+    const response = NextResponse.json(responseData);
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    return response;
   } catch (error) {
     console.error('[API] Error in /api/data:', error);
     console.error('[API] Error stack:', error instanceof Error ? error.stack : 'No stack trace');

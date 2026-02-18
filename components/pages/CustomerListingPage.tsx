@@ -1142,9 +1142,10 @@ export function CustomerListingPage() {
         : 'customer_recommend';
       
       // Build query with filters for limited access users
+      // Optimized: Use count: 'exact' for efficient counting without fetching all data
       let query = supabase
         .from(tableName)
-        .select('*');
+        .select('*', { count: 'exact' });
       
       // Filter by shift and brand for limited access users directly in query
       // This ensures operator only sees customers matching their brand and shift
@@ -1156,7 +1157,12 @@ export function CustomerListingPage() {
           .eq('brand', userBrand);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error, count } = await query.order('created_at', { ascending: false });
+      
+      // Log count for debugging (count is available even if we don't use it for pagination yet)
+      if (count !== null) {
+        console.log(`[CustomerListing] Total count for ${tableName}:`, count);
+      }
 
       if (error) {
         setFetchError('Unable to load list. Please try again.');
@@ -1752,43 +1758,65 @@ export function CustomerListingPage() {
           return updated;
         });
       } else {
-        // For other tabs, use direct Supabase update
-        // Update customer
-        // Note: If error "record has no field updated_at" occurs, the trigger in database
-        // expects updated_at column but it doesn't exist. This needs to be fixed in database.
-        const { data: updatedData, error } = await supabase
-          .from(tableName)
-          .update(updateData)
-          .eq('id', editingCustomer.id)
-          .select();
+        // For other tabs, use API route to bypass RLS (same as adjustment)
+        const response = await fetch('/api/customer-update', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tableName,
+            id: editingCustomer.id,
+            ...updateData,
+          }),
+        });
 
-        if (error) {
-          console.error('Failed to update customer', error);
-          
-          // Provide more helpful error message for common issues
-          let errorMessage = error.message;
-          if (error.message?.includes('updated_at')) {
-            errorMessage = `Database error: The table "${tableName}" has a trigger that expects an "updated_at" column, but this column doesn't exist in the table. Please add the "updated_at" column to the table or fix the trigger in Supabase.`;
-          }
-          
-          alert('Failed to update customer: ' + errorMessage);
+        const result = await response.json();
+        
+        if (!response.ok) {
+          console.error('[Edit] Failed to update customer:', result);
+          alert('Failed to update customer: ' + (result.error || result.details || 'Unknown error'));
+          setSaving(false);
+          return;
+        }
+
+        // Update successful - use data from API response
+        const updatedData = result.data;
+
+        // Check if update actually returned data
+        if (!updatedData) {
+          console.error('[Edit] Update returned no data:', {
+            tableName,
+            customerId: editingCustomer.id,
+            updateData,
+            response: result,
+          });
+          alert('Update completed but no data was returned. The record may not have been updated. Please refresh the page and try again.');
           setSaving(false);
           return;
         }
 
         // Update successful
-        console.log('[Edit] Update successful:', updatedData);
+        console.log('[Edit] Update successful:', {
+          tableName,
+          customerId: editingCustomer.id,
+          updatedData,
+          updateData,
+        });
 
-        // Optimistically update state for immediate UI feedback
+        // Use the actual data returned from database for consistency
+        const dbUpdatedRecord = updatedData;
         const updatedCustomer: Customer = {
           id: editingCustomer.id,
-          uniqueCode: editForm.uniqueCode,
-          username: activeTab === 'recommend' ? (editForm.username || '') : editingCustomer.username,
-          brand: editForm.brand,
-          handler: editForm.handler,
-          label: editForm.label || 'non active', // Will be updated by checkCustomersActiveStatus
-          month: editForm.month || getCurrentMonth(),
+          uniqueCode: dbUpdatedRecord.unique_code || editForm.uniqueCode,
+          username: activeTab === 'recommend' ? (dbUpdatedRecord.username || editForm.username || '') : editingCustomer.username,
+          brand: dbUpdatedRecord.brand || editForm.brand,
+          handler: dbUpdatedRecord.handler || editForm.handler,
+          label: dbUpdatedRecord.label || editForm.label || 'non active',
+          month: dbUpdatedRecord.month || editForm.month || getCurrentMonth(),
         };
+
+        console.log('[Edit] Updated customer object:', updatedCustomer);
 
         // Update state optimistically
         setAllCustomers(prevCustomers => {
@@ -1805,7 +1833,13 @@ export function CustomerListingPage() {
         });
       }
 
-      // Close modal
+      // Refresh data from database to ensure consistency (especially for label)
+      // Do this BEFORE closing modal to ensure data is fresh
+      console.log('[Edit] Refreshing customers from database...');
+      await fetchCustomers();
+      console.log('[Edit] Customers refreshed successfully');
+      
+      // Close modal after refresh
       setShowEditModal(false);
       setEditingCustomer(null);
       setEditForm({ 
@@ -1820,9 +1854,6 @@ export function CustomerListingPage() {
         squad: '',
         score: 0,
       });
-      
-      // Refresh data from database to ensure consistency (especially for label)
-      await fetchCustomers();
       
       alert('Customer updated successfully!');
     } catch (error) {
@@ -2254,15 +2285,29 @@ export function CustomerListingPage() {
       // Label selalu 'non active' saat insert, akan di-update menjadi 'active' jika customer ada di database untuk bulan yang dipilih
       insertData.label = 'non active';
 
-      const { error } = await supabase
-        .from(tableName)
-        .insert(insertData);
+      // Use API route to bypass RLS (same as customer-upload for bulk insert)
+      console.log('[Add User] Inserting customer:', { tableName, insertData });
+      
+      const response = await fetch('/api/customer-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tableName,
+          data: [insertData], // Send as array (API route expects array)
+        }),
+      });
 
-      if (error) {
-        console.error('Failed to add customer', error);
-        alert('Failed to add customer: ' + error.message);
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('[Add User] Failed to add customer:', result);
+        alert('Failed to add customer: ' + (result.error || result.details || 'Unknown error'));
         return;
       }
+
+      console.log('[Add User] Customer added successfully:', result);
 
       setNewUser({
         uniqueCode: '',
@@ -2593,7 +2638,7 @@ export function CustomerListingPage() {
                 {translations.customerListing.importCustomers}
               </Button>
             )}
-            {activeTab === 'recommend' && (
+            {(activeTab === 'recommend' || activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra') && (
               <Button
                 variant="default"
                 size="sm"
@@ -3052,9 +3097,9 @@ export function CustomerListingPage() {
         )}
       </AnimatePresence>
 
-      {/* Add User Modal - Only for Recommend tab */}
+      {/* Add User Modal - For Recommend, Reactivation, Retention, and Extra tabs */}
       <AnimatePresence>
-        {showAddUserModal && activeTab === 'recommend' && (
+        {showAddUserModal && (activeTab === 'recommend' || activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra') && (
           <>
             {/* Backdrop */}
             <motion.div
