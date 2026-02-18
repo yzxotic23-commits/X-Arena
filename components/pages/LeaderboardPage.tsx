@@ -890,6 +890,11 @@ export function LeaderboardPage() {
           retention: scoreData.retention,
           activation: scoreData.dormant,
           referral: scoreData.referrals,
+          days_4_7: scoreData.days_4_7,
+          days_8_11: scoreData.days_8_11,
+          days_12_15: scoreData.days_12_15,
+          days_16_19: scoreData.days_16_19,
+          days_20_plus: scoreData.days_20_plus,
         },
       };
     });
