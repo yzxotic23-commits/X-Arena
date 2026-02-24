@@ -90,6 +90,14 @@ export function BattleArenaPage() {
   const [achievements, setAchievements] = useState<Array<{ id: string; badge: string; text: string; type: string }>>([]);
   const [customerStats, setCustomerStats] = useState({ totalCustomers: 0, squadACustomers: 0, squadBCustomers: 0 });
   const [squadMapping, setSquadMapping] = useState<SquadMapping>({});
+  
+  // Cache for cycle results to avoid redundant calculations
+  const cycleResultsCacheRef = useRef<Map<string, {
+    results: Array<{ squadA: number; squadB: number; breakdown: any }>;
+    timestamp: number;
+  }>>(new Map());
+  
+  const CACHE_TTL = 30000; // 30 seconds cache for cycle results
 
   const getMonthName = (monthStr: string): string => {
     const [year, month] = monthStr.split('-');
@@ -117,6 +125,36 @@ export function BattleArenaPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMonthDropdown, showCycleDropdown]);
 
+  // Helper function to calculate all cycles with caching
+  const calculateAllCycles = useCallback(async (monthStr: string, scoreRules: any, mapping: SquadMapping) => {
+    const cacheKey = monthStr;
+    const cached = cycleResultsCacheRef.current.get(cacheKey);
+    const now = Date.now();
+    
+    // Return cached data if still valid
+    if (cached && (now - cached.timestamp) < CACHE_TTL) {
+      console.log(`[BattleArenaPage] Using cached cycle results for ${monthStr}`);
+      return cached.results;
+    }
+    
+    console.log(`[BattleArenaPage] Calculating all cycles for ${monthStr} (not cached or expired)`);
+    // Calculate all cycles in parallel
+    const cycleResults = await Promise.all([
+      calculateBattleScores(monthStr, 'Cycle 1', scoreRules, mapping),
+      calculateBattleScores(monthStr, 'Cycle 2', scoreRules, mapping),
+      calculateBattleScores(monthStr, 'Cycle 3', scoreRules, mapping),
+      calculateBattleScores(monthStr, 'Cycle 4', scoreRules, mapping)
+    ]);
+    
+    // Cache the results
+    cycleResultsCacheRef.current.set(cacheKey, {
+      results: cycleResults,
+      timestamp: now
+    });
+    
+    return cycleResults;
+  }, []);
+
   // Fetch battle data
   const fetchBattleData = useCallback(async () => {
     console.log(`[BattleArenaPage] fetchBattleData START - Month: ${selectedMonth}, Cycle: ${selectedCycle}`);
@@ -143,14 +181,9 @@ export function BattleArenaPage() {
           squadB: cycleResult.squadB
         });
       } else {
-        // If "All", calculate all cycles individually and sum them (same as Accumulate Score Overview)
-        console.log(`[BattleArenaPage] Calculating for all cycles (sum of Cycle 1-4)`);
-        const cycleResults = await Promise.all([
-          calculateBattleScores(selectedMonth, 'Cycle 1', scoreRules, mapping),
-          calculateBattleScores(selectedMonth, 'Cycle 2', scoreRules, mapping),
-          calculateBattleScores(selectedMonth, 'Cycle 3', scoreRules, mapping),
-          calculateBattleScores(selectedMonth, 'Cycle 4', scoreRules, mapping)
-        ]);
+        // If "All", use cached helper function to calculate all cycles (avoids duplicate calculation with fetchMonthlyData)
+        console.log(`[BattleArenaPage] Calculating for all cycles (sum of Cycle 1-4) - using cached helper`);
+        const cycleResults = await calculateAllCycles(selectedMonth, scoreRules, mapping);
         
         // Sum all cycles (same as Accumulate Score Overview calculation)
         const totalSquadA = cycleResults.reduce((sum, r) => sum + r.squadA, 0);
@@ -320,7 +353,7 @@ export function BattleArenaPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth, selectedCycle]);
+  }, [selectedMonth, selectedCycle, calculateAllCycles]);
 
   // Fetch monthly score and cycle overview separately (only when month changes, not cycle)
   const fetchMonthlyData = useCallback(async () => {
@@ -328,22 +361,39 @@ export function BattleArenaPage() {
       const scoreRules = getPKScoreRules();
       const mapping = await getSquadMapping();
       
-      // Calculate monthly score and cycle overview in parallel
-      const [monthlyResult, ...cycleResults] = await Promise.all([
-        calculateBattleScores(selectedMonth, null, scoreRules, mapping),
-        ...Array.from({ length: 4 }, (_, i) => calculateBattleScores(selectedMonth, `Cycle ${i + 1}`, scoreRules, mapping))
-      ]);
+      // Use cached helper function to calculate all cycles (avoids duplicate calculation with fetchBattleData)
+      const cycleResults = await calculateAllCycles(selectedMonth, scoreRules, mapping);
       
-      // Set monthly score
+      // Sum all cycles for monthly score (same as Accumulate Score Overview)
+      const monthlySquadA = cycleResults.reduce((sum, r) => sum + r.squadA, 0);
+      const monthlySquadB = cycleResults.reduce((sum, r) => sum + r.squadB, 0);
+      
+      // Sum breakdowns for monthly breakdown
+      const monthlyBreakdownResult = {
+        reactivation: {
+          squadA: cycleResults.reduce((sum, r) => sum + r.breakdown.reactivation.squadA, 0),
+          squadB: cycleResults.reduce((sum, r) => sum + r.breakdown.reactivation.squadB, 0)
+        },
+        recommend: {
+          squadA: cycleResults.reduce((sum, r) => sum + r.breakdown.recommend.squadA, 0),
+          squadB: cycleResults.reduce((sum, r) => sum + r.breakdown.recommend.squadB, 0)
+        },
+        activeMember: {
+          squadA: cycleResults.reduce((sum, r) => sum + r.breakdown.activeMember.squadA, 0),
+          squadB: cycleResults.reduce((sum, r) => sum + r.breakdown.activeMember.squadB, 0)
+        }
+      };
+      
+      // Set monthly score (sum of all cycles)
       setMonthlyScore({
         month: selectedMonth,
-        squadA: monthlyResult.squadA,
-        squadB: monthlyResult.squadB
+        squadA: monthlySquadA,
+        squadB: monthlySquadB
       });
       setMonthlyBreakdown([
-        { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': monthlyResult.breakdown.reactivation.squadA, 'Squad B': monthlyResult.breakdown.reactivation.squadB },
-        { 'Metrics': 'Recommend', 'Squad A': monthlyResult.breakdown.recommend.squadA, 'Squad B': monthlyResult.breakdown.recommend.squadB },
-        { 'Metrics': 'Active Member', 'Squad A': monthlyResult.breakdown.activeMember.squadA, 'Squad B': monthlyResult.breakdown.activeMember.squadB }
+        { 'Metrics': 'Reactivation (Old Listing)', 'Squad A': monthlyBreakdownResult.reactivation.squadA, 'Squad B': monthlyBreakdownResult.reactivation.squadB },
+        { 'Metrics': 'Recommend', 'Squad A': monthlyBreakdownResult.recommend.squadA, 'Squad B': monthlyBreakdownResult.recommend.squadB },
+        { 'Metrics': 'Active Member', 'Squad A': monthlyBreakdownResult.activeMember.squadA, 'Squad B': monthlyBreakdownResult.activeMember.squadB }
       ]);
       
       // Set cycle overview
@@ -356,8 +406,8 @@ export function BattleArenaPage() {
       
       // Add monthly achievements
       const monthlyAchievements: Array<{ id: string; badge: string; text: string; type: string }> = [];
-      const monthlyLeader = monthlyResult.squadA > monthlyResult.squadB ? 'Squad A' : monthlyResult.squadB > monthlyResult.squadA ? 'Squad B' : null;
-      const monthlyLeadDiff = Math.abs(monthlyResult.squadA - monthlyResult.squadB);
+      const monthlyLeader = monthlySquadA > monthlySquadB ? 'Squad A' : monthlySquadB > monthlySquadA ? 'Squad B' : null;
+      const monthlyLeadDiff = Math.abs(monthlySquadA - monthlySquadB);
       
       if (monthlyLeader && monthlyLeadDiff > 0) {
         monthlyAchievements.push({
@@ -387,7 +437,7 @@ export function BattleArenaPage() {
       ]);
       setCycleOverview([]);
     }
-  }, [selectedMonth]);
+  }, [selectedMonth, calculateAllCycles]);
 
   useEffect(() => {
     fetchBattleData();
@@ -397,9 +447,12 @@ export function BattleArenaPage() {
     fetchMonthlyData();
   }, [fetchMonthlyData]);
 
-  // Reset achievements when month changes
+  // Reset achievements and clear cache when month changes
   useEffect(() => {
     setAchievements([]);
+    // Clear cycle results cache when month changes
+    cycleResultsCacheRef.current.clear();
+    console.log(`[BattleArenaPage] Cleared cycle results cache for new month: ${selectedMonth}`);
   }, [selectedMonth]);
 
   const currentCycle = cycleScore.cycle;
