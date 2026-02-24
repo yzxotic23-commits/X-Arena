@@ -130,7 +130,7 @@ export function BattleArenaPage() {
       console.log(`[BattleArenaPage] Step 2 completed - Squad Mapping received`);
       setSquadMapping(mapping);
 
-      // Calculate current cycle score (or monthly if "All")
+      // Calculate current cycle score (or sum of all cycles if "All")
       console.log(`[BattleArenaPage] Step 3: Calculating battle scores`);
       let cycleResult;
       if (selectedCycle !== 'All') {
@@ -143,14 +143,46 @@ export function BattleArenaPage() {
           squadB: cycleResult.squadB
         });
       } else {
-        // If "All", use monthly score for cycle display
-        console.log(`[BattleArenaPage] Calculating for all cycles (monthly)`);
-        cycleResult = await calculateBattleScores(selectedMonth, null, scoreRules, mapping);
-        console.log(`[BattleArenaPage] Monthly result received - Squad A: ${cycleResult.squadA}, Squad B: ${cycleResult.squadB}`);
+        // If "All", calculate all cycles individually and sum them (same as Accumulate Score Overview)
+        console.log(`[BattleArenaPage] Calculating for all cycles (sum of Cycle 1-4)`);
+        const cycleResults = await Promise.all([
+          calculateBattleScores(selectedMonth, 'Cycle 1', scoreRules, mapping),
+          calculateBattleScores(selectedMonth, 'Cycle 2', scoreRules, mapping),
+          calculateBattleScores(selectedMonth, 'Cycle 3', scoreRules, mapping),
+          calculateBattleScores(selectedMonth, 'Cycle 4', scoreRules, mapping)
+        ]);
+        
+        // Sum all cycles (same as Accumulate Score Overview calculation)
+        const totalSquadA = cycleResults.reduce((sum, r) => sum + r.squadA, 0);
+        const totalSquadB = cycleResults.reduce((sum, r) => sum + r.squadB, 0);
+        
+        // Sum breakdowns
+        const totalBreakdown = {
+          reactivation: {
+            squadA: cycleResults.reduce((sum, r) => sum + r.breakdown.reactivation.squadA, 0),
+            squadB: cycleResults.reduce((sum, r) => sum + r.breakdown.reactivation.squadB, 0)
+          },
+          recommend: {
+            squadA: cycleResults.reduce((sum, r) => sum + r.breakdown.recommend.squadA, 0),
+            squadB: cycleResults.reduce((sum, r) => sum + r.breakdown.recommend.squadB, 0)
+          },
+          activeMember: {
+            squadA: cycleResults.reduce((sum, r) => sum + r.breakdown.activeMember.squadA, 0),
+            squadB: cycleResults.reduce((sum, r) => sum + r.breakdown.activeMember.squadB, 0)
+          }
+        };
+        
+        cycleResult = {
+          squadA: totalSquadA,
+          squadB: totalSquadB,
+          breakdown: totalBreakdown
+        };
+        
+        console.log(`[BattleArenaPage] All cycles sum - Squad A: ${totalSquadA}, Squad B: ${totalSquadB}`);
         setCycleScore({
           cycle: 'All',
-          squadA: cycleResult.squadA,
-          squadB: cycleResult.squadB
+          squadA: totalSquadA,
+          squadB: totalSquadB
         });
       }
       console.log(`[BattleArenaPage] Step 4: Setting breakdown and achievements`);

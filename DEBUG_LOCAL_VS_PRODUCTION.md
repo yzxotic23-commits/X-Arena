@@ -210,3 +210,4 @@ Jika masalahnya adalah kolom yang berbeda, kita perlu:
 4. ⏳ Bandingkan dengan log di local
 5. ⏳ Identifikasi perbedaan
 6. ⏳ Fix masalah berdasarkan temuan
+ 
