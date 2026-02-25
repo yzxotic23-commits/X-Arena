@@ -961,7 +961,52 @@ export function ReportsPage() {
 
         const allBrandCodes = Array.from(new Set([...retentionCodes, ...reactivationCodes, ...recommendCodes, ...extraCodes]));
 
-        // Check which customers are ACTIVE (deposit_cases > 0) in current month
+        // ✅ NEW: Get first active date per customer for the entire month to determine which cycle they belong to
+        const customerFirstActiveCycle = new Map<string, string>(); // Map<uniqueCode, cycle>
+        
+        // Helper function to determine cycle from date
+        const getCycleFromDate = (dateStr: string): string => {
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const dayOfMonth = day;
+          if (dayOfMonth >= 1 && dayOfMonth <= 7) return 'Cycle 1';
+          if (dayOfMonth >= 8 && dayOfMonth <= 14) return 'Cycle 2';
+          if (dayOfMonth >= 15 && dayOfMonth <= 21) return 'Cycle 3';
+          if (dayOfMonth >= 22) return 'Cycle 4';
+          return 'All';
+        };
+        
+        // Get month date range for first active date lookup
+        const monthStartDate = new Date(year, month - 1, 1);
+        const monthEndDate = new Date(year, month, 0, 23, 59, 59, 999);
+        const monthStartDateStr = formatDateLocal(monthStartDate);
+        const monthEndDateStr = formatDateLocal(monthEndDate);
+        
+        if (allBrandCodes.length > 0) {
+          // Query first active date for all customers in the month
+          const { data: firstActiveData } = await supabase2
+            .from('blue_whale_sgd')
+            .select('unique_code, date')
+            .in('unique_code', allBrandCodes)
+            .eq('line', brand)
+            .gte('date', monthStartDateStr)
+            .lte('date', monthEndDateStr)
+            .gt('deposit_cases', 0)
+            .order('date', { ascending: true })
+            .limit(50000);
+          
+          if (firstActiveData) {
+            // Track first active cycle per customer
+            firstActiveData.forEach((row: any) => {
+              const uniqueCode = String(row.unique_code || '').trim();
+              const dateStr = String(row.date || '').trim();
+              if (uniqueCode && dateStr && !customerFirstActiveCycle.has(uniqueCode)) {
+                customerFirstActiveCycle.set(uniqueCode, getCycleFromDate(dateStr));
+              }
+            });
+          }
+        }
+
+        // Check which customers are ACTIVE (deposit_cases > 0) in current cycle
         // Use normalized brand (OK188) for database query
         let activeSet = new Set<string>();
         if (allBrandCodes.length > 0) {
@@ -983,19 +1028,50 @@ export function ReportsPage() {
           });
         }
 
-        // Count only active customers
-        // Ensure codes are trimmed before checking activeSet (which contains trimmed codes)
+        // ✅ NEW: Count only active customers whose first active cycle matches selected cycle
         const retentionCount = retentionCodes.filter(code => {
           const normalizedCode = String(code || '').trim();
-          return normalizedCode && activeSet.has(normalizedCode);
+          if (!normalizedCode || !activeSet.has(normalizedCode)) return false;
+          
+          // Check if customer's first active cycle matches selected cycle
+          const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+          if (selectedCycle === 'All') {
+            // For "All", count all customers that first became active in this month
+            return customerCycle !== undefined;
+          } else {
+            // For specific cycle, only count customers that first became active in this cycle
+            return customerCycle === selectedCycle;
+          }
         }).length;
+        
         const reactivationCount = reactivationCodes.filter(code => {
           const normalizedCode = String(code || '').trim();
-          return normalizedCode && activeSet.has(normalizedCode);
+          if (!normalizedCode || !activeSet.has(normalizedCode)) return false;
+          
+          // Check if customer's first active cycle matches selected cycle
+          const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+          if (selectedCycle === 'All') {
+            // For "All", count all customers that first became active in this month
+            return customerCycle !== undefined;
+          } else {
+            // For specific cycle, only count customers that first became active in this cycle
+            return customerCycle === selectedCycle;
+          }
         }).length;
+        
         const recommendCount = recommendCodes.filter(code => {
           const normalizedCode = String(code || '').trim();
-          return normalizedCode && activeSet.has(normalizedCode);
+          if (!normalizedCode || !activeSet.has(normalizedCode)) return false;
+          
+          // Check if customer's first active cycle matches selected cycle
+          const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+          if (selectedCycle === 'All') {
+            // For "All", count all customers that first became active in this month
+            return customerCycle !== undefined;
+          } else {
+            // For specific cycle, only count customers that first became active in this cycle
+            return customerCycle === selectedCycle;
+          }
         }).length;
 
         return {
@@ -1043,7 +1119,52 @@ export function ReportsPage() {
 
         const allBrandCodes = Array.from(new Set([...retentionCodes, ...reactivationCodes, ...recommendCodes]));
 
-        // Check which customers are ACTIVE (deposit_cases > 0) in current month
+        // ✅ NEW: Get first active date per customer for the entire month to determine which cycle they belong to
+        const customerFirstActiveCycle = new Map<string, string>(); // Map<uniqueCode, cycle>
+        
+        // Helper function to determine cycle from date
+        const getCycleFromDate = (dateStr: string): string => {
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const dayOfMonth = day;
+          if (dayOfMonth >= 1 && dayOfMonth <= 7) return 'Cycle 1';
+          if (dayOfMonth >= 8 && dayOfMonth <= 14) return 'Cycle 2';
+          if (dayOfMonth >= 15 && dayOfMonth <= 21) return 'Cycle 3';
+          if (dayOfMonth >= 22) return 'Cycle 4';
+          return 'All';
+        };
+        
+        // Get month date range for first active date lookup
+        const monthStartDate = new Date(year, month - 1, 1);
+        const monthEndDate = new Date(year, month, 0, 23, 59, 59, 999);
+        const monthStartDateStr = formatDateLocal(monthStartDate);
+        const monthEndDateStr = formatDateLocal(monthEndDate);
+        
+        if (allBrandCodes.length > 0) {
+          // Query first active date for all customers in the month
+          const { data: firstActiveData } = await supabase2
+            .from('blue_whale_sgd')
+            .select('unique_code, date')
+            .in('unique_code', allBrandCodes)
+            .eq('line', brand)
+            .gte('date', monthStartDateStr)
+            .lte('date', monthEndDateStr)
+            .gt('deposit_cases', 0)
+            .order('date', { ascending: true })
+            .limit(50000);
+          
+          if (firstActiveData) {
+            // Track first active cycle per customer
+            firstActiveData.forEach((row: any) => {
+              const uniqueCode = String(row.unique_code || '').trim();
+              const dateStr = String(row.date || '').trim();
+              if (uniqueCode && dateStr && !customerFirstActiveCycle.has(uniqueCode)) {
+                customerFirstActiveCycle.set(uniqueCode, getCycleFromDate(dateStr));
+              }
+            });
+          }
+        }
+
+        // Check which customers are ACTIVE (deposit_cases > 0) in current cycle
         // Use normalized brand (OK188) for database query
         let activeSet = new Set<string>();
         if (allBrandCodes.length > 0) {
@@ -1065,19 +1186,50 @@ export function ReportsPage() {
           });
         }
 
-        // Count only active customers
-        // Ensure codes are trimmed before checking activeSet (which contains trimmed codes)
+        // ✅ NEW: Count only active customers whose first active cycle matches selected cycle
         const retentionCount = retentionCodes.filter(code => {
           const normalizedCode = String(code || '').trim();
-          return normalizedCode && activeSet.has(normalizedCode);
+          if (!normalizedCode || !activeSet.has(normalizedCode)) return false;
+          
+          // Check if customer's first active cycle matches selected cycle
+          const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+          if (selectedCycle === 'All') {
+            // For "All", count all customers that first became active in this month
+            return customerCycle !== undefined;
+          } else {
+            // For specific cycle, only count customers that first became active in this cycle
+            return customerCycle === selectedCycle;
+          }
         }).length;
+        
         const reactivationCount = reactivationCodes.filter(code => {
           const normalizedCode = String(code || '').trim();
-          return normalizedCode && activeSet.has(normalizedCode);
+          if (!normalizedCode || !activeSet.has(normalizedCode)) return false;
+          
+          // Check if customer's first active cycle matches selected cycle
+          const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+          if (selectedCycle === 'All') {
+            // For "All", count all customers that first became active in this month
+            return customerCycle !== undefined;
+          } else {
+            // For specific cycle, only count customers that first became active in this cycle
+            return customerCycle === selectedCycle;
+          }
         }).length;
+        
         const recommendCount = recommendCodes.filter(code => {
           const normalizedCode = String(code || '').trim();
-          return normalizedCode && activeSet.has(normalizedCode);
+          if (!normalizedCode || !activeSet.has(normalizedCode)) return false;
+          
+          // Check if customer's first active cycle matches selected cycle
+          const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+          if (selectedCycle === 'All') {
+            // For "All", count all customers that first became active in this month
+            return customerCycle !== undefined;
+          } else {
+            // For specific cycle, only count customers that first became active in this cycle
+            return customerCycle === selectedCycle;
+          }
         }).length;
 
         return {

@@ -165,6 +165,41 @@ export async function calculateMemberScore(
       return `${y}-${m}-${d}`;
     };
     
+    // Helper function to get start and end date for cycle (for cumulative days calculation)
+    // Start date always = tanggal 1, end date follows cycle
+    const getCycleDateRangeForDays = (cycle: string): { startDate: string; endDate: string } => {
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const startDate = formatDateLocal(new Date(year, month - 1, 1)); // Always tanggal 1
+      let endDay: number;
+      
+      if (cycle === 'All') {
+        const endOfMonth = new Date(year, month, 0);
+        endDay = endOfMonth.getDate();
+      } else if (cycle === 'Cycle 1') {
+        endDay = 7;
+      } else if (cycle === 'Cycle 2') {
+        endDay = 14;
+      } else if (cycle === 'Cycle 3') {
+        endDay = 21;
+      } else if (cycle === 'Cycle 4') {
+        const endOfMonth = new Date(year, month, 0);
+        endDay = endOfMonth.getDate();
+      } else {
+        const endOfMonth = new Date(year, month, 0);
+        endDay = endOfMonth.getDate();
+      }
+      
+      const endDate = formatDateLocal(new Date(year, month - 1, endDay));
+      return { startDate, endDate };
+    };
+    
+    // Helper function to check if date is within cycle range (from tanggal 1 to cycle end date)
+    const isDateInCycleRange = (dateStr: string, cycle: string): boolean => {
+      if (cycle === 'All') return true;
+      const { startDate, endDate } = getCycleDateRangeForDays(cycle);
+      return dateStr >= startDate && dateStr <= endDate;
+    };
+    
     const startDateStr = formatDateLocal(startDate);
     const endDateStr = formatDateLocal(endDate);
     
@@ -341,26 +376,107 @@ export async function calculateMemberScore(
       totalUniqueCodes: allUniqueCodes.length,
     });
 
+    // ✅ NEW: Get first active date per customer for the entire month to determine which cycle they belong to
+    // This ensures customers are only counted in the cycle where they first became active
+    const customerFirstActiveDate = new Map<string, string>(); // Map<uniqueCode, firstActiveDate>
+    const customerFirstActiveCycle = new Map<string, string>(); // Map<uniqueCode, cycle>
+    
+    // Get month date range for first active date lookup
+    const monthStartDate = new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]) - 1, 1);
+    const monthEndDate = new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]), 0, 23, 59, 59, 999);
+    const monthStartDateStr = formatDateLocal(monthStartDate);
+    const monthEndDateStr = formatDateLocal(monthEndDate);
+    
+    // Helper function to determine cycle from date
+    const getCycleFromDate = (dateStr: string): string => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const dayOfMonth = day;
+      if (dayOfMonth >= 1 && dayOfMonth <= 7) return 'Cycle 1';
+      if (dayOfMonth >= 8 && dayOfMonth <= 14) return 'Cycle 2';
+      if (dayOfMonth >= 15 && dayOfMonth <= 21) return 'Cycle 3';
+      if (dayOfMonth >= 22) return 'Cycle 4';
+      return 'All';
+    };
+    
+    if (allUniqueCodes.length > 0) {
+      // Query first active date for all customers in the month
+      const { data: firstActiveData, error: firstActiveError } = await supabase2
+        .from('blue_whale_sgd')
+        .select('update_unique_code, date')
+        .in('update_unique_code', allUniqueCodes)
+        .eq('line', brand)
+        .gte('date', monthStartDateStr)
+        .lte('date', monthEndDateStr)
+        .gt('deposit_cases', 0)
+        .order('date', { ascending: true })
+        .limit(50000);
+      
+      if (firstActiveData) {
+        // Track first active date per customer
+        firstActiveData.forEach((row: any) => {
+          const uniqueCode = String(row.update_unique_code || '').trim();
+          const dateStr = String(row.date || '').trim();
+          if (uniqueCode && dateStr) {
+            if (!customerFirstActiveDate.has(uniqueCode)) {
+              customerFirstActiveDate.set(uniqueCode, dateStr);
+              customerFirstActiveCycle.set(uniqueCode, getCycleFromDate(dateStr));
+            }
+          }
+        });
+        
+        console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}) - First active date mapping:`, {
+          totalCustomers: customerFirstActiveDate.size,
+          cycleDistribution: {
+            'Cycle 1': Array.from(customerFirstActiveCycle.values()).filter(c => c === 'Cycle 1').length,
+            'Cycle 2': Array.from(customerFirstActiveCycle.values()).filter(c => c === 'Cycle 2').length,
+            'Cycle 3': Array.from(customerFirstActiveCycle.values()).filter(c => c === 'Cycle 3').length,
+            'Cycle 4': Array.from(customerFirstActiveCycle.values()).filter(c => c === 'Cycle 4').length,
+          }
+        });
+      }
+    }
+
     // OPTIMIZED: Single query to get all active customer data (deposit_cases > 0) with dates and deposit_amount - same as leaderboard
     const activeCustomersSet = new Set<string>();
     const customerDeposits = new Map<string, number>(); // Track deposit per customer
-    const customerDaysCount = new Map<string, Set<string>>(); // Track distinct dates per customer
+    const customerDaysCount = new Map<string, Set<string>>(); // Track distinct dates per customer (for retention/deposit/dormant)
+    const customerDaysCountAll = new Map<string, Set<string>>(); // Track all dates for days calculation (all cycles)
     let totalDeposit = 0;
 
+    // Helper function to check if date is in cycle range (defined early for use in processing)
+    const isDateInCycle = (dateStr: string, cycle: string): boolean => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const dayOfMonth = day;
+      
+      if (cycle === 'All') return true;
+      if (cycle === 'Cycle 1' && dayOfMonth >= 1 && dayOfMonth <= 7) return true;
+      if (cycle === 'Cycle 2' && dayOfMonth >= 8 && dayOfMonth <= 14) return true;
+      if (cycle === 'Cycle 3' && dayOfMonth >= 15 && dayOfMonth <= 21) return true;
+      if (cycle === 'Cycle 4' && dayOfMonth >= 22) return true;
+      return false;
+    };
+
     if (allUniqueCodes.length > 0) {
+      // ✅ NEW: For days calculation, we need data from start of month to cycle end date
+      // For retention/deposit/dormant, we use cycle date range
+      const monthStartDate = new Date(parseInt(selectedMonth.split('-')[0]), parseInt(selectedMonth.split('-')[1]) - 1, 1);
+      const monthStartDateStr = formatDateLocal(monthStartDate);
+      const daysEndDate = cycle === 'All' ? endDateStr : getCycleDateRangeForDays(cycle).endDate;
+      
       // ✅ CRITICAL: Log query parameters for blue_whale_sgd
       console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}) - blue_whale_sgd query parameters:`, {
         uniqueCodesCount: allUniqueCodes.length,
         brand: brand,
         startDate: startDateStr,
         endDate: endDateStr,
+        daysStartDate: monthStartDateStr,
+        daysEndDate: daysEndDate,
         startDateISO: startDate.toISOString(),
         endDateISO: endDate.toISOString(),
         note: '⚠️ Compare these values with local - if different, results will differ!',
       });
       
-      // Single query to get all data: active customers with deposit_amount and dates
-      // Note: blue_whale_sgd now uses 'update_unique_code' column (changed from 'unique_code')
+      // Query for retention/deposit/dormant: use cycle date range
       const { data: activeData, error: activeError } = await supabase2
         .from('blue_whale_sgd')
         .select('update_unique_code, line, deposit_cases, deposit_amount, date')
@@ -368,6 +484,17 @@ export async function calculateMemberScore(
         .eq('line', brand)
         .gte('date', startDateStr)
         .lte('date', endDateStr)
+        .gt('deposit_cases', 0)
+        .limit(50000);
+      
+      // ✅ NEW: Query for days calculation: use month start to cycle end date (for cumulative days)
+      const { data: daysData, error: daysError } = await supabase2
+        .from('blue_whale_sgd')
+        .select('update_unique_code, line, deposit_cases, date')
+        .in('update_unique_code', allUniqueCodes)
+        .eq('line', brand)
+        .gte('date', monthStartDateStr)
+        .lte('date', daysEndDate)
         .gt('deposit_cases', 0)
         .limit(50000);
 
@@ -382,34 +509,87 @@ export async function calculateMemberScore(
 
       if (activeError) {
         console.error(`[Calculate Score] Error fetching active customers for ${username}:`, activeError);
-      } else if (activeData) {
+      }
+      
+      if (daysError) {
+        console.error(`[Calculate Score] Error fetching days data for ${username}:`, daysError);
+      }
+      
+      // Process days data for days calculation (from month start to cycle end)
+      if (daysData) {
+        console.log(`[Calculate Score - Library] ${username}: Fetched ${daysData.length} rows for days calculation from ${monthStartDateStr} to ${daysEndDate}`);
+        
+        daysData.forEach((row: any) => {
+          const uniqueCode = String(row.update_unique_code || '').trim();
+          if (uniqueCode) {
+            // Track all dates for days calculation (from month start to cycle end)
+            if (!customerDaysCountAll.has(uniqueCode)) {
+              customerDaysCountAll.set(uniqueCode, new Set());
+            }
+            customerDaysCountAll.get(uniqueCode)!.add(row.date);
+          }
+        });
+      }
+      
+      // Process active data for retention/deposit/dormant (from cycle start to cycle end)
+      if (activeData) {
         console.log(`[Calculate Score - Library] ${username}: Fetched ${activeData.length} rows from blue_whale_sgd for date range ${startDateStr} to ${endDateStr}`);
         
         // Process all data in one pass - same as leaderboard
         // Note: blue_whale_sgd now uses 'update_unique_code' column
+        // ✅ NEW: For retention/deposit/dormant: only process customers whose first active cycle matches selected cycle
         activeData.forEach((row: any) => {
           const uniqueCode = String(row.update_unique_code || '').trim();
           if (uniqueCode) {
-            activeCustomersSet.add(uniqueCode);
             
-            // Sum deposit_amount per customer (avoid double counting)
-            const depositAmount = parseFloat(row.deposit_amount || 0) || 0;
-            if (!customerDeposits.has(uniqueCode)) {
-              customerDeposits.set(uniqueCode, 0);
-            }
-            customerDeposits.set(uniqueCode, customerDeposits.get(uniqueCode)! + depositAmount);
+            // Check if customer's first active cycle matches selected cycle (for retention/deposit/dormant)
+            const customerCycle = customerFirstActiveCycle.get(uniqueCode);
+            let shouldInclude = false;
             
-            // Track distinct dates per customer - SAME AS REPORTS (no trim, direct add)
-            if (!customerDaysCount.has(uniqueCode)) {
-              customerDaysCount.set(uniqueCode, new Set());
+            if (cycle === 'All') {
+              // For "All", include all customers that first became active in this month
+              shouldInclude = customerCycle !== undefined;
+            } else {
+              // For specific cycle, only include customers that first became active in this cycle
+              shouldInclude = customerCycle === cycle;
             }
-            customerDaysCount.get(uniqueCode)!.add(row.date);
+            
+            if (shouldInclude) {
+              activeCustomersSet.add(uniqueCode);
+              
+              // Sum deposit_amount per customer (avoid double counting)
+              const depositAmount = parseFloat(row.deposit_amount || 0) || 0;
+              if (!customerDeposits.has(uniqueCode)) {
+                customerDeposits.set(uniqueCode, 0);
+              }
+              customerDeposits.set(uniqueCode, customerDeposits.get(uniqueCode)! + depositAmount);
+              
+              // Track distinct dates per customer for retention/deposit/dormant calculation
+              if (!customerDaysCount.has(uniqueCode)) {
+                customerDaysCount.set(uniqueCode, new Set());
+              }
+              customerDaysCount.get(uniqueCode)!.add(row.date);
+            }
           }
         });
         
-        console.log(`[Calculate Score - Library] ${username}: Processed ${activeCustomersSet.size} unique active customers, ${customerDaysCount.size} customers with days data`);
+        // For days calculation: use all customers active in the cycle (not just first active)
+        if (cycle !== 'All') {
+          // For per cycle: include all customers that are active in this cycle (for days only)
+          activeData.forEach((row: any) => {
+            const uniqueCode = String(row.update_unique_code || '').trim();
+            if (uniqueCode && isDateInCycle(row.date, cycle)) {
+              // Add to activeCustomersSet for days calculation (if not already added)
+              if (!activeCustomersSet.has(uniqueCode)) {
+                activeCustomersSet.add(uniqueCode);
+              }
+            }
+          });
+        }
+        
+        console.log(`[Calculate Score - Library] ${username}: Processed ${activeCustomersSet.size} unique active customers (filtered by cycle: ${cycle}), ${customerDaysCount.size} customers with days data`);
 
-        // Calculate total deposit from unique customers
+        // Calculate total deposit from unique customers (only those in selected cycle)
         customerDeposits.forEach((deposit) => {
           totalDeposit += deposit;
         });
@@ -424,19 +604,51 @@ export async function calculateMemberScore(
       }
     }
 
-    // Calculate counts (ONLY ACTIVE CUSTOMERS) - SAME AS LEADERBOARD (normalize codes before checking)
-    // Ensure codes are trimmed before checking activeCustomersSet (which contains trimmed codes)
+    // ✅ NEW: Calculate counts (ONLY ACTIVE CUSTOMERS) - Filter by first active cycle
+    // Customer is only counted in the cycle where they first became active
     const retentionCount = retentionUniqueCodes.filter(code => {
       const normalizedCode = String(code || '').trim();
-      return normalizedCode && activeCustomersSet.has(normalizedCode);
+      if (!normalizedCode || !activeCustomersSet.has(normalizedCode)) return false;
+      
+      // Check if customer's first active cycle matches selected cycle
+      const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+      if (cycle === 'All') {
+        // For "All", count all customers that first became active in this month
+        return customerCycle !== undefined;
+      } else {
+        // For specific cycle, only count customers that first became active in this cycle
+        return customerCycle === cycle;
+      }
     }).length;
+    
     const reactivationCount = reactivationUniqueCodes.filter(code => {
       const normalizedCode = String(code || '').trim();
-      return normalizedCode && activeCustomersSet.has(normalizedCode);
+      if (!normalizedCode || !activeCustomersSet.has(normalizedCode)) return false;
+      
+      // Check if customer's first active cycle matches selected cycle
+      const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+      if (cycle === 'All') {
+        // For "All", count all customers that first became active in this month
+        return customerCycle !== undefined;
+      } else {
+        // For specific cycle, only count customers that first became active in this cycle
+        return customerCycle === cycle;
+      }
     }).length;
+    
     const recommendCount = recommendUniqueCodes.filter(code => {
       const normalizedCode = String(code || '').trim();
-      return normalizedCode && activeCustomersSet.has(normalizedCode);
+      if (!normalizedCode || !activeCustomersSet.has(normalizedCode)) return false;
+      
+      // Check if customer's first active cycle matches selected cycle
+      const customerCycle = customerFirstActiveCycle.get(normalizedCode);
+      if (cycle === 'All') {
+        // For "All", count all customers that first became active in this month
+        return customerCycle !== undefined;
+      } else {
+        // For specific cycle, only count customers that first became active in this cycle
+        return customerCycle === cycle;
+      }
     }).length;
     
     // ✅ Log counts for debugging - compare with Overview
@@ -453,7 +665,9 @@ export async function calculateMemberScore(
       totalDeposit,
     });
 
-    // Calculate days (4-7, 8-11, 12-15, 16-19, 20+) from already processed data - same as Reports
+    // ✅ NEW: Calculate days (4-7, 8-11, 12-15, 16-19, 20+) based on cycle logic
+    // For "All": count total days customer in the month
+    // For per cycle: count only days active in that specific cycle (from all customers active in that cycle)
     const daysCounts = {
       days_4_7: 0,
       days_8_11: 0,
@@ -472,31 +686,118 @@ export async function calculateMemberScore(
       '20+': [],
     };
 
-    // Count ACTIVE customers by number of active days (minimum 4 days) - same as Reports
+    // Count ACTIVE customers by number of active days
+    // For days: use all customers active in the cycle (not just first active)
+    // Use customerDaysCountAll which tracks all dates for all customers
     let customersNotInRange = 0;
-    customerDaysCount.forEach((datesSet, uniqueCode) => {
-      if (activeCustomersSet.has(uniqueCode)) {
-        const daysCount = datesSet.size;
-        if (daysCount < 4) {
-          // Customer has less than 4 days - not counted in days metrics
-          customersByDayRange['1-3'].push(uniqueCode);
-          customersNotInRange++;
-        } else if (daysCount >= 4 && daysCount <= 7) {
-          daysCounts.days_4_7++;
-          customersByDayRange['4-7'].push(uniqueCode);
-        } else if (daysCount >= 8 && daysCount <= 11) {
-          daysCounts.days_8_11++;
-          customersByDayRange['8-11'].push(uniqueCode);
-        } else if (daysCount >= 12 && daysCount <= 15) {
-          daysCounts.days_12_15++;
-          customersByDayRange['12-15'].push(uniqueCode);
-        } else if (daysCount >= 16 && daysCount <= 19) {
-          daysCounts.days_16_19++;
-          customersByDayRange['16-19'].push(uniqueCode);
-        } else if (daysCount >= 20) {
-          daysCounts.days_20_plus++;
-          customersByDayRange['20+'].push(uniqueCode);
+    const daysCalculationSet = cycle === 'All' ? customerDaysCount : customerDaysCountAll;
+    
+    // ✅ NEW: Track first cycle where customer reaches each category
+    // Customer only counted in the cycle where they first reach that category
+    const customerFirstCategoryCycle = new Map<string, string>(); // Map<uniqueCode_category, firstCycle>
+    
+    // Helper function to get category from days count
+    const getCategoryFromDays = (days: number): string | null => {
+      if (days < 4) return null;
+      if (days >= 4 && days <= 7) return '4-7';
+      if (days >= 8 && days <= 11) return '8-11';
+      if (days >= 12 && days <= 15) return '12-15';
+      if (days >= 16 && days <= 19) return '16-19';
+      if (days >= 20) return '20+';
+      return null;
+    };
+    
+    // ✅ NEW: For per cycle, we need to check all previous cycles to find first cycle where customer reaches category
+    if (cycle !== 'All') {
+      // Calculate cumulative days for all cycles up to current cycle
+      const cycles = ['Cycle 1', 'Cycle 2', 'Cycle 3', 'Cycle 4'];
+      const currentCycleIndex = cycles.indexOf(cycle);
+      const cyclesToCheck = cycles.slice(0, currentCycleIndex + 1);
+      
+      customerDaysCountAll.forEach((datesSet, uniqueCode) => {
+        const allDates = Array.from(datesSet).sort();
+        if (allDates.length === 0) return;
+        
+        // Check each cycle to find first cycle where customer reaches each category
+        for (const checkCycle of cyclesToCheck) {
+          const { startDate, endDate } = getCycleDateRangeForDays(checkCycle);
+          const datesInCycle = allDates.filter(date => date >= startDate && date <= endDate);
+          if (datesInCycle.length === 0) continue;
+          
+          const daysCount = datesInCycle.length;
+          const category = getCategoryFromDays(daysCount);
+          
+          if (category) {
+            const categoryKey = `${uniqueCode}_${category}`;
+            // Only set if not already set (first cycle where customer reaches this category)
+            if (!customerFirstCategoryCycle.has(categoryKey)) {
+              customerFirstCategoryCycle.set(categoryKey, checkCycle);
+            }
+          }
         }
+      });
+    }
+    
+    daysCalculationSet.forEach((datesSet, uniqueCode) => {
+      let daysCount: number;
+      
+      if (cycle === 'All') {
+        // For "All": only count customers that first became active in this month
+        const customerCycle = customerFirstActiveCycle.get(uniqueCode);
+        if (!customerCycle) return;
+        
+        // For "All": count total days customer in the month (existing logic)
+        daysCount = datesSet.size;
+      } else {
+        // For per cycle: count cumulative days customer from tanggal 1 to cycle end date
+        // Start date always = tanggal 1, end date = cycle end date
+        const { startDate, endDate } = getCycleDateRangeForDays(cycle);
+        const allDates = Array.from(datesSet).sort();
+        if (allDates.length === 0) return;
+        
+        // Filter dates that are within cycle range (tanggal 1 to cycle end date)
+        const datesInCycle = allDates.filter(date => date >= startDate && date <= endDate);
+        
+        // Customer is counted if they have at least one active date in the cycle range
+        if (datesInCycle.length === 0) return;
+        
+        // Count cumulative days customer from tanggal 1 to cycle end date
+        // This is the total days customer has been active from start of month to end of cycle
+        daysCount = datesInCycle.length;
+        
+        // ✅ NEW: Get category and check if this is the first cycle where customer reaches this category
+        const category = getCategoryFromDays(daysCount);
+        if (category) {
+          const categoryKey = `${uniqueCode}_${category}`;
+          const firstCycle = customerFirstCategoryCycle.get(categoryKey);
+          // Only count if this is the first cycle where customer reaches this category
+          if (firstCycle !== cycle) {
+            return; // Skip this customer for this cycle
+          }
+        } else {
+          return; // Less than 4 days, not counted
+        }
+      }
+      
+      if (daysCount < 4) {
+        // Customer has less than 4 days - not counted in days metrics
+        customersByDayRange['1-3'].push(uniqueCode);
+        customersNotInRange++;
+      } else if (daysCount >= 4 && daysCount <= 7) {
+        daysCounts.days_4_7++;
+        customersByDayRange['4-7'].push(uniqueCode);
+      } else if (daysCount >= 8 && daysCount <= 11) {
+        daysCounts.days_8_11++;
+        customersByDayRange['8-11'].push(uniqueCode);
+      } else if (daysCount >= 12 && daysCount <= 15) {
+        daysCounts.days_12_15++;
+        customersByDayRange['12-15'].push(uniqueCode);
+      } else if (daysCount >= 16 && daysCount <= 19) {
+        daysCounts.days_16_19++;
+        customersByDayRange['16-19'].push(uniqueCode);
+      } else if (daysCount >= 20) {
+        daysCounts.days_20_plus++;
+        customersByDayRange['20+'].push(uniqueCode);
       }
     });
     
