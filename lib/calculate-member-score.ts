@@ -852,6 +852,7 @@ export async function calculateMemberScore(
       return {
         score: 0,
         deposits: totalDeposit,
+        ggr: totalGgr,
         retention: retentionCount,
         dormant: reactivationCount,
         referrals: recommendCount,
