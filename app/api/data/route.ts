@@ -1001,6 +1001,7 @@ export async function GET(request: NextRequest) {
       numberOfReactivatedDormantCustomers: memberScore.dormant,
       numberOfRetentionCustomers: memberScore.retention,
       depositAmountPerUser: memberScore.deposits,
+      ggr: memberScore.ggr,
       days_4_7: memberScore.days_4_7,
       days_8_11: memberScore.days_8_11,
       days_12_15: memberScore.days_12_15,

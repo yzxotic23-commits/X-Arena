@@ -255,6 +255,7 @@ export interface Translations {
     reactivatedDormant: string;
     retentionCustomers: string;
     depositPerUser: string;
+    ggr: string;
     targetGapAMGP: string;
     dataSourceTrafficSource: string;
     squadDetailsTopContributor: string;
@@ -509,6 +510,7 @@ export const translations: Record<Language, Translations> = {
       reactivatedDormant: 'Reactivated Dormant',
       retentionCustomers: 'Retention Customers',
       depositPerUser: 'Deposit per User',
+      ggr: 'GGR',
       targetGapAMGP: 'Target Gap (AM/GP)',
       dataSourceTrafficSource: 'Data Source - Traffic Source',
       squadDetailsTopContributor: 'Squad Details & Top Contributor',
@@ -762,6 +764,7 @@ export const translations: Record<Language, Translations> = {
       reactivatedDormant: '重新激活休眠',
       retentionCustomers: '留存客户',
       depositPerUser: '每用户存款',
+      ggr: 'GGR',
       targetGapAMGP: '目标差距(活跃成员/总利润)',
       dataSourceTrafficSource: '数据源 - 流量来源',
       squadDetailsTopContributor: '小队详情与顶级贡献者',

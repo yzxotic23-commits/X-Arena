@@ -158,11 +158,14 @@ function generateMockContributionMetrics(contribution: Contribution): Contributi
 }
 
 function generateMockBehaviorMetrics(baseMetrics: BaseBusinessMetrics, target: Target): BehaviorResultMetrics {
+  // GGR is typically 5-10% of deposits
+  const ggr = target.depositPerUser * (0.05 + Math.random() * 0.05);
   return {
     numberOfReferredCustomers: randomInt(10, 200),
     numberOfReactivatedDormantCustomers: randomInt(5, 150),
     numberOfRetentionCustomers: randomInt(20, 300),
     depositAmountPerUser: target.depositPerUser,
+    ggr: ggr,
   };
 }
 

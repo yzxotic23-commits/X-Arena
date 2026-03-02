@@ -73,6 +73,7 @@ function getCycleDateRange(selectedMonth: string, cycle: string): { startDate: D
 export interface MemberScoreData {
   score: number;
   deposits: number;
+  ggr: number;
   retention: number;
   dormant: number;
   referrals: number;
@@ -130,6 +131,7 @@ export async function calculateMemberScore(
     return {
       score: 0,
       deposits: 0,
+      ggr: 0,
       retention: 0,
       dormant: 0,
       referrals: 0,
@@ -439,9 +441,11 @@ export async function calculateMemberScore(
     // OPTIMIZED: Single query to get all active customer data (deposit_cases > 0) with dates and deposit_amount - same as leaderboard
     const activeCustomersSet = new Set<string>();
     const customerDeposits = new Map<string, number>(); // Track deposit per customer
+    const customerGgr = new Map<string, number>(); // Track GGR per customer
     const customerDaysCount = new Map<string, Set<string>>(); // Track distinct dates per customer (for retention/deposit/dormant)
     const customerDaysCountAll = new Map<string, Set<string>>(); // Track all dates for days calculation (all cycles)
     let totalDeposit = 0;
+    let totalGgr = 0;
 
     // Helper function to check if date is in cycle range (defined early for use in processing)
     const isDateInCycle = (dateStr: string, cycle: string): boolean => {
@@ -476,10 +480,10 @@ export async function calculateMemberScore(
         note: '⚠️ Compare these values with local - if different, results will differ!',
       });
       
-      // Query for retention/deposit/dormant: use cycle date range
+      // Query for retention/deposit/dormant/ggr: use cycle date range
       const { data: activeData, error: activeError } = await supabase2
         .from('blue_whale_sgd')
-        .select('update_unique_code, line, deposit_cases, deposit_amount, date')
+        .select('update_unique_code, line, deposit_cases, deposit_amount, ggr, date')
         .in('update_unique_code', allUniqueCodes)
         .eq('line', brand)
         .gte('date', startDateStr)
@@ -564,6 +568,13 @@ export async function calculateMemberScore(
               }
               customerDeposits.set(uniqueCode, customerDeposits.get(uniqueCode)! + depositAmount);
               
+              // Sum ggr per customer
+              const ggrAmount = parseFloat(row.ggr || 0) || 0;
+              if (!customerGgr.has(uniqueCode)) {
+                customerGgr.set(uniqueCode, 0);
+              }
+              customerGgr.set(uniqueCode, customerGgr.get(uniqueCode)! + ggrAmount);
+              
               // Track distinct dates per customer for retention/deposit/dormant calculation
               if (!customerDaysCount.has(uniqueCode)) {
                 customerDaysCount.set(uniqueCode, new Set());
@@ -594,12 +605,19 @@ export async function calculateMemberScore(
           totalDeposit += deposit;
         });
         
-        // ✅ Log AFTER deposit calculation
+        // Calculate total GGR from unique customers (only those in selected cycle)
+        customerGgr.forEach((ggr) => {
+          totalGgr += ggr;
+        });
+        
+        // ✅ Log AFTER deposit and GGR calculation
         console.log(`[Calculate Score - Library] ${username} (${shift}, ${brand}) - Active customers summary:`, {
           totalUniqueCodesFromTables: allUniqueCodes.length,
           activeCustomersInBlueWhale: activeCustomersSet.size,
           totalDeposit: totalDeposit,
+          totalGgr: totalGgr,
           customersWithDeposits: customerDeposits.size,
+          customersWithGgr: customerGgr.size,
         });
       }
     }
@@ -984,6 +1002,7 @@ export async function calculateMemberScore(
     return {
       score: finalScore, // ✅ This includes adjustment score
       deposits: totalDeposit,
+      ggr: totalGgr,
       retention: retentionCount,
       dormant: reactivationCount,
       referrals: recommendCount,
@@ -1001,6 +1020,7 @@ export async function calculateMemberScore(
     return {
       score: 0,
       deposits: 0,
+      ggr: 0,
       retention: 0,
       dormant: 0,
       referrals: 0,

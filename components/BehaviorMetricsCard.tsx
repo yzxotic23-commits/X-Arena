@@ -41,6 +41,12 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
       icon: DollarSign,
       color: 'text-yellow-400',
     },
+    {
+      key: 'ggr' as const,
+      label: translations.overview.ggr,
+      icon: DollarSign,
+      color: 'text-orange-400',
+    },
   ];
   return (
     <motion.div
@@ -59,7 +65,7 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
           </CardTitle>
         </CardHeader>
         <CardContent className="relative z-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
             {metricConfig.map((config, index) => {
               const Icon = config.icon;
               const value = behaviorMetrics[config.key];
@@ -77,7 +83,7 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
                     <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${config.color} flex-shrink-0`} />
                   </div>
                   <p className="text-lg sm:text-xl font-heading font-bold text-foreground-primary break-words overflow-wrap-anywhere">
-                    {config.key === 'depositAmountPerUser'
+                    {config.key === 'depositAmountPerUser' || config.key === 'ggr'
                       ? `$${formatCurrency(value)}`
                       : formatNumber(value)}
                   </p>

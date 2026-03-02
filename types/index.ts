@@ -99,6 +99,7 @@ export interface BehaviorResultMetrics {
   numberOfReactivatedDormantCustomers: number;
   numberOfRetentionCustomers: number;
   depositAmountPerUser: number; // Deposit amount of the member
+  ggr: number; // GGR amount of the member
   days_4_7?: number;
   days_8_11?: number;
   days_12_15?: number;

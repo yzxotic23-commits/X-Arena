@@ -422,9 +422,13 @@ export function ReportsPage() {
       hash = ((hash << 5) - hash) + username.charCodeAt(i);
       hash = hash & hash;
     }
+    const deposits = 150000 + Math.abs(hash % 100000) + (index * 5000);
+    // GGR is typically a percentage of deposits (roughly 5-10%)
+    const ggr = deposits * (0.05 + (Math.abs(hash % 5) / 100));
     return {
       score,
-      deposits: 150000 + Math.abs(hash % 100000) + (index * 5000),
+      deposits,
+      ggr,
       retention: 40 + Math.abs(hash % 30) + (index * 3),
       dormant: 5 + Math.abs(hash % 15),
       referrals: Math.abs(hash % 8),
@@ -1904,6 +1908,9 @@ export function ReportsPage() {
                         Deposits
                       </th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                        GGR
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
                         Retention
                       </th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
@@ -1932,7 +1939,7 @@ export function ReportsPage() {
                   <tbody>
                     {squadAMembers.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="py-8 text-center text-muted">
+                        <td colSpan={12} className="py-8 text-center text-muted">
                           {translations.common.loading}
                         </td>
                       </tr>
@@ -1941,7 +1948,7 @@ export function ReportsPage() {
                         <React.Fragment key={brandGroup.brand}>
                           {/* Brand Header */}
                           <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
-                            <td colSpan={11} className="py-2 px-4">
+                            <td colSpan={12} className="py-2 px-4">
                               <div className="flex items-center justify-center gap-2">
                                 <Users className="w-3.5 h-3.5 text-primary" />
                                 <span className="text-sm font-bold text-gray-900 dark:text-white">{brandGroup.brand}</span>
@@ -1962,6 +1969,7 @@ export function ReportsPage() {
                                   <span className="font-bold text-primary">{formatNumber(scoreData.score)}</span>
                                 </td>
                                 <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">${formatNumberWithDecimals(scoreData.deposits)}</td>
+                                <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">${formatNumberWithDecimals(scoreData.ggr || 0)}</td>
                                 <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">{scoreData.retention}</td>
                                 <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">{scoreData.dormant}</td>
                                 <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">{scoreData.referrals}</td>
@@ -1998,6 +2006,16 @@ export function ReportsPage() {
                               sum + group.members.reduce((memberSum, member) => {
                                 const scoreData = group.memberScores?.get(member.username) || getDummyData(member.username, group.brand, 0);
                                 return memberSum + (scoreData?.deposits || 0);
+                              }, 0), 0
+                            )
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm font-bold text-gray-900 dark:text-white border-r border-red-300 dark:border-red-700">
+                          ${formatNumberWithDecimals(
+                            squadAMembers.reduce((sum, group) => 
+                              sum + group.members.reduce((memberSum, member) => {
+                                const scoreData = group.memberScores?.get(member.username) || getDummyData(member.username, group.brand, 0);
+                                return memberSum + (scoreData?.ggr || 0);
                               }, 0), 0
                             )
                           )}
@@ -2116,6 +2134,9 @@ export function ReportsPage() {
                         Deposits
                       </th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                        GGR
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
                         Retention
                       </th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
@@ -2144,7 +2165,7 @@ export function ReportsPage() {
                   <tbody>
                     {squadBMembers.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="py-8 text-center text-muted">
+                        <td colSpan={12} className="py-8 text-center text-muted">
                           {translations.common.loading}
                         </td>
                       </tr>
@@ -2153,7 +2174,7 @@ export function ReportsPage() {
                         <React.Fragment key={brandGroup.brand}>
                           {/* Brand Header */}
                           <tr className="bg-gray-100 dark:bg-gray-800/50 border-b border-gray-300 dark:border-gray-700">
-                            <td colSpan={11} className="py-2 px-4">
+                            <td colSpan={12} className="py-2 px-4">
                               <div className="flex items-center justify-center gap-2">
                                 <Users className="w-3.5 h-3.5 text-blue-400" />
                                 <span className="text-sm font-bold text-gray-900 dark:text-white">{brandGroup.brand}</span>
@@ -2174,6 +2195,7 @@ export function ReportsPage() {
                                   <span className="font-bold text-blue-400">{formatNumber(scoreData.score)}</span>
                                 </td>
                                 <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">${formatNumberWithDecimals(scoreData.deposits)}</td>
+                                <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">${formatNumberWithDecimals(scoreData.ggr || 0)}</td>
                                 <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">{scoreData.retention}</td>
                                 <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">{scoreData.dormant}</td>
                                 <td className="py-3 px-4 text-right text-sm text-gray-900 dark:text-white border-r border-gray-200 dark:border-gray-700">{scoreData.referrals}</td>
@@ -2210,6 +2232,16 @@ export function ReportsPage() {
                               sum + group.members.reduce((memberSum, member) => {
                                 const scoreData = group.memberScores?.get(member.username) || getDummyData(member.username, group.brand, 0);
                                 return memberSum + (scoreData?.deposits || 0);
+                              }, 0), 0
+                            )
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm font-bold text-gray-900 dark:text-white border-r border-blue-300 dark:border-blue-700">
+                          ${formatNumberWithDecimals(
+                            squadBMembers.reduce((sum, group) => 
+                              sum + group.members.reduce((memberSum, member) => {
+                                const scoreData = group.memberScores?.get(member.username) || getDummyData(member.username, group.brand, 0);
+                                return memberSum + (scoreData?.ggr || 0);
                               }, 0), 0
                             )
                           )}
