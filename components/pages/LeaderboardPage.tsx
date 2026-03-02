@@ -660,6 +660,7 @@ export function LeaderboardPage() {
           brandScoresMap.set(brand, {
             score: existing.score + scoreData.score,
             deposits: existing.deposits + scoreData.deposits,
+            ggr: existing.ggr + scoreData.ggr,
             retention: existing.retention + scoreData.retention,
             dormant: existing.dormant + scoreData.dormant,
             referrals: existing.referrals + scoreData.referrals,
