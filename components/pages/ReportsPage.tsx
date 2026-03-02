@@ -334,6 +334,7 @@ export function ReportsPage() {
       return {
         score: 0,
         deposits: 0,
+        ggr: 0,
         retention: 0,
         dormant: 0,
         referrals: 0,
