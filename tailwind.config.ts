@@ -43,6 +43,10 @@ const config: Config = {
       fontFamily: {
         heading: ["Poppins", "sans-serif"],
         body: ["Poppins", "sans-serif"],
+        manrope: ["Manrope", "sans-serif"],
+        nexokora: ["'Nexokora Techno'", "Orbitron", "sans-serif"],
+        inter: ["Inter", "sans-serif"],
+        nohemi: ["Nohemi", "sans-serif"],
       },
       boxShadow: {
         "glow-red": "0 0 12px rgba(220, 38, 38, 0.25), 0 0 24px rgba(220, 38, 38, 0.15)",

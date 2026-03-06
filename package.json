@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@splinetool/react-spline": "^4.1.0",
     "@supabase/supabase-js": "^2.89.0",
     "@tanstack/react-query": "^5.51.1",
     "@types/node": "^20.14.12",

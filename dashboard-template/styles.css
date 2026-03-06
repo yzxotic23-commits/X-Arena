@@ -1,0 +1,44 @@
+.root { box-sizing: border-box; }
+* { box-sizing: inherit; }
+body { margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#0b1224; color:#e2e8f0; }
+.app { min-height:100vh; display:flex; flex-direction:column; }
+.topbar { height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid rgba(255,255,255,0.03); background:linear-gradient(90deg, rgba(14,18,30,0.6), rgba(7,9,16,0.6)); }
+.brand { font-weight:700; font-size:16px; color:#fff; }
+.topbar-right { display:flex; align-items:center; gap:12px; color:#9aa4bf; }
+.icon-btn { background:transparent;border:none;color:inherit;cursor:pointer;padding:6px;border-radius:8px; }
+.container { width:100%; max-width:1200px; margin:20px auto; padding:0 16px; }
+.kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-bottom:18px; }
+.kpi { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03); display:flex; gap:12px; align-items:center; }
+.kpi .icon { width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#5b21b6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700; }
+.kpi .value { font-size:22px;font-weight:700; }
+.card { background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.03); margin-bottom:16px; }
+.card h2 { margin:0 0 8px 0; font-size:16px; color:#f8fafc; }
+.form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; align-items:end; }
+.form-grid label { display:flex; flex-direction:column; gap:6px; font-size:13px; color:#9aa4bf; }
+.form-grid input, .form-grid select { padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:inherit; }
+.select-with-btn { display:flex; gap:8px; align-items:center; }
+.actions { grid-column: 1 / -1; display:flex; justify-content:flex-end; }
+.primary{ background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; padding:10px 16px; border:none; border-radius:8px; cursor:pointer; }
+.secondary{ background:transparent;color:#9aa4bf;border:1px solid rgba(255,255,255,0.04); padding:8px 12px;border-radius:8px; cursor:pointer; }
+.table-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.table-controls input { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:rgba(255,255,255,0.02); color:inherit; }
+.table-wrap { overflow:auto; border-radius:12px; border:1px solid rgba(255,255,255,0.03); }
+.data-table { width:100%; border-collapse:collapse; min-width:900px; }
+.data-table th, .data-table td { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.03); text-align:left; font-size:13px; color:#cfe0ff; }
+.data-table th { background:rgba(255,255,255,0.01); position:sticky; top:0; z-index:3; }
+.filterable { position:relative; cursor:pointer; user-select:none; }
+.filterable .chev { margin-left:8px; color:#9aa4bf; font-size:12px; }
+.filter-dropdown { position:absolute; display:none; background:#0b1224; border:1px solid rgba(255,255,255,0.04); padding:8px; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.6); }
+.filter-dropdown.visible { display:block; }
+.filter-dropdown button { display:block; width:100%; text-align:left; padding:8px 10px; border:none; background:transparent; color:inherit; cursor:pointer; border-radius:6px; }
+.filter-dropdown button:hover { background:rgba(255,255,255,0.02); color:#fff; }
+.modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); z-index:10000; }
+.modal.hidden { display:none; }
+.modal-content { background:#071025; padding:16px; border-radius:12px; width:480px; max-width:95%; }
+.handlers-list { list-style:none; padding:0; margin:12px 0 0 0; max-height:260px; overflow:auto; display:flex; flex-direction:column; gap:8px; }
+.handlers-list li { display:flex; align-items:center; justify-content:space-between; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02); }
+.hidden{ display:none; }
+.action-buttons { display:flex; gap:8px; }
+.action-btn { background:transparent; border:1px solid rgba(255,255,255,0.05); color:inherit; padding:6px; border-radius:6px; cursor:pointer; }
+.no-data { text-align:center; padding:40px 20px; color:#9aa4bf; }
+

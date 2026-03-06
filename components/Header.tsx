@@ -246,7 +246,7 @@ export function Header({
         <div className="w-full flex flex-col md:flex-row items-start md:items-center gap-4">
           {/* Greeting Message - Left side */}
           {showGreeting && (
-            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground-primary flex-1">
+            <h2 className="text-[1.625rem] sm:text-[2rem] font-nohemi font-extrabold text-foreground-primary flex-1">
               {getGreeting()}, <span className="text-[#E60012] dark:text-primary">{displayName}</span>!
             </h2>
           )}

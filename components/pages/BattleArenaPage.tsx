@@ -575,7 +575,7 @@ export function BattleArenaPage() {
 
   if (loading) {
     return (
-      <div className="battle-arena-embed">
+      <div className="battle-arena-embed min-h-[70vh] flex items-center justify-center">
         <Loading text="Loading battle arena..." variant="gaming" />
       </div>
     );

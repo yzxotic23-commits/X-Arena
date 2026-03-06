@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, User, Crown, Medal, X, TrendingUp, TrendingDown, DollarSign, RefreshCw, UserPlus, Repeat, Users, Award, Eye, Pencil, Trash2, UserCircle2, ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
+import { Trophy, User, Crown, Medal, X, TrendingUp, TrendingDown, DollarSign, RefreshCw, UserPlus, Repeat, Users, Award, Eye, Pencil, Trash2, UserCircle2, ArrowUpRight, ArrowDownRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FilterButtons } from '@/components/FilterButtons';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,7 @@ interface PodiumUser {
   avatar?: string;
   points: number;
   prize: number;
+  categoryTops?: string[];
 }
 
 // Avatars are now fetched from users_management table (avatar_url column) for all users
@@ -91,6 +92,8 @@ export function LeaderboardPage() {
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showCycleDropdown, setShowCycleDropdown] = useState(false);
   const [showSquadDropdown, setShowSquadDropdown] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const carouselCardDragRef = useRef(false);
   const monthDropdownRef = useRef<HTMLDivElement>(null);
   const cycleDropdownRef = useRef<HTMLDivElement>(null);
   const squadDropdownRef = useRef<HTMLDivElement>(null);
@@ -184,7 +187,7 @@ export function LeaderboardPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showMonthDropdown, showCycleDropdown, showSquadDropdown]);
-  
+
   // Fetch brand mapping to determine squad from brand
   const fetchBrandMapping = useCallback(async () => {
     try {
@@ -765,6 +768,114 @@ export function LeaderboardPage() {
     });
   };
 
+  // Carousel: Squad → Brand = 3 kartu, Squad → Personal = 6 kartu
+  const CAROUSEL_SIZE_BRAND = 3;
+  const CAROUSEL_SIZE_PERSONAL = 6;
+
+  const getCarouselUsers = (): PodiumUser[] => {
+    if (memberScores.size === 0 || loadingScores || loadingSquadMappings) {
+      return [];
+    }
+
+    if (activeViewFilter === 'Squad → Brand') {
+      const brandScores = getBrandScores();
+      const brandsWithScores = Array.from(brandScores.entries())
+        .map(([brand, scoreData]) => ({ brand, score: scoreData.score, scoreData }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, CAROUSEL_SIZE_BRAND);
+
+      const prizes = [100000, 50000, 20000];
+      return brandsWithScores.map((item, index) => {
+        const scoreData = item.scoreData;
+        const categoryTops: string[] = [];
+        const depositScore = scoreData.deposits * (targetPersonal?.deposit_amount || 0.001);
+        const retentionScore = scoreData.retention * (targetPersonal?.retention || 5);
+        const reactivationScore = scoreData.dormant * (targetPersonal?.reactivation || 5);
+        const recommendScore = scoreData.referrals * (targetPersonal?.recommend || 5);
+        const daysScore = (scoreData.days_4_7 + scoreData.days_8_11 + scoreData.days_12_15 +
+          (scoreData.days_15_17 ?? 0) + scoreData.days_16_19 + scoreData.days_20_plus) * (targetPersonal?.days_4_7 || 5);
+        const maxScore = Math.max(depositScore, retentionScore, reactivationScore, recommendScore, daysScore);
+        if (depositScore === maxScore && depositScore > 0) categoryTops.push('Deposit');
+        if (retentionScore === maxScore && retentionScore > 0) categoryTops.push('Retention');
+        if (reactivationScore === maxScore && reactivationScore > 0) categoryTops.push('Activation');
+        if (recommendScore === maxScore && recommendScore > 0) categoryTops.push('Referral');
+        if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
+        return {
+          rank: index + 1,
+          name: item.brand,
+          points: item.score,
+          prize: prizes[index] ?? 0,
+          avatar: undefined,
+          categoryTops,
+        };
+      });
+    }
+
+    const membersWithScores = getFilteredSquadMappings()
+      .filter(m => m.status === 'active')
+      .map(mapping => {
+        const scoreData = memberScores.get(mapping.username);
+        return {
+          mapping,
+          score: scoreData?.score || 0,
+          scoreData: scoreData || {
+            score: 0,
+            deposits: 0,
+            retention: 0,
+            dormant: 0,
+            referrals: 0,
+            days_4_7: 0,
+            days_8_11: 0,
+            days_12_15: 0,
+            days_15_17: 0,
+            days_16_19: 0,
+            days_20_plus: 0,
+          },
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, CAROUSEL_SIZE_PERSONAL);
+
+    const prizes = [100000, 50000, 20000, 0, 0, 0];
+    return membersWithScores.map((member, index) => {
+      const rank = index + 1;
+      const fullName = member.mapping.fullName || member.mapping.username;
+      const profileAvatar = userAvatars.get(fullName) || userAvatars.get(member.mapping.username);
+      const scoreData = member.scoreData;
+      const categoryTops: string[] = [];
+      const depositScore = scoreData.deposits * (targetPersonal?.deposit_amount || 0.001);
+      const retentionScore = scoreData.retention * (targetPersonal?.retention || 5);
+      const reactivationScore = scoreData.dormant * (targetPersonal?.reactivation || 5);
+      const recommendScore = scoreData.referrals * (targetPersonal?.recommend || 5);
+      const daysScore = (scoreData.days_4_7 + scoreData.days_8_11 + scoreData.days_12_15 +
+        scoreData.days_16_19 + scoreData.days_20_plus) * (targetPersonal?.days_4_7 || 5);
+      const maxScore = Math.max(depositScore, retentionScore, reactivationScore, recommendScore, daysScore);
+      if (depositScore === maxScore && depositScore > 0) categoryTops.push('Deposit');
+      if (retentionScore === maxScore && retentionScore > 0) categoryTops.push('Retention');
+      if (reactivationScore === maxScore && reactivationScore > 0) categoryTops.push('Activation');
+      if (recommendScore === maxScore && recommendScore > 0) categoryTops.push('Referral');
+      if (daysScore === maxScore && daysScore > 0 && categoryTops.length === 0) categoryTops.push('Days');
+      return {
+        rank,
+        name: fullName,
+        points: member.score,
+        prize: prizes[index] ?? 0,
+        avatar: profileAvatar || undefined,
+        categoryTops,
+      };
+    });
+  };
+
+  const getCarouselSize = () => activeViewFilter === 'Squad → Brand' ? CAROUSEL_SIZE_BRAND : CAROUSEL_SIZE_PERSONAL;
+
+  // Clamp carousel index when top-6 list length changes
+  useEffect(() => {
+    const len = getCarouselUsers().length;
+    if (len > 0 && carouselIndex >= len) {
+      setCarouselIndex(Math.max(0, len - 1));
+    }
+  }, [carouselIndex, loadingScores, loadingSquadMappings, activeViewFilter]);
+
   // Get leaderboard entries based on real scores
   const getLeaderboardEntries = (): LeaderboardEntry[] => {
     if (memberScores.size === 0 || loadingScores || loadingSquadMappings) {
@@ -782,9 +893,9 @@ export function LeaderboardPage() {
         }))
         .sort((a, b) => b.score - a.score);
 
-      // Skip first 3 (they're in podium), start from rank 4
-      return allBrandsWithScores.slice(3).map((item, index) => {
-        const rank = index + 4;
+      // Skip top 3 (di carousel Brand), tabel dari rank 4
+      return allBrandsWithScores.slice(CAROUSEL_SIZE_BRAND).map((item, index) => {
+        const rank = index + CAROUSEL_SIZE_BRAND + 1;
         const scoreData = item.scoreData;
 
         // Determine category tops
@@ -810,7 +921,9 @@ export function LeaderboardPage() {
           score: item.score,
           categoryTops: categoryTops,
           isCurrentUser: false,
-          avatar: undefined, // No hardcoded avatars for brands - use default User icon
+          avatar: undefined,
+          squad: undefined,
+          username: undefined,
           breakdown: {
             deposit: scoreData.deposits,
             retention: scoreData.retention,
@@ -851,9 +964,9 @@ export function LeaderboardPage() {
       })
       .sort((a, b) => b.score - a.score);
 
-    // Skip first 3 (they're in podium), start from rank 4
-    return allMembersWithScores.slice(3).map((member, index) => {
-      const rank = index + 4; // Start from rank 4
+    // Skip top 6 (di carousel Personal), tabel dari rank 7
+    return allMembersWithScores.slice(CAROUSEL_SIZE_PERSONAL).map((member, index) => {
+      const rank = index + CAROUSEL_SIZE_PERSONAL + 1;
       const scoreData = member.scoreData;
       const fullName = member.mapping.fullName || member.mapping.username;
       // Try full_name first, then username for avatar lookup
@@ -880,13 +993,16 @@ export function LeaderboardPage() {
       const isCurrentUserEntry = (userInfo?.fullName === fullName) || (userInfo?.username === member.mapping.username) || 
                                   (rankFullName === fullName) || (rankUsername === member.mapping.username);
 
+      const squadName = brandToSquadMap.get(member.mapping.brand);
       return {
         rank,
-        name: fullName, // Use full_name for display
+        name: fullName,
         score: member.score,
         categoryTops: categoryTops,
         isCurrentUser: isCurrentUserEntry,
-        avatar: profileAvatar || undefined, // Only use profile avatar, no default fallback
+        avatar: profileAvatar || undefined,
+        username: member.mapping.username,
+        squad: squadName ? (squadName === 'Squad A' ? 'Squad A' : 'Squad B') : undefined,
         breakdown: {
           deposit: scoreData.deposits,
           retention: scoreData.retention,
@@ -1293,17 +1409,17 @@ export function LeaderboardPage() {
     }
   };
 
-  // Show loading state while fetching data
+  // Show loading state while fetching data (sama seperti Battle Arena: tengah layout)
   if (loadingScores || loadingSquadMappings || memberScores.size === 0) {
     return (
-      <div className="w-full flex items-center justify-center min-h-[60vh]">
+      <div className="w-full min-h-[70vh] flex items-center justify-center">
         <Loading size="lg" text={`Loading ${translations.nav.leaderboard}...`} variant="gaming" />
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-6 select-none" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
+    <div className="w-full space-y-6 select-none overflow-x-visible" style={{ maxWidth: '100%' }}>
       {/* Month and Cycle Slicers - Top Right (Sejajar) */}
       <div className="flex items-center justify-between gap-4 mb-6 select-none">
         {/* Filter Buttons - Left */}
@@ -1459,148 +1575,154 @@ export function LeaderboardPage() {
         </div>
       </div>
 
-      {/* Top 3 Podium */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-end mt-16 md:mt-24 lg:mt-32 select-none">
-        {getPodiumUsers().map((user, index) => {
-          const podiumConfig = {
-            1: {
-              height: 'h-64 md:h-80',
-              topColor: 'linear-gradient(135deg, #FFD700 0%, #FFE44D 50%, #FFD700 100%)',
-              bodyColor: 'linear-gradient(180deg, #FFD700 0%, #FFC125 30%, #FFB347 60%, #FFA500 100%)',
-              shadow: '0 20px 60px rgba(255, 215, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.2)',
-              glow: 'rgba(255, 215, 0, 0.25)',
-            },
-            2: {
-              height: 'h-48 md:h-60',
-              topColor: 'linear-gradient(135deg, #E8E8E8 0%, #F5F5F5 50%, #E8E8E8 100%)',
-              bodyColor: 'linear-gradient(180deg, #E8E8E8 0%, #D3D3D3 30%, #C0C0C0 60%, #B0B0B0 100%)',
-              shadow: '0 15px 45px rgba(192, 192, 192, 0.25), 0 8px 20px rgba(0, 0, 0, 0.15)',
-              glow: 'rgba(192, 192, 192, 0.15)',
-            },
-            3: {
-              height: 'h-40 md:h-52',
-              topColor: 'linear-gradient(135deg, #E6A857 0%, #F0C090 50%, #E6A857 100%)',
-              bodyColor: 'linear-gradient(180deg, #E6A857 0%, #D4A574 30%, #CD7F32 60%, #C19A6B 100%)',
-              shadow: '0 12px 35px rgba(205, 127, 50, 0.25), 0 6px 15px rgba(0, 0, 0, 0.15)',
-              glow: 'rgba(205, 127, 50, 0.15)',
-            },
-          };
-
-          const config = podiumConfig[user.rank as keyof typeof podiumConfig];
-
-          return (
-              <motion.div
-              key={user.rank}
-              initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              onClick={() => handlePodiumClick(user)}
-              className={`${getPodiumOrder(user.rank)} flex flex-col items-center w-full cursor-pointer hover:opacity-90 transition-opacity`}
-            >
-              {/* Avatar */}
-              <div className="relative mb-4 z-10">
-                <div className={`${user.rank === 1 ? 'w-28 h-28 md:w-32 md:h-32 lg:w-36 lg:h-36' : 'w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28'} rounded-lg overflow-hidden relative bg-transparent ${user.rank === 1 ? 'border-2 border-yellow-400' : user.rank === 2 ? 'border border-gray-300' : 'border border-amber-600'}`}>
-                  {user.avatar && (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) ? (
-                    <>
-                      <Image 
-                        src={user.avatar} 
-                        alt={user.name}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                        onError={(e) => {
-                          // Fallback to icon User on error
-                          e.currentTarget.style.display = 'none';
-                          const container = e.currentTarget.parentElement;
-                          if (container) {
-                            const fallback = container.querySelector('.avatar-fallback') as HTMLElement;
-                            if (fallback) fallback.style.display = 'flex';
-                          }
-                        }}
-                      />
-                      <div className="w-full h-full bg-transparent flex items-center justify-center absolute inset-0 avatar-fallback hidden">
-                        <User className={`${user.rank === 1 ? 'w-14 h-14 md:w-16 md:h-16 lg:w-18 lg:h-18' : 'w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14'} text-gray-400`} />
-                      </div>
-                    </>
-                  ) : (
-                    // No avatar - show User icon (default for all users including brands)
-                    <div className="w-full h-full bg-transparent flex items-center justify-center">
-                      <User className={`${user.rank === 1 ? 'w-14 h-14 md:w-16 md:h-16 lg:w-18 lg:h-18' : 'w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14'} text-gray-400`} />
+      {/* Carousel Juara 1–6 (3D rotate) */}
+      {(() => {
+        const carouselUsers = getCarouselUsers();
+        const total = carouselUsers.length;
+        const angle = total > 0 ? 360 / total : 60;
+        const translateZ = 260;
+        const safeIndex = total > 0 ? Math.min(carouselIndex, total - 1) : 0;
+        return (
+      <div className="mt-16 md:mt-24 lg:mt-32 select-none overflow-visible relative px-4 md:px-6">
+        {/* Chevron Prev - kiri (polos, dekat card) */}
+        <button
+          type="button"
+          onClick={() => total > 0 && setCarouselIndex((i) => (i - 1 + total) % total)}
+          className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center text-foreground-primary hover:text-primary opacity-90 hover:opacity-100 transition-colors"
+          aria-label="Previous"
+        >
+          <ChevronLeft className="w-6 h-6 md:w-7 md:h-7" />
+        </button>
+        {/* Chevron Next - kanan (polos, dekat card) */}
+        <button
+          type="button"
+          onClick={() => total > 0 && setCarouselIndex((i) => (i + 1) % total)}
+          className="absolute right-6 md:right-10 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center text-foreground-primary hover:text-primary opacity-90 hover:opacity-100 transition-colors"
+          aria-label="Next"
+        >
+          <ChevronRight className="w-6 h-6 md:w-7 md:h-7" />
+        </button>
+        <div className="carousel-scene" style={{ perspective: '1200px' }}>
+          {total === 0 ? (
+            <div className="h-[380px] flex items-center justify-center text-muted">Loading...</div>
+          ) : (
+          <div
+            className="carousel-track"
+            style={{
+              transform: `translate(-50%, -50%) rotateY(${-safeIndex * angle}deg)`,
+              transition: 'transform 1s cubic-bezier(0.25, 0.8, 0.25, 1)',
+            }}
+          >
+            {carouselUsers.map((user, index) => {
+              const isFront = index === safeIndex;
+              return (
+              <div
+                key={`${user.rank}-${user.name}`}
+                className="carousel-card-wrapper"
+                style={{
+                  transform: `rotateY(${index * angle}deg) translateZ(${translateZ}px) scale(${isFront ? 1 : 0.88})`,
+                  transition: 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                }}
+              >
+                <motion.div
+                  className={`w-[220px] md:w-[260px] min-h-[300px] rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-3 py-6 px-4 cursor-grab active:cursor-grabbing transition-all duration-300 border-2 touch-none ${
+                    user.rank === 1
+                      ? 'carousel-card-gold'
+                      : user.rank === 2
+                        ? 'carousel-card-silver'
+                        : user.rank === 3
+                          ? 'carousel-card-bronze'
+                          : isFront
+                            ? 'bg-gray-100/95 dark:bg-[#0a0a0a]'
+                            : 'bg-gray-200/80 dark:bg-[#0a0a0a]/70'
+                  } ${isFront ? 'shadow-xl hover:shadow-2xl' : 'shadow-md'} ${user.rank >= 4 ? 'border-primary/50 dark:border-primary/50' : ''}`}
+                  style={{
+                    opacity: isFront ? 1 : 0.78,
+                    filter: isFront ? 'none' : 'grayscale(1) blur(2px)',
+                    ...(user.rank === 1 && {
+                      borderColor: 'rgb(234, 179, 8)',
+                      boxShadow: isFront ? '0 0 20px rgba(234, 179, 8, 0.5), 0 0 40px rgba(234, 179, 8, 0.25)' : undefined,
+                    }),
+                    ...(user.rank === 2 && {
+                      borderColor: 'rgb(156, 163, 175)',
+                      boxShadow: isFront ? '0 0 20px rgba(148, 163, 184, 0.55), 0 0 40px rgba(148, 163, 184, 0.25)' : undefined,
+                    }),
+                    ...(user.rank === 3 && {
+                      borderColor: 'rgb(217, 119, 6)',
+                      boxShadow: isFront ? '0 0 20px rgba(217, 119, 6, 0.5), 0 0 40px rgba(217, 119, 6, 0.25)' : undefined,
+                    }),
+                    ...(user.rank >= 4 && {
+                      boxShadow: isFront ? '0 0 18px rgba(220, 38, 38, 0.4), 0 0 36px rgba(220, 38, 38, 0.2)' : undefined,
+                    }),
+                  }}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragStart={() => { carouselCardDragRef.current = true; }}
+                  onDragEnd={(_, info) => {
+                    const threshold = 50;
+                    if (info.offset.x < -threshold && total > 0) {
+                      setCarouselIndex((i) => (i + 1) % total);
+                    } else if (info.offset.x > threshold && total > 0) {
+                      setCarouselIndex((i) => (i - 1 + total) % total);
+                    }
+                    setTimeout(() => { carouselCardDragRef.current = false; }, 150);
+                  }}
+                  onClick={() => {
+                    if (carouselCardDragRef.current) return;
+                    handlePodiumClick(user);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handlePodiumClick(user); }}
+                  aria-label={`View ${user.name} details`}
+                >
+                  <div className="flex items-center gap-2">
+                    {user.rank === 1 && <Crown className="w-5 h-5 text-yellow-500" />}
+                    {user.rank === 2 && <Medal className="w-5 h-5 text-gray-400" />}
+                    {user.rank === 3 && <Medal className="w-5 h-5 text-amber-600" />}
+                    {user.rank >= 4 && <Trophy className="w-5 h-5 text-gray-500 dark:text-gray-400" />}
+                    <span className="text-sm font-bold text-muted">#{user.rank}</span>
+                  </div>
+                  <div className="relative rounded-full overflow-hidden w-20 h-20 md:w-24 md:h-24 border-2 border-gray-300 dark:border-primary/40 flex-shrink-0">
+                    {user.avatar && (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) ? (
+                      <>
+                        <Image src={user.avatar} alt={user.name} fill className="object-cover" unoptimized onError={(e) => { e.currentTarget.style.display = 'none'; const c = e.currentTarget.parentElement; const f = c?.querySelector('.avatar-fallback') as HTMLElement; if (f) f.style.display = 'flex'; }} />
+                        <div className="w-full h-full bg-transparent items-center justify-center absolute inset-0 avatar-fallback hidden" aria-hidden><User className="w-8 h-8 text-gray-400" /></div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted"><User className="w-8 h-8 text-muted-foreground" /></div>
+                    )}
+                  </div>
+                  <h3 className="text-base font-heading font-bold text-foreground-primary text-center leading-tight">
+                    {user.name}
+                  </h3>
+                  {((userInfo?.fullName === user.name) || (userInfo?.username === user.name) || (rankFullName === user.name) || (rankUsername === user.name)) && (
+                    <Badge variant="default" className="text-xs bg-primary text-white font-semibold px-2 py-0.5">You</Badge>
+                  )}
+                  <p className="text-sm font-heading font-bold text-foreground-primary">{formatNumber(user.points)} pts</p>
+                  {user.categoryTops && user.categoryTops.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 justify-center">
+                      {user.categoryTops.map((cat) => (
+                        <span
+                          key={cat}
+                          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600"
+                        >
+                          {cat}
+                        </span>
+                      ))}
                     </div>
                   )}
-                </div>
+                </motion.div>
               </div>
-
-              {/* Name */}
-              <div className="flex items-center justify-center gap-2 mb-2 z-10">
-                <h3 className="text-base md:text-lg font-heading font-bold text-foreground-primary text-center">
-                  {user.name}
-                </h3>
-                {((userInfo?.fullName === user.name) || (userInfo?.username === user.name) || (rankFullName === user.name) || (rankUsername === user.name)) && (
-                  <Badge variant="default" className="text-xs bg-primary text-white font-semibold px-2 py-0.5">
-                    You
-                  </Badge>
-                )}
-              </div>
-
-              {/* Score */}
-              <div className="flex items-center justify-center mb-4 z-10">
-                <span className="text-sm md:text-base font-heading font-bold text-foreground-primary">
-                  {formatNumber(user.points)}
-                </span>
-              </div>
-
-              {/* Podium Design - Tapered Shape */}
-              <div className="relative w-full flex flex-col items-center">
-                {/* Top Platform - Wider */}
-                <div 
-                  className="w-11/12 rounded-t-lg"
-                  style={{
-                    height: user.rank === 1 ? '24px' : user.rank === 2 ? '20px' : '16px',
-                    backgroundColor: user.rank === 1 ? '#FFD700' : user.rank === 2 ? '#E8E8E8' : '#E6A857',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-                  }}
-                />
-                
-                {/* Middle Section - Medium */}
-                <div 
-                  className="w-10/12"
-                  style={{
-                    height: user.rank === 1 ? '32px' : user.rank === 2 ? '28px' : '24px',
-                    backgroundColor: user.rank === 1 ? '#FFC125' : user.rank === 2 ? '#D3D3D3' : '#D4A574',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
-                  }}
-                />
-                
-                {/* Main Body - Taller with Rank Number */}
-                <div 
-                  className={`relative w-full ${config.height} rounded-b-lg flex items-center justify-center`}
-                  style={{
-                    backgroundColor: user.rank === 1 ? '#FFA500' : user.rank === 2 ? '#C0C0C0' : '#CD7F32',
-                    boxShadow: user.rank === 1 
-                      ? '0 10px 30px rgba(255, 215, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2)' 
-                      : user.rank === 2 
-                      ? '0 8px 20px rgba(192, 192, 192, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.2)' 
-                      : '0 8px 20px rgba(205, 127, 50, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.2)',
-                  }}
-                >
-                  {/* Rank Number */}
-                  <div 
-                    className="text-6xl md:text-7xl lg:text-8xl font-heading font-black select-none"
-                    style={{
-                      color: '#ffffff',
-                      textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
-                      lineHeight: '1',
-                    }}
-                  >
-                    {user.rank}
-                  </div>
-                </div>
-              </div>
-              </motion.div>
-          );
-        })}
+            );
+            })}
+          </div>
+          )}
+        </div>
       </div>
+        );
+      })()}
 
       {/* Ranking & Incentive Module & Top Performers by Category - Stacked */}
       <div className="select-none pt-8 md:pt-12 lg:pt-16">
@@ -1613,122 +1735,105 @@ export function LeaderboardPage() {
                 {translations.leaderboard.rankingIncentiveModule}
               </h3>
             </div>
-            <Card className="bg-card-glass h-full">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-card-border">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted">{translations.leaderboardTable.rank}</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
-                          {translations.leaderboardTable.memberBrand}
-                        </th>
-                        <th className="text-right py-3 px-4 text-sm font-semibold text-muted">{translations.leaderboardTable.score}</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted">
-                          Category Tops
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getLeaderboardEntries().map((entry, index) => (
-                        <motion.tr
-                          key={entry.rank}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className={`border-b border-card-border transition-colors cursor-pointer select-none ${
-                            entry.isCurrentUser 
-                              ? 'bg-primary/15 dark:bg-primary/20 border-l-4 border-l-primary shadow-md' 
-                              : 'hover:bg-primary/5'
-                          }`}
+            <div className="w-full overflow-x-auto">
+              {/* Header - lebar kolom ikut sample: 72px, 1fr, 130px, 110px, 130px */}
+              <div className="grid grid-cols-[72px_1fr_130px_110px_130px] gap-0 px-4 py-3 text-sm font-semibold text-muted border-b border-border mb-3 items-center">
+                <div className="text-left">{translations.leaderboardTable.rank}</div>
+                <div className="text-left">{translations.leaderboardTable.memberBrand}</div>
+                <div className="text-right">Squad</div>
+                <div className="w-full text-right">{translations.leaderboardTable.score}</div>
+                <div className="w-full text-right">Category Tops</div>
+              </div>
+              {/* Block rows */}
+              <div className="space-y-2">
+                    {getLeaderboardEntries().map((entry, index) => (
+                      <motion.div
+                        key={entry.rank}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25, delay: index * 0.03 }}
+                        className={`grid grid-cols-[72px_1fr_130px_110px_130px] gap-0 items-center rounded-xl py-3 px-4 transition-colors cursor-pointer select-none
+                          bg-gray-100/80 dark:bg-[#0a0a0a] border border-transparent dark:border-primary/20
+                          hover:bg-gray-200/80 dark:hover:bg-[#111111]
+                          ${entry.isCurrentUser ? 'dark:bg-[#111111] dark:ring-1 dark:ring-primary/30' : ''}`}
+                        onClick={() => handleMemberClick(entry)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {getRankIcon(entry.rank)}
+                          <span className={`font-heading font-bold ${entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'}`}>
+                            #{entry.rank}
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMemberClick(entry); }}
+                          className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left min-w-0"
                         >
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
-                              {getRankIcon(entry.rank)}
-                              <span className={`font-heading font-bold ${
-                                entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'
-                              }`}>
-                                #{entry.rank}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <button
-                              onClick={() => handleMemberClick(entry)}
-                              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                            >
-                              {/* Avatar */}
-                              <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-card-inner border border-card-border flex-shrink-0">
-                                {entry.avatar && (entry.avatar.startsWith('http://') || entry.avatar.startsWith('https://')) ? (
-                                  <>
-                                    <Image 
-                                      src={entry.avatar} 
-                                      alt={entry.name}
-                                      fill
-                                      className="object-cover"
-                                      unoptimized
-                                      onError={(e) => {
-                                        // Fallback to icon User on error
-                                        e.currentTarget.style.display = 'none';
-                                        const container = e.currentTarget.parentElement;
-                                        if (container) {
-                                          const fallback = container.querySelector('.entry-avatar-fallback') as HTMLElement;
-                                          if (fallback) fallback.style.display = 'flex';
-                                        }
-                                      }}
-                                    />
-                                    <div className="w-full h-full flex items-center justify-center absolute inset-0 entry-avatar-fallback hidden">
-                                      <User className="w-5 h-5 text-muted" />
-                                    </div>
-                                  </>
-                                ) : (
-                                  // No avatar - show User icon (default for all users including brands)
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <User className="w-5 h-5 text-muted" />
-                                  </div>
-                                )}
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-card-inner border border-card-border flex-shrink-0">
+                            {entry.avatar && (entry.avatar.startsWith('http://') || entry.avatar.startsWith('https://')) ? (
+                              <>
+                                <Image
+                                  src={entry.avatar}
+                                  alt={entry.name}
+                                  fill
+                                  className="object-cover"
+                                  unoptimized
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const container = e.currentTarget.parentElement;
+                                    if (container) {
+                                      const fallback = container.querySelector('.entry-avatar-fallback') as HTMLElement;
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                                <div className="w-full h-full items-center justify-center absolute inset-0 entry-avatar-fallback hidden" aria-hidden>
+                                  <User className="w-5 h-5 text-muted" />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary font-semibold text-sm">
+                                {(entry.name || '?').slice(0, 2).toUpperCase()}
                               </div>
-                              <span
-                                className={`font-semibold ${
-                                  entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'
-                                }`}
-                              >
-                                {entry.name}
-                              </span>
-                              {entry.isCurrentUser && (
-                                <Badge variant="default" className="text-xs bg-primary text-white font-semibold px-2 py-0.5">
-                                  You
-                                </Badge>
-                              )}
-                            </button>
-                          </td>
-                          <td className="py-4 px-4 text-right">
-                            <span className={`font-body font-bold ${
-                              entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'
-                            }`} style={{ fontFamily: 'Poppins, sans-serif' }}>
-                              {formatNumber(entry.score)}
+                            )}
+                          </div>
+                          <div className="min-w-0 flex flex-col">
+                            <span className={`font-semibold truncate ${entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'}`}>
+                              {entry.name}
                             </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex flex-wrap gap-2">
-                              {entry.categoryTops.length > 0 ? (
-                                entry.categoryTops.map((category, idx) => (
-                                  <Badge key={idx} variant={"outline" as const} className="text-xs">
-                                    {category}
-                                  </Badge>
-                                ))
-                              ) : (
-                                <span className="text-muted text-sm">-</span>
-                              )}
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+                            {entry.username && (
+                              <span className="text-xs text-muted truncate">@{entry.username}</span>
+                            )}
+                            {entry.isCurrentUser && (
+                              <span className="text-xs text-primary font-medium">You</span>
+                            )}
+                          </div>
+                        </button>
+                        <div className="w-full min-w-0 text-right text-sm font-medium text-foreground-primary">
+                          {entry.squad ?? '-'}
+                        </div>
+                        <div className="w-full min-w-0 text-right">
+                          <span className={`font-body font-bold ${entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'}`}>
+                            {formatNumber(entry.score)}
+                          </span>
+                        </div>
+                        <div className="w-full min-w-0 flex flex-wrap gap-1.5 justify-end">
+                          {entry.categoryTops.length > 0 ? (
+                            entry.categoryTops.map((category, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600"
+                              >
+                                {category}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-muted text-sm">-</span>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+              </div>
+            </div>
           </div>
 
           {/* Top Performers by Category - Bottom */}
@@ -1746,7 +1851,7 @@ export function LeaderboardPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="bg-card-glass">
+              <Card className="bg-gray-100/80 dark:bg-[#0a0a0a] border border-transparent dark:border dark:border-primary/20 rounded-xl shadow-none">
                 <CardContent className="p-6">
                   <div className="space-y-8">
                     {(['Highest Deposit', 'Highest Retention', 'Most Reactivation', 'Most Referrals', 'Repeat 4 - 7 Days', 'Repeat 8 - 11 Days', 'Repeat 12 - 15 Days', 'Repeat 16 - 19 Days', 'Repeat 20 Days & Above'] as TopPerformer['category'][]).map((category, categoryIndex) => {

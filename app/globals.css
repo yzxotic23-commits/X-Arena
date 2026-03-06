@@ -1,12 +1,53 @@
 /* stylelint-disable */
 /* Tailwind CSS directives - these are valid and required */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800;900&display=swap');
+
+/* Nexokora Techno: WAJIB letakkan file font di public/fonts/ agar dipakai (lihat public/fonts/README.md) */
+@font-face {
+  font-family: 'Nexokora Techno';
+  src: local('Nexokora Techno'), local('NexokoraTechno-Regular'),
+       url('/fonts/NexokoraTechno-Regular.woff2') format('woff2'),
+       url('/fonts/NexokoraTechno-Regular.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Nohemi: letakkan file font di public/fonts/ (lihat public/fonts/README.md) */
+@font-face {
+  font-family: 'Nohemi';
+  src: local('Nohemi'), local('Nohemi-Regular'),
+       url('/fonts/Nohemi-Regular.woff2') format('woff2'),
+       url('/fonts/Nohemi-Regular.woff') format('woff'),
+       url('/fonts/Nohemi-Regular.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Pastikan class font-nexokora pakai Nexokora Techno di seluruh app (sidebar, landing, dll) */
+.font-nexokora {
+  font-family: 'Nexokora Techno', 'Orbitron', sans-serif !important;
+}
+
+.font-nohemi {
+  font-family: 'Nohemi', sans-serif !important;
+}
+
+/* Sidebar pakai Poppins (sama seperti body) */
+.x-arena-sidebar {
+  font-family: 'Poppins', sans-serif !important;
+}
 /* @tailwind directives are valid Tailwind CSS syntax */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* Ukuran default Chrome 100% = tampil seperti 125% */
+  html {
+    zoom: 1.25;
+  }
   :root {
     /* Default dark mode */
     --background: 0 0% 0%;
@@ -286,18 +327,18 @@
     }
   }
   
-  /* Light mode background - custom image with cache busting */
+  /* Light mode background - custom image */
   .light body {
-    background-image: url('/background-layout/light.jpg?v=2.1') !important;
+    background-image: url('/background-layout/light-2.jpg') !important;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
   }
 
-  /* Ensure bg-background class uses custom image in light mode */
+  /* Ensure bg-background class uses custom image in light mode (tanpa blur agar sidebar & konten tetap tampil) */
   .light .bg-background {
-    background-image: url('/background-layout/light.jpg?v=2.1') !important;
+    background-image: url('/background-layout/light-2.jpg') !important;
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
@@ -306,7 +347,7 @@
   
   /* Ensure bg-background class uses custom image in dark mode */
   .dark .bg-background {
-    background-image: url('/background-layout/dark.jpg') !important;
+    background-image: url('/background-layout/dark-2.jpg') !important;
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
@@ -347,7 +388,7 @@
     text-shadow: none;
     color: #E60012;
   }
-  
+
   .text-glow-blue {
     text-shadow: 
       0 0 3px rgba(59, 130, 246, 0.2),
@@ -6139,4 +6180,291 @@ body.hide-scrollbar::-webkit-scrollbar {
 }
 .light .battle-arena-embed .card-header {
   border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Landing revamp: dark theme + grid background (layout referensi) */
+.landing-revamp {
+  background-color: #000000;
+  position: relative;
+}
+/* Pola grid halus seperti di animasi 3D */
+.landing-revamp::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Pola dot halus (titik-titik) untuk nuansa tech */
+.landing-revamp::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+.landing-revamp > * {
+  position: relative;
+  z-index: 1;
+}
+.landing-revamp-nav {
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(12px);
+}
+.landing-revamp-hero {
+  position: relative;
+  z-index: 1;
+}
+.landing-revamp-section {
+  position: relative;
+  z-index: 1;
+}
+.landing-revamp-btn-doc {
+  background: rgba(0, 0, 0, 0.95);
+}
+
+/* Landing popup: kotak hitam ke abu-abuan (bukan putih) */
+.landing-popup-glass {
+  background: linear-gradient(145deg, #1a1a1e 0%, #121216 100%) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+.landing-popup-label {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+/* Kolom box username & password: hitam ke abu-abuan (bukan putih) */
+.landing-popup-glass input.landing-popup-input,
+.landing-popup-glass .landing-popup-input,
+input.landing-popup-input {
+  background-color: #25252a !important;
+  background: #25252a !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  outline: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.landing-popup-glass input.landing-popup-input::placeholder,
+.landing-popup-glass .landing-popup-input::placeholder,
+input.landing-popup-input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+.landing-popup-glass input.landing-popup-input:focus,
+.landing-popup-glass .landing-popup-input:focus,
+input.landing-popup-input:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+  background-color: #2a2a30 !important;
+  background: #2a2a30 !important;
+}
+/* Force semua input di dalam popup landing jadi hitam abu-abu */
+.landing-popup-glass input[type="text"],
+.landing-popup-glass input[type="password"] {
+  background-color: #25252a !important;
+  background: #25252a !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+}
+
+/* Landing page: font Manrope & Nexokora (tanpa background jpg) */
+.landing-page-light,
+.landing-page-light * {
+  font-family: 'Manrope', sans-serif !important;
+}
+.landing-page-light .font-nexokora {
+  font-family: 'Nexokora Techno', 'Orbitron', sans-serif !important;
+}
+
+/* 3D Carousel - Top 3 Leaderboard (kartu samping tetap terlihat) */
+.carousel-scene {
+  width: 100%;
+  min-height: 380px;
+  position: relative;
+  margin: 0 auto;
+  overflow: visible;
+  padding: 0 4rem;
+}
+@media (max-width: 768px) {
+  .carousel-scene {
+    padding: 0 2rem;
+  }
+}
+.carousel-track {
+  width: 0;
+  height: 0;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform-origin: center center;
+}
+.carousel-card-wrapper {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 260px;
+  margin-left: -130px;
+  margin-top: -150px;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+}
+
+/* Carousel card gradient by rank (juara 1 = gold, 2 = silver, 3 = bronze) */
+.carousel-card-gold {
+  background: linear-gradient(145deg, #fef9c3 0%, #fef08a 40%, #fde047 100%) !important;
+}
+.dark .carousel-card-gold {
+  background: linear-gradient(145deg, #3d2e00 0%, #2d2000 50%, #1f1600 100%) !important;
+}
+.carousel-card-silver {
+  background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 40%, #cbd5e1 100%) !important;
+}
+.dark .carousel-card-silver {
+  background: linear-gradient(145deg, #2d3142 0%, #1e2233 50%, #141824 100%) !important;
+}
+.carousel-card-bronze {
+  background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 40%, #fde68a 100%) !important;
+}
+.dark .carousel-card-bronze {
+  background: linear-gradient(145deg, #3d2610 0%, #2a1a08 50%, #1c1205 100%) !important;
+}
+
+/* Podium 3D Flip Card (hover) - kept for any reuse */
+.podium-flip-card {
+  width: 100%;
+  min-height: 300px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border-radius: 12px;
+}
+.podium-flip-card:hover {
+  transform: rotateY(180deg);
+}
+.podium-flip-card .podium-card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 0.5rem;
+}
+.podium-flip-card .podium-card-back {
+  transform: rotateY(180deg);
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%);
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  color: #fff;
+}
+.dark .podium-flip-card .podium-card-back {
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0.98) 0%, rgba(0, 0, 0, 1) 100%);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+.light .podium-flip-card .podium-card-back {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 1) 100%);
+  border-color: rgba(220, 38, 38, 0.25);
+  color: #0f172a;
+}
+
+/* Spline viewer: muat penuh di dalam container, tidak terpotong */
+.spline-viewer-wrap {
+  position: relative;
+  background: #000000 !important;
+  aspect-ratio: 1482 / 850;
+  min-height: 380px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (min-width: 1024px) {
+  .spline-viewer-wrap {
+    min-height: 520px;
+    max-height: 850px;
+  }
+}
+/* Perbesar viewer (scale 1.1) */
+.spline-scale-wrap {
+  transform-origin: center center;
+  transform: scale(1.1);
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.spline-scale-wrap > div,
+.spline-viewer-wrap .spline-scale-wrap > div {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+.spline-viewer-wrap canvas,
+.spline-scale-wrap canvas,
+#spline {
+  background: transparent !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  visibility: visible !important;
+}
+/* Tutup watermark "Built with Spline" di pojok kanan bawah */
+.spline-viewer-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 140px;
+  height: 44px;
+  background: #000000;
+  z-index: 10;
+  pointer-events: none;
+}
+/* Sembunyikan link/watermark dari Spline viewer jika bisa di-target */
+.spline-viewer-wrap spline-viewer a[href*="spline"],
+.spline-viewer-wrap a[href*="spline.design"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+/* Legacy: spline-viewer web component */
+.spline-viewer-wrap spline-viewer,
+.spline-viewer-wrap .robot-3d {
+  background: transparent !important;
+}
+
+/* Kolom email newsletter: tetap putih di light & dark (override .dark input[type=email]) */
+.landing-page-light .landing-email-wrap {
+  background-color: #ffffff !important;
+}
+.landing-page-light .landing-email-input,
+.dark .landing-page-light input.landing-email-input[type="email"] {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+.dark .landing-page-light input.landing-email-input[type="email"]::placeholder {
+  color: #6b7280 !important;
 }

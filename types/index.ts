@@ -52,6 +52,8 @@ export interface LeaderboardEntry {
   categoryTops: string[];
   isCurrentUser?: boolean;
   avatar?: string;
+  username?: string; // @handle for display
+  squad?: string; // "Squad A" | "Squad B"
   breakdown?: {
     deposit: number;
     retention: number;

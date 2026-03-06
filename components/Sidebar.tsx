@@ -269,23 +269,24 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
     <aside 
       ref={sidebarRef}
       className={cn(
-        "x-arena-sidebar fixed left-0 top-0 h-screen bg-gradient-to-t from-[#E8E6E0] via-[#F0EDE5] to-[#F7F6F3] dark:bg-black border-r border-red-500/20 dark:border-primary/40 z-40 flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
+        "x-arena-sidebar font-body fixed left-0 top-0 h-screen bg-gradient-to-t from-[#E8E6E0] via-[#F0EDE5] to-[#F7F6F3] dark:bg-black border-r border-red-500/20 dark:border-primary/40 z-40 flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
-      {/* Logo Section */}
+      {/* Logo Section - font sama seperti landing (Nexokora Techno) */}
       <div className="px-4 py-4 border-b-2 border-red-500/20 dark:border-primary/40 flex items-center justify-between min-h-[88px]">
         {!isCollapsed && (
           <div className="flex flex-col gap-1 flex-1">
-            <h1 className="text-3xl font-heading font-bold text-glow-red">
-              X ARENA
+            <h1 className="text-2xl font-nexokora font-bold tracking-[0.12em]">
+              <span className="text-glow-red">X</span>
+              <span className="text-gray-900 dark:text-white">-ARENA</span>
             </h1>
             <span className="text-xs text-gray-600 dark:text-gray-400 font-mono">Gamified Dashboard</span>
           </div>
         )}
         {isCollapsed && (
           <div className="w-full flex items-center justify-center">
-            <h1 className="text-2xl font-heading font-bold text-glow-red">
+            <h1 className="text-xl font-nexokora font-bold text-glow-red tracking-wider">
               X
             </h1>
           </div>
@@ -356,51 +357,30 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
                     }
                   }}
                   className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-lg relative group',
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative group transition-all duration-200 cursor-pointer',
                     'text-left',
                     isActive
-                      ? 'text-primary dark:text-primary'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-primary/10 transition-all duration-200'
+                      ? 'bg-gradient-to-r from-primary/15 to-primary/5 dark:from-primary/25 dark:to-primary/10 border-l-[3px] border-primary shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-primary/5 dark:hover:bg-primary/10 border-l-[3px] border-transparent hover:text-primary dark:hover:text-primary'
                   )}
-                  whileHover={!isActive && !isDark ? { x: 4 } : {}}
-                  whileTap={{ scale: 1 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  whileHover={{}}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
                 >
-                  {/* Active gradient background - red to black fade */}
-                  {isActive && (
-                    <div
-                      className="absolute inset-0 rounded-lg"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(220, 38, 38, 0.1) 50%, rgba(0, 0, 0, 0.1) 100%)',
-                      }}
-                    />
-                  )}
-
-                  {/* Active border indicator */}
-                  {isActive && (
-                    <div
-                      className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
-                    />
-                  )}
-
                   {/* Icon */}
-                  <div
-                    className={cn(
-                      'relative z-10 transition-all duration-200 flex-shrink-0',
-                      isActive && 'text-primary',
-                      isHovered && !isActive && 'text-primary/80 dark:text-primary/80'
-                    )}
-                  >
-                    <Icon className="w-5 h-5" />
+                  <div className="relative z-10 flex-shrink-0">
+                    <Icon className={cn(
+                      'w-5 h-5 transition-colors',
+                      isActive ? 'text-primary dark:text-primary' : 'group-hover:text-primary dark:group-hover:text-primary'
+                    )} />
                   </div>
 
                   {/* Label */}
                   {!isCollapsed && (
                     <span
                       className={cn(
-                        'text-sm relative z-10 transition-all duration-200',
-                        isActive ? 'font-semibold text-primary dark:text-white' : 'font-medium text-gray-600 dark:text-gray-400',
-                        isHovered && !isActive && 'text-primary dark:text-white'
+                        'text-sm relative z-10 font-medium transition-colors',
+                        isActive ? 'text-gray-900 dark:text-white font-semibold' : 'group-hover:text-primary dark:group-hover:text-primary'
                       )}
                     >
                       {item.label}
@@ -411,7 +391,8 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
                   {item.submenu && !isCollapsed && (
                     <ChevronDown 
                       className={cn(
-                        'ml-auto w-4 h-4 relative z-10 transition-transform',
+                        'ml-auto w-4 h-4 relative z-10 transition-all',
+                        isActive ? 'text-primary' : 'text-gray-500 dark:text-gray-500 group-hover:text-primary dark:group-hover:text-primary',
                         isDropdownOpen && 'rotate-180'
                       )} 
                     />
@@ -419,7 +400,10 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
 
                   {/* Badge */}
                   {item.badge !== undefined && !isCollapsed && (
-                    <span className="ml-auto bg-gray-100 dark:bg-primary/20 text-gray-700 dark:text-primary text-xs font-semibold px-2 py-1 rounded-full border border-gray-300 dark:border-primary/30">
+                    <span className={cn(
+                      'ml-auto text-xs font-semibold px-2 py-0.5 rounded-full transition-colors',
+                      isActive ? 'bg-primary/15 dark:bg-primary/20 text-primary dark:text-primary border border-primary/30' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400'
+                    )}>
                       {item.badge}
                     </span>
                   )}
@@ -445,31 +429,24 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
                           key={subItem.id}
                           onClick={(e) => handleSubmenuClick(e, subItem.id)}
                           className={cn(
-                            'w-full flex items-center gap-3 px-4 py-2 rounded-lg relative group text-left transition-all duration-200',
+                            'w-full flex items-center gap-3 px-3 py-2 rounded-lg relative group text-left transition-all duration-200 cursor-pointer',
                             isSubActive
-                              ? 'text-primary dark:text-white bg-primary/10'
-                              : 'text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-primary/10'
+                              ? 'bg-primary/15 dark:bg-primary/20 text-primary dark:text-white'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary dark:hover:text-primary'
                           )}
-                          whileHover={!isSubActive ? { x: 4 } : {}}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{ duration: 0.15, ease: 'easeOut' }}
+                          whileTap={{ scale: 0.99 }}
+                          transition={{ duration: 0.2, ease: 'easeOut' }}
                         >
                           <SubIcon className={cn(
                             "w-4 h-4 flex-shrink-0 transition-colors",
-                            isSubActive 
-                              ? "text-primary dark:text-primary" 
-                              : "text-gray-600 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary"
+                            isSubActive ? "text-primary dark:text-white" : "group-hover:text-primary dark:group-hover:text-primary"
                           )} />
                           <span className={cn(
                             "text-sm font-medium whitespace-nowrap transition-colors",
-                            isSubActive
-                              ? "text-primary dark:text-white"
-                              : "text-gray-600 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-white"
+                            isSubActive ? "text-primary dark:text-white" : "group-hover:text-primary dark:group-hover:text-primary"
                           )}>{subItem.label}</span>
                           {isSubActive && (
-                            <div
-                              className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
-                            />
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full" />
                           )}
                         </motion.button>
                       );
@@ -538,21 +515,17 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
                           className={cn(
                             'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200 text-left',
                             isSubActive
-                              ? 'text-primary dark:text-white bg-primary/10'
-                              : 'text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-primary/10'
+                              ? 'bg-primary/15 dark:bg-primary/20 text-primary dark:text-white'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-primary/5 dark:hover:bg-primary/10 hover:text-primary dark:hover:text-primary'
                           )}
                         >
                           <SubIcon className={cn(
                             "w-4 h-4 flex-shrink-0 transition-colors",
-                            isSubActive 
-                              ? "text-primary dark:text-primary" 
-                              : "text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary"
+                            isSubActive ? "text-primary dark:text-white" : "hover:text-primary dark:hover:text-primary"
                           )} />
                           <span className={cn(
-                            "whitespace-nowrap transition-colors",
-                            isSubActive
-                              ? "text-primary dark:text-white"
-                              : "text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-white"
+                            "whitespace-nowrap transition-colors text-sm font-medium",
+                            isSubActive ? "text-primary dark:text-white" : "hover:text-primary dark:hover:text-primary"
                           )}>{subItem.label}</span>
                           {isSubActive && (
                             <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full" />
