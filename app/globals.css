@@ -47,6 +47,30 @@
   /* Ukuran default Chrome 100% = tampil seperti 125% */
   html {
     zoom: 1.25;
+    scrollbar-width: none !important;
+  }
+  html::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  body {
+    scrollbar-width: none !important;
+  }
+  body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+  }
+  /* Dark mode tidak boleh override scrollbar html/body */
+  html.dark,
+  body.dark,
+  .dark html,
+  .dark body {
+    scrollbar-width: none !important;
+  }
+  html.dark::-webkit-scrollbar,
+  body.dark::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
   }
   :root {
     /* Default dark mode */
@@ -642,8 +666,8 @@ body.hide-scrollbar::-webkit-scrollbar {
   background: rgba(255, 255, 255, 0.25);
 }
 
-/* Firefox - transparent glass scrollbar */
-.dark {
+/* Firefox - transparent glass scrollbar (only for scrollable content, not html/body) */
+.dark *:not(html):not(body) {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
@@ -800,8 +824,9 @@ body.hide-scrollbar::-webkit-scrollbar {
   background: rgba(55, 53, 47, 0.25);
 }
 
-/* Firefox - light mode transparent scrollbar */
-.light {
+/* Firefox - light mode transparent scrollbar (only for scrollable content, not html/body) */
+.light *:not(html):not(body) {
+  scrollbar-width: thin;
   scrollbar-color: rgba(55, 53, 47, 0.2) transparent;
 }
 

@@ -326,27 +326,30 @@ export function LeaderboardPage() {
 
   // Fetch target_personal from database
   const fetchTargetPersonal = useCallback(async () => {
+    const defaultTarget = {
+      deposit_amount: 0.001,
+      retention: 5,
+      reactivation: 5,
+      recommend: 5,
+      days_4_7: 5,
+      days_8_11: 5,
+      days_12_15: 5,
+      days_15_17: 5,
+      days_16_19: 5,
+      days_20_more: 5,
+    };
     try {
       const { data, error } = await supabase
         .from('target_personal')
         .select('*')
         .eq('month', selectedMonth)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.error('Failed to fetch target personal', error);
-        setTargetPersonal({
-          deposit_amount: 0.001,
-          retention: 5,
-          reactivation: 5,
-          recommend: 5,
-          days_4_7: 5,
-          days_8_11: 5,
-          days_12_15: 5,
-          days_15_17: 5,
-          days_16_19: 5,
-          days_20_more: 5,
-        });
+        console.warn('target_personal not found for month:', selectedMonth, '— using defaults');
+        setTargetPersonal(defaultTarget);
+      } else if (!data) {
+        setTargetPersonal(defaultTarget);
       } else {
         setTargetPersonal({
           deposit_amount: parseFloat(data.deposit_amount || 0.001),
@@ -362,19 +365,8 @@ export function LeaderboardPage() {
         });
       }
     } catch (error) {
-      console.error('Error fetching target personal', error);
-      setTargetPersonal({
-        deposit_amount: 0.001,
-        retention: 5,
-        reactivation: 5,
-        recommend: 5,
-        days_4_7: 5,
-        days_8_11: 5,
-        days_12_15: 5,
-        days_15_17: 5,
-        days_16_19: 5,
-        days_20_more: 5,
-      });
+      console.warn('Error fetching target personal, using defaults:', error);
+      setTargetPersonal(defaultTarget);
     }
   }, [selectedMonth]);
 
@@ -875,6 +867,19 @@ export function LeaderboardPage() {
       setCarouselIndex(Math.max(0, len - 1));
     }
   }, [carouselIndex, loadingScores, loadingSquadMappings, activeViewFilter]);
+
+  // Block scroll on main when modal open — tanpa ubah overflow agar tidak ada layout flick
+  useEffect(() => {
+    const main = document.querySelector('main');
+    if (!main || !showMemberModal) return;
+    const prevent = (e: Event) => e.preventDefault();
+    main.addEventListener('wheel', prevent, { passive: false });
+    main.addEventListener('touchmove', prevent, { passive: false });
+    return () => {
+      main.removeEventListener('wheel', prevent);
+      main.removeEventListener('touchmove', prevent);
+    };
+  }, [showMemberModal]);
 
   // Get leaderboard entries based on real scores
   const getLeaderboardEntries = (): LeaderboardEntry[] => {
@@ -1932,26 +1937,34 @@ export function LeaderboardPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4"
               onClick={() => setShowMemberModal(false)}
-              style={{ 
-                position: 'fixed', 
-                top: 0, 
-                left: 0, 
-                right: 0, 
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
                 bottom: 0,
-                width: '100vw',
-                height: '100vh',
-                margin: 0,
-                padding: 0
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(4px)',
               }}
             >
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-card-inner rounded-lg p-6 border border-card-border shadow-lg w-full max-w-2xl relative m-4"
+                className="bg-card-inner rounded-lg p-6 border border-card-border shadow-lg relative hide-scrollbar"
+                style={{
+                  width: '90%',
+                  maxWidth: '42rem',
+                  maxHeight: '90vh',
+                  overflowY: 'auto',
+                  margin: 'auto',
+                }}
               >
                 <button
                   onClick={() => setShowMemberModal(false)}

@@ -26,6 +26,8 @@ export function LandingPage() {
   const { showToast } = useToast();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRankModal, setShowRankModal] = useState(false);
+  const [splineMounted, setSplineMounted] = useState(false);
+  const [splineError, setSplineError] = useState(false);
   const [rankUsername, setRankUsername] = useState('');
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -42,6 +44,23 @@ export function LandingPage() {
       document.body.classList.remove('hide-scrollbar');
       document.documentElement.classList.remove('hide-scrollbar');
     };
+  }, []);
+
+  /* Lazy mount Spline untuk kurangi WebGL context loss (dev hot-reload, Strict Mode) */
+  useEffect(() => {
+    const t = setTimeout(() => setSplineMounted(true), 500);
+    return () => clearTimeout(t);
+  }, []);
+
+  /* Tangkap error WebGL dari Spline */
+  useEffect(() => {
+    const onError = (e: ErrorEvent) => {
+      if (e.message?.includes('WebGL') || e.message?.includes('THREE.')) {
+        setSplineError(true);
+      }
+    };
+    window.addEventListener('error', onError);
+    return () => window.removeEventListener('error', onError);
   }, []);
 
   return (
@@ -114,11 +133,19 @@ export function LandingPage() {
           </div>
           <div className="order-1 lg:order-2 relative w-full flex items-center justify-center spline-viewer-wrap overflow-hidden rounded-2xl">
             <div className="spline-scale-wrap spline-canvas-size w-full h-full">
-              <spline-viewer
-                url="https://prod.spline.design/IQ3NS9ogGSqrtRtb/scene.splinecode"
-                className="w-full h-full block"
-                style={{ width: '100%', height: '100%', display: 'block' }}
-              />
+              {splineError ? (
+                <div className="w-full h-full flex items-center justify-center bg-black/60 rounded-xl text-white/60 text-sm text-center px-4">
+                  3D viewer tidak tersedia (WebGL terbatas). Coba tutup tab lain atau refresh halaman.
+                </div>
+              ) : splineMounted ? (
+                <spline-viewer
+                  url="https://prod.spline.design/IQ3NS9ogGSqrtRtb/scene.splinecode"
+                  className="w-full h-full block"
+                  style={{ width: '100%', height: '100%', display: 'block' }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-black/40 rounded-xl" aria-hidden="true" />
+              )}
             </div>
           </div>
         </div>
