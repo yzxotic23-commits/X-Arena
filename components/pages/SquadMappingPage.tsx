@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase-client';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
 import { ParticleLoading } from '@/components/ui/ParticleLoading';
+import { Loading } from '@/components/Loading';
 
 interface SquadMapping {
   id: string;
