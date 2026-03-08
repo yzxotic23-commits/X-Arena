@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
-import { Loading } from '@/components/Loading';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 
 interface SquadMapping {
   id: string;
@@ -254,9 +254,7 @@ export function SquadMappingPage() {
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="py-12 px-4">
-                      <div className="flex items-center justify-center min-h-[200px]">
-                        <Loading size="md" text="Loading Squad Mapping..." variant="gaming" />
-                      </div>
+                      <ParticleLoading text="SQUAD MAPPING" minHeight="200px" />
                     </td>
                   </tr>
                 ) : mappings.length === 0 ? (

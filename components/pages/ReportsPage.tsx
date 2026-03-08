@@ -11,7 +11,7 @@ import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
 import { supabase } from '@/lib/supabase-client';
 import { supabase2 } from '@/lib/supabase-client-2';
-import { Loading } from '@/components/Loading';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 import { calculateMemberScore as calculateMemberScoreLib, type TargetPersonal as TargetPersonalType, type MemberScoreData } from '@/lib/calculate-member-score';
 
 interface SquadMember {
@@ -1285,9 +1285,7 @@ export function ReportsPage() {
   
   if (loading) {
     return (
-      <div className="w-full flex items-center justify-center min-h-[60vh]">
-        <Loading size="lg" text={`Loading ${translations.nav.reports}...`} variant="gaming" />
-      </div>
+      <ParticleLoading text="REPORTS" minHeight="60vh" />
     );
   }
   
@@ -1379,490 +1377,52 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {/* Monthly Target & Report */}
-      <div className="space-y-4 select-none pt-2 md:pt-4 lg:pt-6">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <Trophy className="w-6 h-6 text-primary" />
-          <h3 className="text-2xl font-heading font-bold text-foreground-primary">{translations.reports.title}</h3>
-        </div>
-      </div>
-
-      {/* Squad Comparison Report Section - From Reports Page */}
-      <div className="space-y-6 select-none">
-        {/* Leading Squad Result - Top */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full"
-        >
-          <Card className="relative overflow-hidden group">
-            <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-            <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-            <CardContent className="relative z-10 p-6">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center ${
-                    leadingSquad === 'squad-b'
-                      ? 'bg-gradient-to-br from-blue-500 to-blue-600'
-                      : 'bg-gradient-to-br from-primary to-primary-dark'
-                  }`}>
-                    <Trophy className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted mb-1">{translations.reports.currentLeader}</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      {leadingSquad === 'squad-b' ? `${translations.reports.squadB} ${translations.reports.isLeading}` : `${translations.reports.squadA} ${translations.reports.isLeading}`}
-                    </div>
-                  </div>
+      {/* Leading Squad Result */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full select-none"
+      >
+        <Card className="relative overflow-hidden group">
+          <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+          <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+          <CardContent className="relative z-10 p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center ${
+                  leadingSquad === 'squad-b'
+                    ? 'bg-gradient-to-br from-blue-500 to-blue-600'
+                    : 'bg-gradient-to-br from-primary to-primary-dark'
+                }`}>
+                  <Trophy className="w-8 h-8 text-white" />
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-sm text-muted mb-1">{translations.reports.leadAmount}</div>
-                    <div className={`text-3xl font-heading font-bold ${
-                      leadingSquad === 'squad-b' ? 'text-blue-400' : 'text-primary'
-                    }`}>
-                      +${formatNumber(leadAmount)}
-                    </div>
+                <div>
+                  <div className="text-sm text-muted mb-1">{translations.reports.currentLeader}</div>
+                  <div className="text-2xl font-heading font-bold text-foreground-primary">
+                    {leadingSquad === 'squad-b'
+                      ? `${translations.reports.squadB} ${translations.reports.isLeading}`
+                      : `${translations.reports.squadA} ${translations.reports.isLeading}`}
                   </div>
-                  <TrendingUp className={`w-8 h-8 ${
-                    leadingSquad === 'squad-b' ? 'text-blue-400' : 'text-primary'
-                  }`} />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Squad Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {/* Squad A Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="relative overflow-hidden group w-full h-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl font-heading font-bold text-primary">{translations.reports.squadA.toUpperCase()}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">{translations.reports.netProfit}</div>
-                    <div className="text-2xl font-heading font-bold text-gray-900 dark:text-white">
-                      ${formatNumber(squadAData.netProfit)}
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">{translations.reports.totalDeposit}</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      ${formatNumber(squadAData.totalDeposit)}
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">{translations.reports.totalActive}</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      {formatNumber(squadAData.totalActive)}
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">{translations.common.status}</div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {squadAData.netProfit > squadBData.netProfit ? translations.overview.leading : translations.overview.behind}
-                    </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <div className="text-sm text-muted mb-1">{translations.reports.leadAmount}</div>
+                  <div className={`text-3xl font-heading font-bold ${
+                    leadingSquad === 'squad-b' ? 'text-blue-400' : 'text-primary'
+                  }`}>
+                    +${formatNumber(leadAmount)}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Squad B Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="relative overflow-hidden group w-full h-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl font-heading font-bold text-blue-400">SQUAD B</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">{translations.reports.netProfit}</div>
-                    <div className="text-2xl font-heading font-bold text-blue-400">
-                      ${formatNumber(squadBData.netProfit)}
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">{translations.reports.totalDeposit}</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      ${formatNumber(squadBData.totalDeposit)}
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">{translations.reports.totalActive}</div>
-                    <div className="text-2xl font-heading font-bold text-foreground-primary">
-                      {formatNumber(squadBData.totalActive)}
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-4 border border-card-border">
-                    <div className="text-xs text-muted mb-1">{translations.common.status}</div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {squadBData.netProfit > squadAData.netProfit ? translations.overview.leading : translations.overview.behind}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Squad Details & Top Contributor Section - Combined Design */}
-      <div className="space-y-6 select-none">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Squad A Details & Top Contributor */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="relative overflow-hidden group w-full h-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10 border-b border-card-border pb-4">
-                <CardTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-heading font-bold text-primary">SQUAD A</div>
-                    <div className="text-xs text-muted">{translations.overview.squadDetailsTopContributor}</div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 pt-6">
-                {/* Metrics Section */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">{translations.overview.totalSquadScore}</span>
-                      <Crown className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-gray-900 dark:text-white">
-                      {formatNumber(
-                        squadAMembers.reduce((sum, group) => 
-                          sum + group.members.reduce((memberSum, member) => {
-                            const scoreData = group.memberScores?.get(member.username);
-                            return memberSum + (scoreData?.score || 0);
-                          }, 0), 0
-                        )
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400 font-semibold">+12.5%</span>
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">{translations.overview.avgScore}</span>
-                      <TrendingUp className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {formatNumberWithDecimals(
-                        squadAMembers.reduce((sum, group) => 
-                          sum + group.members.reduce((memberSum, member) => {
-                            const scoreData = group.memberScores?.get(member.username);
-                            return memberSum + (scoreData?.score || 0);
-                          }, 0), 0
-                        ) / squadAMembers.reduce((sum, group) => sum + group.members.length, 0) || 0
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <ArrowUpRight className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400 font-semibold">+8.3%</span>
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">{translations.overview.members}</span>
-                      <UserPlus className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {squadAMembers.reduce((sum, group) => sum + group.members.length, 0)}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <UserPlus className="w-3 h-3 text-blue-400" />
-                      <span className="text-xs text-blue-400 font-semibold">{translations.userManagement.active}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Top Contributor Section */}
-                <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-6 border border-primary/20">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Award className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-semibold text-foreground-primary">{translations.overview.topContributor}</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg">
-                      <Crown className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="w-full">
-                      {(() => {
-                        // Find top contributor from squadAMembers
-                        let topMember: { username: string; score: number; brand: string } | null = null;
-                        let totalSquadScore = 0;
-                        
-                        squadAMembers.forEach((group) => {
-                          group.members.forEach((member) => {
-                            const scoreData = group.memberScores?.get(member.username);
-                            const score = scoreData?.score || 0;
-                            totalSquadScore += score;
-                            
-                            if (!topMember || score > topMember.score) {
-                              topMember = {
-                                username: member.username,
-                                score: score,
-                                brand: group.brand,
-                              };
-                            }
-                          });
-                        });
-                        
-                        const topMemberScore = (topMember as { username: string; score: number; brand: string } | null)?.score ?? 0;
-                        const contribution = totalSquadScore > 0
-                          ? (topMemberScore / totalSquadScore) * 100 
-                          : 0;
-                        
-                        // Get global rank for top member
-                        const globalRank = topMember !== null ? getGlobalRank((topMember as { username: string; score: number; brand: string }).username) : 0;
-                        
-                        return (
-                          <>
-                            <div className="flex items-center justify-center gap-2 mb-1">
-                              <h3 className="text-xl font-heading font-bold text-foreground-primary">
-                                {(topMember as { username: string; score: number; brand: string } | null)?.username || 'N/A'}
-                              </h3>
-                              <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
-                                #{globalRank || 'N/A'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted mb-2">
-                              {translations.overview.contribution}: {contribution.toFixed(1)}%
-                            </p>
-                            <p className="text-2xl font-heading font-bold text-gray-900 dark:text-white">
-                              {formatNumber((topMember as { username: string; score: number; brand: string } | null)?.score || 0)} {translations.overview.points}
-                            </p>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Squad B Details & Top Contributor */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="relative overflow-hidden group w-full h-full">
-              <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-              <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-              <CardHeader className="relative z-10 border-b border-card-border pb-4">
-                <CardTitle className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-xl font-heading font-bold text-blue-400">SQUAD B</div>
-                    <div className="text-xs text-muted">{translations.overview.squadDetailsTopContributor}</div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 pt-6">
-                {/* Metrics Section */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">{translations.overview.totalSquadScore}</span>
-                      <Crown className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-blue-400">
-                      {formatNumber(
-                        squadBMembers.reduce((sum, group) => 
-                          sum + group.members.reduce((memberSum, member) => {
-                            const scoreData = group.memberScores?.get(member.username);
-                            return memberSum + (scoreData?.score || 0);
-                          }, 0), 0
-                        )
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <TrendingUp className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400 font-semibold">+15.2%</span>
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">{translations.overview.avgScore}</span>
-                      <TrendingUp className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {formatNumberWithDecimals(
-                        squadBMembers.reduce((sum, group) => 
-                          sum + group.members.reduce((memberSum, member) => {
-                            const scoreData = group.memberScores?.get(member.username);
-                            return memberSum + (scoreData?.score || 0);
-                          }, 0), 0
-                        ) / squadBMembers.reduce((sum, group) => sum + group.members.length, 0) || 0
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <ArrowUpRight className="w-3 h-3 text-green-400" />
-                      <span className="text-xs text-green-400 font-semibold">+10.7%</span>
-                    </div>
-                  </div>
-                  <div className="bg-card-inner rounded-lg p-3 border border-card-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted">{translations.overview.members}</span>
-                      <UserPlus className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div className="text-lg font-heading font-bold text-foreground-primary">
-                      {squadBMembers.reduce((sum, group) => sum + group.members.length, 0)}
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <UserPlus className="w-3 h-3 text-blue-400" />
-                      <span className="text-xs text-blue-400 font-semibold">{translations.userManagement.active}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Top Contributor Section */}
-                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl p-6 border border-blue-500/20">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Award className="w-5 h-5 text-blue-400" />
-                    <span className="text-sm font-semibold text-foreground-primary">{translations.overview.topContributor}</span>
-                  </div>
-                  <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                      <Crown className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="w-full">
-                      <div className="flex items-center justify-center gap-2 mb-1">
-                        {(() => {
-                          // Find top contributor from squadBMembers
-                          let topMember: { username: string; score: number; brand: string } | null = null;
-                          let totalSquadScore = 0;
-                          
-                          squadBMembers.forEach((group) => {
-                            group.members.forEach((member) => {
-                              const scoreData = group.memberScores?.get(member.username);
-                              const score = scoreData?.score || 0;
-                              totalSquadScore += score;
-                              
-                              if (!topMember || score > topMember.score) {
-                                topMember = {
-                                  username: member.username,
-                                  score: score,
-                                  brand: group.brand,
-                                };
-                              }
-                            });
-                          });
-                          
-                          const contribution = totalSquadScore > 0 
-                            ? (((topMember as { username: string; score: number; brand: string } | null)?.score || 0) / totalSquadScore) * 100 
-                            : 0;
-                          
-                          // Get global rank for top member
-                          const globalRank = topMember ? getGlobalRank((topMember as { username: string; score: number; brand: string }).username) : 0;
-                          
-                          return (
-                            <>
-                              <h3 className="text-xl font-heading font-bold text-foreground-primary">
-                                {(topMember as { username: string; score: number; brand: string } | null)?.username || 'N/A'}
-                              </h3>
-                              <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-sm px-2 py-0.5">
-                                #{globalRank || 'N/A'}
-                              </Badge>
-                            </>
-                          );
-                        })()}
-                      </div>
-                      <p className="text-sm text-muted mb-2">
-                        {(() => {
-                          let topMember: { username: string; score: number; brand: string } | null = null;
-                          let totalSquadScore = 0;
-                          
-                          squadBMembers.forEach((group) => {
-                            group.members.forEach((member) => {
-                              const scoreData = group.memberScores?.get(member.username);
-                              const score = scoreData?.score || 0;
-                              totalSquadScore += score;
-                              
-                              if (!topMember || score > topMember.score) {
-                                topMember = {
-                                  username: member.username,
-                                  score: score,
-                                  brand: group.brand,
-                                };
-                              }
-                            });
-                          });
-                          
-                          const contribution = totalSquadScore > 0 
-                            ? (((topMember as { username: string; score: number; brand: string } | null)?.score || 0) / totalSquadScore) * 100 
-                            : 0;
-                          
-                          return `${translations.overview.contribution}: ${formatPercentage(contribution)}`;
-                        })()}
-                      </p>
-                      <p className="text-2xl font-heading font-bold text-blue-400">
-                        {(() => {
-                          let topMember: { username: string; score: number; brand: string } | null = null;
-                          
-                          squadBMembers.forEach((group) => {
-                            group.members.forEach((member) => {
-                              const scoreData = group.memberScores?.get(member.username);
-                              const score = scoreData?.score || 0;
-                              
-                              if (!topMember || score > topMember.score) {
-                                topMember = {
-                                  username: member.username,
-                                  score: score,
-                                  brand: group.brand,
-                                };
-                              }
-                            });
-                          });
-                          
-                          return `${formatNumber((topMember as { username: string; score: number; brand: string } | null)?.score || 0)} ${translations.overview.points}`;
-                        })()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
+                <TrendingUp className={`w-8 h-8 ${
+                  leadingSquad === 'squad-b' ? 'text-blue-400' : 'text-primary'
+                }`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Monthly Target & Report Table */}
       <div className="space-y-4 select-none mt-12 md:mt-16 lg:mt-20">

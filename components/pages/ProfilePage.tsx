@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useAuth } from '@/lib/auth-context';
-import { Loading } from '@/components/Loading';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 import { ChangeAvatarModal } from '@/components/ChangeAvatarModal';
 import { useToast } from '@/lib/toast-context';
 
@@ -539,9 +539,7 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="w-full flex items-center justify-center min-h-[60vh]">
-        <Loading size="lg" text="Loading Profile..." variant="gaming" />
-      </div>
+      <ParticleLoading text="PROFILE" minHeight="60vh" />
     );
   }
 

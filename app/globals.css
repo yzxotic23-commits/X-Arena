@@ -360,6 +360,15 @@
     background-attachment: fixed;
   }
 
+  /* Landing page selalu hitam — override light mode background */
+  /* Pakai :has() agar aktif langsung tanpa JavaScript (tidak ada flash) */
+  html:has(.landing-revamp),
+  body:has(.landing-revamp),
+  body.on-landing-page {
+    background-image: none !important;
+    background-color: #000000 !important;
+  }
+
   /* Ensure bg-background class uses custom image in light mode (tanpa blur agar sidebar & konten tetap tampil) */
   .light .bg-background {
     background-image: url('/background-layout/light-2.jpg') !important;

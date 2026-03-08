@@ -19,7 +19,7 @@ import {
   type ScoreBreakdown,
   type SquadMapping
 } from '@/lib/battle-arena-helpers';
-import { Loading } from '@/components/Loading';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 
 // Crown Badge Icon
 const CrownBadgeIcon: React.FC = () => (
@@ -575,8 +575,8 @@ export function BattleArenaPage() {
 
   if (loading) {
     return (
-      <div className="battle-arena-embed min-h-[70vh] flex items-center justify-center">
-        <Loading text="Loading battle arena..." variant="gaming" />
+      <div className="battle-arena-embed min-h-[70vh]">
+        <ParticleLoading text="Loading Battle Arena" />
       </div>
     );
   }

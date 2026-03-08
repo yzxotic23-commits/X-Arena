@@ -11,6 +11,7 @@ import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
 import { supabase } from '@/lib/supabase-client';
 import { supabase2 } from '@/lib/supabase-client-2';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 import { Loading } from '@/components/Loading';
 import { useAuth } from '@/lib/auth-context';
 import * as XLSX from 'xlsx';
@@ -2714,9 +2715,7 @@ export function CustomerListingPage() {
                 {loading ? (
                   <tr>
                     <td colSpan={activeTab === 'adjustment' ? 6 : activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 align-middle">
-                      <div className="flex items-center justify-center min-h-[180px]">
-                        <Loading size="md" text={translations.common.loading} variant="gaming" />
-                      </div>
+                      <ParticleLoading text="LOADING" minHeight="180px" />
                     </td>
                   </tr>
                 ) : customers.length === 0 ? (

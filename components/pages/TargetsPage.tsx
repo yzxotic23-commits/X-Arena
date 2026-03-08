@@ -9,7 +9,7 @@ import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
 import { supabase } from '@/lib/supabase-client';
 import { supabase2 } from '@/lib/supabase-client-2';
-import { Loading } from '@/components/Loading';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 
 interface Cycle {
   id: number;
@@ -508,9 +508,7 @@ export function TargetsPage() {
   // Show loading if brands or cycle data is loading
   if (loadingBrands || loadingCycleData) {
     return (
-      <div className="w-full flex items-center justify-center min-h-[60vh]">
-        <Loading size="lg" text={`Loading ${translations.nav.targetSummary}...`} variant="gaming" />
-      </div>
+      <ParticleLoading text="TARGETS" minHeight="60vh" />
     );
   }
 
@@ -989,8 +987,8 @@ export function TargetsPage() {
               {/* Modal Content */}
               <div className="p-6 overflow-y-auto flex-1">
                 {loadingBrandDetails ? (
-                  <div className="flex items-center justify-center py-12 min-h-[300px]">
-                    <Loading size="md" variant="gaming" />
+                  <div className="min-h-[300px]">
+                    <ParticleLoading text="LOADING" minHeight="300px" />
                   </div>
                 ) : brandDetails.length === 0 ? (
                   <div className="text-center py-12 text-muted">

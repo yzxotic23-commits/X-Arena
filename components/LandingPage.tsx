@@ -38,10 +38,10 @@ export function LandingPage() {
 
   useEffect(() => {
     document.body.style.overflow = 'auto';
-    document.body.classList.add('hide-scrollbar');
+    document.body.classList.add('hide-scrollbar', 'on-landing-page');
     document.documentElement.classList.add('hide-scrollbar');
     return () => {
-      document.body.classList.remove('hide-scrollbar');
+      document.body.classList.remove('hide-scrollbar', 'on-landing-page');
       document.documentElement.classList.remove('hide-scrollbar');
     };
   }, []);
@@ -65,14 +65,24 @@ export function LandingPage() {
 
   return (
     <>
-    <div className="min-h-screen landing-revamp font-manrope antialiased text-white">
+    <motion.div
+      className="min-h-screen landing-revamp font-manrope antialiased text-white"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+    >
       <Script
         src="https://unpkg.com/@splinetool/viewer@1.12.67/build/spline-viewer.js"
         strategy="afterInteractive"
         type="module"
       />
-      {/* Header: logo kiri, nav tengah, CTA kanan (layout seperti referensi) */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/10">
+      {/* Header */}
+      <motion.header
+        className="sticky top-0 z-50 w-full border-b border-white/10"
+        initial={{ opacity: 0, y: -24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+      >
         <nav className="landing-revamp-nav px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between gap-4">
           <button type="button" onClick={() => router.push('/landing')} className="cursor-pointer border-0 bg-transparent p-0 shrink-0">
             <span className="font-nexokora font-bold text-base tracking-[0.15em] uppercase text-white">
@@ -94,27 +104,56 @@ export function LandingPage() {
             </a>
           </div>
         </nav>
-      </header>
+      </motion.header>
 
-      {/* Hero: kiri = badge + heading + deskripsi + 2 CTA, kanan = robot 3D + teks Front/End */}
+      {/* Hero */}
       <section className="landing-revamp-hero pt-10 sm:pt-14 pb-16 px-4 sm:px-6 lg:px-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+          {/* Left: text + CTA */}
           <div className="text-center lg:text-left order-2 lg:order-1">
-            <div className="flex justify-center lg:justify-start mb-5">
+            {/* Badge */}
+            <motion.div
+              className="flex justify-center lg:justify-start mb-5"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.45, ease: 'easeOut', delay: 0.2 }}
+            >
               <span className="inline-flex items-center rounded-full border-2 border-transparent bg-gradient-to-r from-red-500/80 to-red-600/80 p-[2px]">
                 <span className="rounded-full bg-black px-4 py-1.5 text-xs font-semibold text-white tracking-wide font-nexokora">
                   X-Arena
                 </span>
               </span>
-            </div>
-            <h1 className="font-manrope font-black text-[2.5rem] sm:text-[3rem] lg:text-[3.5rem] leading-tight tracking-tight text-white mb-5">
+            </motion.div>
+
+            {/* Heading */}
+            <motion.h1
+              className="font-manrope font-black text-[2.5rem] sm:text-[3rem] lg:text-[3.5rem] leading-tight tracking-tight text-white mb-5"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, ease: 'easeOut', delay: 0.3 }}
+            >
               Real-Time Insights,
               <span className="text-red-500 block mt-1">Real-Time Results</span>
-            </h1>
-            <p className="text-base sm:text-[17px] text-gray-400 max-w-[420px] mx-auto lg:mx-0 mb-8 leading-relaxed">
+            </motion.h1>
+
+            {/* Description */}
+            <motion.p
+              className="text-base sm:text-[17px] text-gray-400 max-w-[420px] mx-auto lg:mx-0 mb-8 leading-relaxed"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.42 }}
+            >
               Track your performance, compete with your squad and climb the leaderboard. Gamified dashboard for targets and activities.
-            </p>
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4">
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div
+              className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.55 }}
+            >
               <button
                 type="button"
                 onClick={() => setShowLoginModal(true)}
@@ -129,9 +168,16 @@ export function LandingPage() {
               >
                 Your Rank <span>&gt;</span>
               </button>
-            </div>
+            </motion.div>
           </div>
-          <div className="order-1 lg:order-2 relative w-full flex items-center justify-center spline-viewer-wrap overflow-hidden rounded-2xl">
+
+          {/* Right: Spline 3D */}
+          <motion.div
+            className="order-1 lg:order-2 relative w-full flex items-center justify-center spline-viewer-wrap overflow-hidden rounded-2xl"
+            initial={{ opacity: 0, y: -40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut', delay: 0.25 }}
+          >
             <div className="spline-scale-wrap spline-canvas-size w-full h-full">
               {splineError ? (
                 <div className="w-full h-full flex items-center justify-center bg-black/60 rounded-xl text-white/60 text-sm text-center px-4">
@@ -147,10 +193,11 @@ export function LandingPage() {
                 <div className="w-full h-full flex items-center justify-center bg-black/40 rounded-xl" aria-hidden="true" />
               )}
             </div>
-          </div>
+          </motion.div>
+
         </div>
       </section>
-    </div>
+    </motion.div>
       {typeof document !== 'undefined' && document.body && createPortal(
         <>
       {/* Modal Get started (Login) - portal ke body agar fixed center */}

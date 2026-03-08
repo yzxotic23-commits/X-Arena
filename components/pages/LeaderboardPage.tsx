@@ -14,7 +14,7 @@ import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
 import { supabase } from '@/lib/supabase-client';
 import { supabase2 } from '@/lib/supabase-client-2';
-import { Loading } from '@/components/Loading';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import Image from 'next/image';
@@ -1417,9 +1417,7 @@ export function LeaderboardPage() {
   // Show loading state while fetching data (sama seperti Battle Arena: tengah layout)
   if (loadingScores || loadingSquadMappings || memberScores.size === 0) {
     return (
-      <div className="w-full min-h-[70vh] flex items-center justify-center">
-        <Loading size="lg" text={`Loading ${translations.nav.leaderboard}...`} variant="gaming" />
-      </div>
+      <ParticleLoading text="LEADERBOARD" minHeight="70vh" />
     );
   }
 

@@ -116,9 +116,10 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
         const button = menuButtonRefs.current[activeMenuItem.id];
         if (button) {
           const rect = button.getBoundingClientRect();
+          const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
           setPopoverPosition({
-            top: rect.top,
-            left: rect.right + 8,
+            top: rect.top / zoom,
+            left: rect.right / zoom + 8,
           });
         }
       }
@@ -285,11 +286,15 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
           </div>
         )}
         {isCollapsed && (
-          <div className="w-full flex items-center justify-center">
-            <h1 className="text-xl font-nexokora font-bold text-glow-red tracking-wider">
+          <button
+            onClick={onToggleCollapse}
+            className="w-full flex items-center justify-center rounded-lg hover:bg-primary/10 transition-colors group p-1"
+            title="Expand sidebar"
+          >
+            <h1 className="text-xl font-nexokora font-bold text-glow-red tracking-wider group-hover:scale-110 transition-transform">
               X
             </h1>
-          </div>
+          </button>
         )}
         {!isCollapsed && onToggleCollapse && (
           <button
@@ -328,9 +333,10 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
                       const button = menuButtonRefs.current[item.id];
                       if (button) {
                         const rect = button.getBoundingClientRect();
+                        const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
                         setPopoverPosition({
-                          top: rect.top,
-                          left: rect.right + 8,
+                          top: rect.top / zoom,
+                          left: rect.right / zoom + 8,
                         });
                       }
                     } else if (!isActive) {
@@ -541,18 +547,6 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
         </ul>
       </nav>
 
-      {/* Collapse Button (when collapsed) */}
-      {isCollapsed && onToggleCollapse && (
-        <div className="border-t-2 border-red-500/20 dark:border-primary/40 px-4 py-4">
-          <button
-            onClick={onToggleCollapse}
-            className="w-full p-2 rounded-lg hover:bg-primary/10 text-gray-600 dark:text-gray-400 hover:text-primary transition-colors flex items-center justify-center"
-            title="Expand sidebar"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
     </aside>
   );
 }

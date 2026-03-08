@@ -38,7 +38,7 @@ import { ReportsPage } from '@/components/pages/ReportsPage';
 import { useAuth } from '@/lib/auth-context';
 import { LandingPage } from '@/components/LandingPage';
 import { useLanguage } from '@/lib/language-context';
-import { Loading } from '@/components/Loading';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 import { t } from '@/lib/translations';
 
 const BattleArenaPage = dynamic(
@@ -460,8 +460,8 @@ function DashboardContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
-        <Loading size="lg" text={translations.common.loading} variant="gaming" />
+      <div className="min-h-screen bg-background transition-colors">
+        <ParticleLoading text="X-ARENA" minHeight="100vh" />
       </div>
     );
   }
@@ -491,8 +491,8 @@ function DashboardContent() {
   // Hanya tampilkan loading Overview saat user ada di halaman Overview
   if (dataLoading && (activeMenu === 'dashboard' || activeMenu === 'overview')) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center transition-colors">
-        <Loading size="lg" text={`Loading ${translations.nav.overview}...`} variant="gaming" />
+      <div className="min-h-screen bg-background transition-colors">
+        <ParticleLoading text="OVERVIEW" minHeight="100vh" />
       </div>
     );
   }
@@ -573,9 +573,7 @@ function DashboardContent() {
         <main className="flex-1 w-full mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 overflow-y-auto" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
           {/* Conditional Rendering based on activeMenu */}
           {(activeMenu === 'dashboard' || activeMenu === 'overview') && dataLoading && (
-            <div className="flex min-h-[400px] items-center justify-center">
-              <Loading size="lg" text={`Loading ${translations.nav.overview}...`} variant="gaming" />
-            </div>
+            <ParticleLoading text="OVERVIEW" minHeight="400px" />
           )}
               {(activeMenu === 'dashboard' || activeMenu === 'overview') && data && !dataLoading && (
             <>

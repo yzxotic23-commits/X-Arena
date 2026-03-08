@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Building2, Plus, X, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
-import { Loading } from '@/components/Loading';
+import { ParticleLoading } from '@/components/ui/ParticleLoading';
 
 interface Brand {
   id: string;
@@ -173,9 +173,7 @@ export function BrandPage() {
                 {loading ? (
                   <tr>
                     <td colSpan={5} className="py-8 px-4">
-                      <div className="flex items-center justify-center min-h-[200px]">
-                        <Loading size="md" text="Loading..." variant="gaming" />
-                      </div>
+                      <ParticleLoading text="LOADING" minHeight="200px" />
                     </td>
                   </tr>
                 ) : brands.length === 0 ? (
