@@ -154,7 +154,7 @@ export function AppearanceSettingsPage() {
     icon: React.ComponentType<{ className?: string }>; 
     children: React.ReactNode;
   }) => (
-    <div className="bg-card-inner rounded-lg p-4 sm:p-5 border border-card-border">
+    <div className="rounded-xl border border-transparent bg-gray-100/80 p-4 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20 sm:p-5">
       <div className="flex items-start gap-3 mb-4">
         <div className="p-2 rounded-lg bg-primary/10">
           <Icon className="w-5 h-5 text-primary" />

@@ -270,12 +270,12 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
     <aside 
       ref={sidebarRef}
       className={cn(
-        "x-arena-sidebar font-body fixed left-0 top-0 h-screen bg-gradient-to-t from-[#E8E6E0] via-[#F0EDE5] to-[#F7F6F3] dark:bg-black border-r border-red-500/20 dark:border-primary/40 z-40 flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
+        "x-arena-sidebar font-body fixed left-0 top-0 h-screen bg-gray-100/95 dark:bg-[#0a0a0a] border-r border-gray-300/70 dark:border-primary/20 z-40 flex-col transition-all duration-300 hidden lg:flex backdrop-blur-md overflow-visible",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
       {/* Logo Section - font sama seperti landing (Nexokora Techno) */}
-      <div className="px-4 py-4 border-b-2 border-red-500/20 dark:border-primary/40 flex items-center justify-between min-h-[88px]">
+      <div className="px-4 py-4 border-b border-gray-300/70 dark:border-primary/20 flex items-center justify-between min-h-[88px]">
         {!isCollapsed && (
           <div className="flex flex-col gap-1 flex-1">
             <h1 className="text-2xl font-nexokora font-bold tracking-[0.12em]">
@@ -468,11 +468,11 @@ export function Sidebar({ activeMenu = 'battle-arena', onMenuChange, isCollapsed
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ duration: 0.2 }}
                     data-popover="settings-submenu"
-                    className="fixed bg-[#F7F6F3] dark:bg-gray-900 border border-gray-200 dark:border-primary/30 rounded-lg shadow-lg py-2 min-w-[200px] z-[99999]"
+                    className="fixed min-w-[200px] rounded-lg border border-gray-300/70 bg-gray-100/95 py-2 shadow-none ring-1 ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:ring-primary/20 z-[99999]"
                     style={{
                       top: `${popoverPosition.top}px`,
                       left: `${popoverPosition.left}px`,
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(220, 38, 38, 0.2)',
+                      boxShadow: 'none',
                     }}
                     onMouseEnter={() => {
                       // Keep popover open when hovering over it

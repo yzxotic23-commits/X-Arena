@@ -312,7 +312,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
   return (
     <div className="space-y-6" style={{ fontFamily: theme === 'green' ? 'Poppins, sans-serif' : 'inherit' }}>
       {/* Top Section: Squad Status Banner - Modern Style */}
-      <div className={theme === 'green' ? 'rounded-xl p-6' : 'rounded-xl p-6 bg-card-glass border border-border hover:border-primary/30 transition-all duration-200'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `1px solid ${cardBorder}` : undefined }}>
+      <div className={theme === 'green' ? 'rounded-xl p-6' : 'rounded-xl border border-transparent bg-gray-100/80 p-6 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `1px solid ${cardBorder}` : undefined }}>
         <div className="flex items-center justify-center gap-6">
           <div className="text-center">
             <div className="flex items-center justify-center gap-3 mb-3">
@@ -482,7 +482,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
       {/* Squad A & B Comparison - Side by Side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Squad A */}
-        <div className={theme === 'green' ? 'rounded-xl p-6' : 'rounded-xl p-6 bg-card-glass border border-border hover:border-primary/30 transition-all duration-200'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `1px solid ${cardBorder}` : undefined }}>
+        <div className={theme === 'green' ? 'rounded-xl p-6' : 'rounded-xl border border-transparent bg-gray-100/80 p-6 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `1px solid ${cardBorder}` : undefined }}>
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 pb-3 border-b border-border" style={{ color: textColor || 'inherit' }}>
             <Users2 className="w-5 h-5 text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }} />
             <span>Squad A</span>
@@ -506,7 +506,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
         </div>
 
         {/* Squad B */}
-        <div className={theme === 'green' ? 'rounded-xl p-6' : 'rounded-xl p-6 bg-card-glass border border-border hover:border-primary/30 transition-all duration-200'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `1px solid ${cardBorder}` : undefined }}>
+        <div className={theme === 'green' ? 'rounded-xl p-6' : 'rounded-xl border border-transparent bg-gray-100/80 p-6 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `1px solid ${cardBorder}` : undefined }}>
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 pb-3 border-b border-border" style={{ color: textColor || 'inherit' }}>
             <Users2 className="w-5 h-5 text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }} />
             <span>Squad B</span>
@@ -533,7 +533,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
       {/* TOP 3 Performance Categories - Grid Layout */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {/* Customer Deposits TOP 3 */}
-            <div className={theme === 'green' ? 'rounded-xl p-5' : 'rounded-xl p-5 bg-gradient-to-br from-card-glass to-card-glass/50 border-2 border-primary/20 dark:hover:border-primary/20 hover:border-primary/40 transition-all duration-200 shadow-lg dark:hover:shadow-lg hover:shadow-xl'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
+            <div className={theme === 'green' ? 'rounded-xl p-5' : 'rounded-xl border border-transparent bg-gray-100/80 p-5 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
               <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-primary/20">
                 <div className="p-2 rounded-lg bg-primary/20 border border-primary/30">
                   <DollarSign className="w-5 h-5 text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }} />
@@ -565,7 +565,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
             </div>
 
             {/* Customer Retention TOP 3 */}
-            <div className={theme === 'green' ? 'rounded-xl p-5' : 'rounded-xl p-5 bg-gradient-to-br from-card-glass to-card-glass/50 border-2 border-primary/20 dark:hover:border-primary/20 hover:border-primary/40 transition-all duration-200 shadow-lg dark:hover:shadow-lg hover:shadow-xl'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
+            <div className={theme === 'green' ? 'rounded-xl p-5' : 'rounded-xl border border-transparent bg-gray-100/80 p-5 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
               <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-primary/20">
                 <div className="p-2 rounded-lg bg-primary/20 border border-primary/30">
                   <UserCheck className="w-5 h-5 text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }} />
@@ -597,7 +597,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
             </div>
 
             {/* Activate Dormant TOP 3 */}
-            <div className={theme === 'green' ? 'rounded-xl p-5' : 'rounded-xl p-5 bg-gradient-to-br from-card-glass to-card-glass/50 border-2 border-primary/20 dark:hover:border-primary/20 hover:border-primary/40 transition-all duration-200 shadow-lg dark:hover:shadow-lg hover:shadow-xl'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
+            <div className={theme === 'green' ? 'rounded-xl p-5' : 'rounded-xl border border-transparent bg-gray-100/80 p-5 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
               <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-primary/20">
                 <div className="p-2 rounded-lg bg-primary/20 border border-primary/30">
                   <UserPlus className="w-5 h-5 text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }} />
@@ -629,7 +629,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
             </div>
 
             {/* Referral TOP 3 */}
-            <div className={theme === 'green' ? 'rounded-xl p-5' : 'rounded-xl p-5 bg-gradient-to-br from-card-glass to-card-glass/50 border-2 border-primary/20 dark:hover:border-primary/20 hover:border-primary/40 transition-all duration-200 shadow-lg dark:hover:shadow-lg hover:shadow-xl'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
+            <div className={theme === 'green' ? 'rounded-xl p-5' : 'rounded-xl border border-transparent bg-gray-100/80 p-5 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
               <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-primary/20">
                 <div className="p-2 rounded-lg bg-primary/20 border border-primary/30">
                   <Share2 className="w-5 h-5 text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }} />
@@ -662,7 +662,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
       </div>
 
       {/* Customer Repurchase TOP 3 - Modern Style */}
-      <div className={theme === 'green' ? 'rounded-xl p-6 mb-6' : 'rounded-xl p-6 bg-card-glass border border-border hover:border-primary/30 transition-all duration-200 mb-6'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `1px solid ${cardBorder}` : undefined }}>
+      <div className={theme === 'green' ? 'rounded-xl p-6 mb-6' : 'rounded-xl border border-transparent bg-gray-100/80 p-6 shadow-none transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20 mb-6'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `1px solid ${cardBorder}` : undefined }}>
         <h4 className="text-lg font-semibold mb-4 flex items-center gap-2 pb-3 border-b border-border" style={{ color: textColor || 'inherit' }}>
           <TrendingUp className="w-5 h-5 text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }} />
           <span>Customer Repurchase TOP 3</span>
@@ -693,7 +693,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
       </div>
 
       {/* Detailed Squad Breakdown - Table with Merge Cells */}
-      <div className={theme === 'green' ? 'rounded-xl p-6 overflow-x-auto' : 'rounded-xl p-6 bg-card-glass border-2 border-primary/20 overflow-x-auto shadow-lg'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
+      <div className={theme === 'green' ? 'rounded-xl p-6 overflow-x-auto' : 'rounded-xl border border-transparent bg-gray-100/80 p-6 shadow-none overflow-x-auto transition-[border-color,box-shadow] duration-300 hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:hover:border-primary/30 dark:hover:ring-primary/20'} style={{ backgroundColor: theme === 'green' ? cardBg : undefined, border: theme === 'green' ? `2px solid ${cardBorder}` : undefined }}>
         <h3 className="text-2xl font-bold mb-6 pb-4 border-b-2 border-primary/30 flex items-center gap-3" style={{ color: textColor || 'inherit' }}>
           <TrendingUp className="w-6 h-6 text-primary" style={{ color: theme === 'green' ? primaryColor : undefined }} />
           <span>Detailed Squad Statistics</span>

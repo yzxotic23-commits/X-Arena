@@ -78,7 +78,7 @@ export function ChangeAvatarModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-card-glass rounded-lg w-full max-w-md mx-4 shadow-xl border border-card-border">
+      <div className="w-full max-w-md mx-4 rounded-lg border border-transparent bg-gray-100/95 shadow-none ring-1 ring-gray-300/50 dark:border-primary/20 dark:bg-[#0a0a0a] dark:ring-primary/20">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-card-border">
           <h2 className="text-xl font-semibold text-foreground-primary font-heading">

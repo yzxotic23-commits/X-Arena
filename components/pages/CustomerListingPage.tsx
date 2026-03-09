@@ -2511,7 +2511,7 @@ export function CustomerListingPage() {
       </div>
 
       {/* Customer Table */}
-      <Card className="bg-card-glass">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
             <CardTitle className="flex items-center gap-2">
@@ -2745,7 +2745,7 @@ export function CustomerListingPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={`border-b border-card-border/70 transition-colors hover:bg-primary/5 ${index % 2 === 0 ? 'bg-transparent' : 'bg-gray-50/80 dark:bg-white/[0.02]'}`}
+                    className="border-b border-card-border/70 bg-transparent transition-colors hover:bg-primary/5"
                   >
                     <td className="py-3 px-4 text-center align-middle">
                       <input

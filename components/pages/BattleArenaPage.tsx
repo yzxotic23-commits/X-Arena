@@ -57,6 +57,7 @@ const CustomTooltip = ({ active, payload, label, squadColor }: any) => {
 };
 
 export function BattleArenaPage() {
+  const [isDark, setIsDark] = useState(true);
   const getCurrentMonth = () => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -115,6 +116,18 @@ export function BattleArenaPage() {
     setSelectedCycle(cycle);
     setShowCycleDropdown(false);
   };
+
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -572,6 +585,8 @@ export function BattleArenaPage() {
     cycle: ((r.cycle as string) ?? r.Cycle ?? `Cycle ${i + 1}`).replace('Cycle ', 'C'),
     score: typeof r['Squad B'] === 'number' ? r['Squad B'] : 0,
   }));
+  const chartXAxisTick = { fontSize: 11, fontWeight: 700, fill: isDark ? 'rgba(226, 232, 240, 0.7)' : 'rgba(15, 23, 42, 0.72)' };
+  const chartYAxisTick = { fontSize: 10, fontWeight: 600, fill: isDark ? 'rgba(226, 232, 240, 0.5)' : 'rgba(51, 65, 85, 0.72)' };
 
   if (loading) {
     return (
@@ -864,8 +879,8 @@ export function BattleArenaPage() {
                               </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" className="chart-grid-modern" />
-                            <XAxis dataKey="cycle" tick={{ fontSize: 11, fontWeight: 700, fill: 'rgba(226, 232, 240, 0.7)' }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: 'rgba(226, 232, 240, 0.5)' }} axisLine={false} tickLine={false} width={40} />
+                            <XAxis dataKey="cycle" tick={chartXAxisTick} axisLine={false} tickLine={false} />
+                            <YAxis tick={chartYAxisTick} axisLine={false} tickLine={false} width={40} />
                             <Tooltip content={<CustomTooltip squadColor="rgba(99, 102, 241, 0.9)" />} cursor={{ fill: 'rgba(99, 102, 241, 0.08)', stroke: 'rgba(99, 102, 241, 0.2)', strokeWidth: 1 }} />
                             <Bar dataKey="score" radius={[8, 8, 0, 0]} animationDuration={800}>
                               {squadAChartData.map((_, i) => <Cell key={i} fill="url(#squadAGrad)" />)}
@@ -903,8 +918,8 @@ export function BattleArenaPage() {
                               </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" className="chart-grid-modern" />
-                            <XAxis dataKey="cycle" tick={{ fontSize: 11, fontWeight: 700, fill: 'rgba(226, 232, 240, 0.7)' }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: 'rgba(226, 232, 240, 0.5)' }} axisLine={false} tickLine={false} width={40} />
+                            <XAxis dataKey="cycle" tick={chartXAxisTick} axisLine={false} tickLine={false} />
+                            <YAxis tick={chartYAxisTick} axisLine={false} tickLine={false} width={40} />
                             <Tooltip content={<CustomTooltip squadColor="rgba(236, 72, 153, 0.9)" />} cursor={{ fill: 'rgba(236, 72, 153, 0.08)', stroke: 'rgba(236, 72, 153, 0.2)', strokeWidth: 1 }} />
                             <Bar dataKey="score" radius={[8, 8, 0, 0]} animationDuration={800}>
                               {squadBChartData.map((_, i) => <Cell key={i} fill="url(#squadBGrad)" />)}

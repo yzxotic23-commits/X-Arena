@@ -1428,7 +1428,7 @@ export function ReportsPage() {
       <div className="space-y-4 select-none mt-12 md:mt-16 lg:mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* SQUAD A Table */}
-          <Card className="bg-card-glass border border-card-border shadow-lg">
+          <Card>
             <CardContent className="p-0">
               {/* SQUAD A Header - Top */}
               <div className="border-b border-card-border py-3 px-4">
@@ -1654,7 +1654,7 @@ export function ReportsPage() {
           </Card>
 
           {/* SQUAD B Table */}
-          <Card className="bg-card-glass border border-card-border shadow-lg">
+          <Card>
             <CardContent className="p-0">
               {/* SQUAD B Header - Top */}
               <div className="border-b border-card-border py-3 px-4">

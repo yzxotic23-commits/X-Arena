@@ -392,9 +392,9 @@
     font-family: 'Poppins', sans-serif;
   }
   
-  /* Sidebar dark mode - hitam solid, tanpa gradient */
+  /* Sidebar dark mode - samakan dengan frame dark baru */
   .dark .x-arena-sidebar {
-    background: #000000 !important;
+    background: #0a0a0a !important;
     background-image: none !important;
   }
 
@@ -486,6 +486,7 @@
   /* Card gradient overlay - only in light mode */
   .card-gradient-overlay {
     opacity: 0;
+    display: none;
   }
   
   /* Hide gradient overlay in dark mode - use solid color like sidebar */
@@ -522,6 +523,7 @@
   
   .card-gradient-blur {
     opacity: 0;
+    display: none;
   }
   
   /* Hide gradient blur in dark mode - use solid color like sidebar */
@@ -3273,7 +3275,6 @@ body.hide-scrollbar::-webkit-scrollbar {
 }
 
 .cycle-card:hover {
-  transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: 
     0 20px 56px -12px rgba(0, 0, 0, 0.25),
@@ -3495,7 +3496,6 @@ body.hide-scrollbar::-webkit-scrollbar {
 /* Hover effect for leading squad */
 .accumulate-card.squad-a-win:hover,
 .accumulate-card.squad-b-win:hover {
-  transform: translateY(-2px);
   border-color: rgba(250, 204, 21, 0.7) !important;
   box-shadow: 
     0 12px 48px rgba(250, 204, 21, 0.3),
@@ -3913,7 +3913,6 @@ body.hide-scrollbar::-webkit-scrollbar {
 /* Light mode hover effect for leading squad */
 [data-theme="light"] .accumulate-card.squad-a-win:hover,
 [data-theme="light"] .accumulate-card.squad-b-win:hover {
-  transform: translateY(-2px);
   border-color: rgba(250, 204, 21, 0.6) !important;
   box-shadow: 
     0 12px 48px rgba(250, 204, 21, 0.25),
@@ -5912,9 +5911,9 @@ body.hide-scrollbar::-webkit-scrollbar {
   background: radial-gradient(circle at 50% 0%, rgba(230, 0, 18, 0.08), transparent 60%) !important;
 }
 .dark .battle-arena-embed .cycle-card {
-  background: rgba(0, 0, 0, 0.95) !important;
-  border: 1px solid rgba(230, 0, 18, 0.4) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(230, 0, 18, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  background: #0a0a0a !important;
+  border: 1px solid rgba(230, 0, 18, 0.2) !important;
+  box-shadow: none !important;
 }
 .dark .battle-arena-embed .cycle-card::before {
   background: linear-gradient(90deg, rgba(230, 0, 18, 0.8), rgba(230, 0, 18, 0.5)) !important;
@@ -5926,37 +5925,50 @@ body.hide-scrollbar::-webkit-scrollbar {
 }
 .dark .battle-arena-embed .accumulate-card.squad-a-win,
 .dark .battle-arena-embed .accumulate-card.squad-b-win {
-  border-color: rgba(230, 0, 18, 0.5) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(230, 0, 18, 0.4), 0 0 12px rgba(230, 0, 18, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(230, 0, 18, 0.2) !important;
+  box-shadow: none !important;
 }
 .dark .battle-arena-embed .accumulate-card.squad-a-win::before,
 .dark .battle-arena-embed .accumulate-card.squad-b-win::before {
   background: linear-gradient(90deg, rgba(230, 0, 18, 0.9), rgba(220, 38, 38, 0.7)) !important;
 }
 .dark .battle-arena-embed .score-tile {
-  background: rgba(0, 0, 0, 0.6) !important;
-  border: 1px solid rgba(230, 0, 18, 0.25) !important;
+  background: #0a0a0a !important;
+  border: 1px solid rgba(230, 0, 18, 0.2) !important;
 }
 .dark .battle-arena-embed .metric-table {
-  background: rgba(0, 0, 0, 0.6) !important;
-  border: 1px solid rgba(230, 0, 18, 0.25) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+  background: #0a0a0a !important;
+  border: 1px solid rgba(230, 0, 18, 0.2) !important;
+  box-shadow: none !important;
 }
 .dark .battle-arena-embed .metric-table-head {
   background: rgba(230, 0, 18, 0.08) !important;
   border-bottom: 1px solid rgba(230, 0, 18, 0.2) !important;
 }
 .dark .battle-arena-embed .accumulate-chart-frame {
-  background: rgba(0, 0, 0, 0.6) !important;
-  border: 1px solid rgba(230, 0, 18, 0.25) !important;
+  background: #0a0a0a !important;
+  border: 1px solid rgba(230, 0, 18, 0.2) !important;
 }
 .dark .battle-arena-embed .accumulate-score-frame .score-item.accumulate-score {
-  background: rgba(0, 0, 0, 0.6) !important;
-  border: 1px solid rgba(230, 0, 18, 0.25) !important;
+  background: #0a0a0a !important;
+  border: 1px solid rgba(230, 0, 18, 0.2) !important;
 }
 .dark .battle-arena-embed .cycle-card .score-item {
-  background: rgba(0, 0, 0, 0.6) !important;
+  background: #0a0a0a !important;
   border: 1px solid rgba(230, 0, 18, 0.2) !important;
+}
+.dark .battle-arena-embed .cycle-card:hover,
+.dark .battle-arena-embed .accumulate-card:hover,
+.dark .battle-arena-embed .accumulate-card.squad-a-win:hover,
+.dark .battle-arena-embed .accumulate-card.squad-b-win:hover {
+  background: #111111 !important;
+  border-color: rgba(230, 0, 18, 0.2) !important;
+  box-shadow: none !important;
+}
+.dark .battle-arena-embed .accumulate-chart-frame:hover {
+  background: #111111 !important;
+  border-color: rgba(230, 0, 18, 0.2) !important;
+  box-shadow: none !important;
 }
 .dark .battle-arena-embed .cycle-card .score-item.winner {
   background: rgba(230, 0, 18, 0.1) !important;
@@ -6087,9 +6099,9 @@ body.hide-scrollbar::-webkit-scrollbar {
   background: radial-gradient(circle at 50% 0%, rgba(230, 0, 18, 0.04), transparent 60%) !important;
 }
 .light .battle-arena-embed .cycle-card {
-  background: #F7F6F3 !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  background: rgba(243, 244, 246, 0.8) !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
 }
 .light .battle-arena-embed .cycle-card::before {
   background: linear-gradient(90deg, rgba(230, 0, 18, 0.5), rgba(230, 0, 18, 0.3)) !important;
@@ -6101,51 +6113,63 @@ body.hide-scrollbar::-webkit-scrollbar {
 }
 .light .battle-arena-embed .accumulate-card.squad-a-win,
 .light .battle-arena-embed .accumulate-card.squad-b-win {
-  border-color: rgba(230, 0, 18, 0.35) !important;
-  box-shadow: 0 2px 8px rgba(230, 0, 18, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 .light .battle-arena-embed .accumulate-card.squad-a-win::before,
 .light .battle-arena-embed .accumulate-card.squad-b-win::before {
   background: linear-gradient(90deg, rgba(230, 0, 18, 0.6), rgba(230, 0, 18, 0.4)) !important;
 }
 .light .battle-arena-embed .score-tile {
-  background: rgba(0, 0, 0, 0.02) !important;
-  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: rgba(243, 244, 246, 0.8) !important;
+  border: 1px solid transparent !important;
 }
 .light .battle-arena-embed .metric-table {
-  background: #F7F6F3 !important;
-  border: 1px solid rgba(0, 0, 0, 0.06) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  background: rgba(243, 244, 246, 0.8) !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
 }
 .light .battle-arena-embed .metric-table-head {
   background: rgba(230, 0, 18, 0.04) !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 .light .battle-arena-embed .accumulate-chart-frame {
-  background: rgba(0, 0, 0, 0.02) !important;
-  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: rgba(243, 244, 246, 0.8) !important;
+  border: 1px solid transparent !important;
 }
 .light .battle-arena-embed .accumulate-score-frame .score-item.accumulate-score {
-  background: rgba(230, 0, 18, 0.03) !important;
-  border: 1px solid rgba(230, 0, 18, 0.12) !important;
+  background: rgba(243, 244, 246, 0.8) !important;
+  border: 1px solid transparent !important;
 }
 .light .battle-arena-embed .cycle-card.squad-b-win .score-item.accumulate-score {
-  background: rgba(230, 0, 18, 0.03) !important;
-  border: 1px solid rgba(230, 0, 18, 0.12) !important;
+  background: rgba(243, 244, 246, 0.8) !important;
+  border: 1px solid transparent !important;
 }
 .light .battle-arena-embed .accumulate-chart-frame:hover {
-  border-color: rgba(230, 0, 18, 0.2) !important;
+  background: rgba(229, 231, 235, 0.8) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 .light .battle-arena-embed .cycle-card.squad-b-win .accumulate-chart-frame:hover {
-  border-color: rgba(230, 0, 18, 0.2) !important;
+  background: rgba(229, 231, 235, 0.8) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 .light .battle-arena-embed .cycle-card .score-item {
-  background: rgba(0, 0, 0, 0.02) !important;
-  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  background: rgba(243, 244, 246, 0.8) !important;
+  border: 1px solid transparent !important;
 }
 .light .battle-arena-embed .cycle-card .score-item.winner {
-  background: rgba(230, 0, 18, 0.05) !important;
-  border-color: rgba(230, 0, 18, 0.2) !important;
+  background: rgba(243, 244, 246, 0.8) !important;
+  border-color: transparent !important;
+}
+.light .battle-arena-embed .cycle-card:hover,
+.light .battle-arena-embed .accumulate-card:hover,
+.light .battle-arena-embed .accumulate-card.squad-a-win:hover,
+.light .battle-arena-embed .accumulate-card.squad-b-win:hover {
+  background: rgba(229, 231, 235, 0.8) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 .light .battle-arena-embed .meta-chip {
   background: rgba(0, 0, 0, 0.03) !important;

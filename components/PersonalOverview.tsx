@@ -169,9 +169,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
         </h2>
       </div>
 
-      <Card className="relative overflow-hidden group w-full" style={{ maxWidth: '100%' }}>
-        <div className="absolute inset-0 card-gradient-overlay personal-overview-gradient transition-opacity" />
-        <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur personal-overview-gradient rounded-full blur-3xl" />
+      <Card className="relative overflow-hidden group w-full bg-gray-100/80 dark:bg-[#0a0a0a] border border-transparent dark:border-primary/20 shadow-none hover:shadow-none hover:border-gray-300/80 hover:ring-1 hover:ring-gray-300/50 dark:hover:border-primary/30 dark:hover:ring-primary/20" style={{ maxWidth: '100%' }}>
         <CardHeader className="relative z-10">
           <div className="flex items-center justify-between">
             {(staffName || brand) && (
