@@ -13,6 +13,7 @@ interface LoadingProps {
 export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps) {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const loadingFontFamily = "'Poppins', sans-serif";
 
   useEffect(() => {
     setMounted(true);
@@ -28,7 +29,14 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
           size === 'md' ? 'h-8 w-8 border-t-2' : 
           'h-12 w-12 border-t-2'
         } ${isDark ? 'border-t-primary' : 'border-t-gray-400'}`} />
-        {text && <span className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} text-muted`}>{text}</span>}
+        {text && (
+          <span
+            className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} text-muted`}
+            style={{ fontFamily: loadingFontFamily }}
+          >
+            {text}
+          </span>
+        )}
       </div>
     );
   }
@@ -41,6 +49,7 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
         {text && (
           <motion.p
             className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} font-semibold text-gray-900 dark:text-white`}
+            style={{ fontFamily: loadingFontFamily }}
             animate={{
               opacity: [0.5, 1, 0.5],
             }}
@@ -318,6 +327,7 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
         {text && (
           <motion.p
             className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} font-semibold text-gray-900 dark:text-white`}
+            style={{ fontFamily: loadingFontFamily }}
             animate={{
               opacity: [0.5, 1, 0.5],
             }}
@@ -404,7 +414,10 @@ export function Loading({ size = 'md', text, variant = 'gaming' }: LoadingProps)
         />
       </motion.div>
       {text && (
-        <p className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} text-muted`}>
+        <p
+          className={`${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'} text-muted`}
+          style={{ fontFamily: loadingFontFamily }}
+        >
           {text}
         </p>
       )}

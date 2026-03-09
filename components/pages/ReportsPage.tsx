@@ -1409,7 +1409,7 @@ export function ReportsPage() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <div className="text-sm text-muted mb-1">{translations.reports.leadAmount}</div>
-                  <div className={`text-3xl font-heading font-bold ${
+                  <div className={`text-3xl font-body font-bold ${
                     leadingSquad === 'squad-b' ? 'text-blue-400' : 'text-primary'
                   }`}>
                     +${formatNumber(leadAmount)}

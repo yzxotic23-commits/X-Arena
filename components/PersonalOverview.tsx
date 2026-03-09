@@ -164,7 +164,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
       {/* Title Outside Card - Centered */}
       <div className="flex items-center justify-center gap-3 mb-4">
         <Trophy className="w-6 h-6 text-primary" />
-        <h2 className="text-2xl font-heading font-bold text-foreground-primary">
+        <h2 className="text-xl sm:text-2xl font-heading font-bold leading-tight tracking-tight uppercase text-gray-900 dark:text-white">
           {translations.overview.personalContributionOverview}
         </h2>
       </div>
@@ -199,7 +199,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
               key={displayScore}
               initial={{ scale: 1.2, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="text-6xl font-heading font-bold text-gray-900 dark:text-white"
+              className="text-6xl font-body font-bold text-gray-900 dark:text-white"
             >
               {formatNumber(displayScore)}
             </motion.div>
@@ -220,7 +220,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
                 initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
               >
-                <span className="text-base font-heading font-bold text-yellow-600 dark:text-yellow-400">
+                <span className="text-base font-body font-bold text-yellow-600 dark:text-yellow-400">
                   #{displayRanking} / {contribution.totalUsers}
                 </span>
               </motion.div>
@@ -240,7 +240,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
                 className="flex flex-col items-center gap-2"
               >
                 <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <span className="text-base font-heading font-bold text-blue-600 dark:text-blue-400">
+                <span className="text-base font-body font-bold text-blue-600 dark:text-blue-400">
                   #{contribution.rankingWithinSquad} / {contribution.squadTotalMembers}
                 </span>
               </motion.div>
@@ -300,7 +300,7 @@ export function PersonalOverview({ contribution, contributionMetrics, staffName,
                           <span className="text-xs text-muted">{config.label}</span>
                         </div>
                         <div className="flex items-center justify-center gap-1">
-                          <p className={`text-base font-heading font-bold ${config.color}`}>
+                          <p className={`text-base font-body font-bold ${config.color}`}>
                             {formatNumber(value)}
                           </p>
                           <span className="text-xs text-muted">pts</span>

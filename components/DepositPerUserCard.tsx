@@ -40,7 +40,7 @@ export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
         <CardContent className="space-y-3 sm:space-y-4 relative z-10">
           {/* Main Value */}
           <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors text-center">
-            <p className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2">
+            <p className="text-4xl font-body font-bold text-gray-900 dark:text-white mb-2">
               ${formatCurrency(target.depositPerUser)}
             </p>
             <p className="text-sm text-muted">{translations.overview.averageDepositPerUser}</p>
@@ -57,7 +57,7 @@ export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
                   <TrendingDown className="w-5 h-5 text-red-400" />
                 )}
               </div>
-              <p className={`text-2xl font-heading font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+              <p className={`text-2xl font-body font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                 {formatPercentage(trendChange)}
               </p>
               <p className="text-xs text-muted mt-1">{translations.overview.vsLastPeriod}</p>
@@ -68,7 +68,7 @@ export function DepositPerUserCard({ target }: DepositPerUserCardProps) {
                 <span className="text-sm text-muted">{translations.overview.previousPeriod}</span>
                 <DollarSign className="w-5 h-5 text-primary" />
               </div>
-              <p className="text-2xl font-heading font-bold text-foreground-primary">
+              <p className="text-2xl font-body font-bold text-foreground-primary">
                 ${formatNumber(Math.round(previousValue))}
               </p>
               <p className="text-xs text-muted mt-1">{translations.overview.lastPeriodAverage}</p>

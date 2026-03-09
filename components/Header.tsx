@@ -258,7 +258,7 @@ export function Header({
               <div className="flex items-center gap-2 sm:gap-3">
                 <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 <div className="flex flex-col">
-                  <div className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground-primary tabular-nums">
+                  <div className="text-lg sm:text-xl md:text-2xl font-body font-bold text-foreground-primary tabular-nums">
                     {formatTime(currentTime)}
                   </div>
                   <div className="text-xs sm:text-sm text-muted">
@@ -272,7 +272,7 @@ export function Header({
                 <div className="flex items-center gap-2 sm:gap-3 pl-4 sm:pl-6 border-l border-gray-400 dark:border-white">
                   {getWeatherIcon(weather.icon)}
                   <div className="flex flex-col">
-                    <div className="text-base sm:text-lg font-heading font-semibold text-foreground-primary">
+                    <div className="text-base sm:text-lg font-body font-semibold text-foreground-primary">
                       {weather.temp}°C
                     </div>
                     <div className="text-xs sm:text-sm text-muted">
@@ -291,7 +291,7 @@ export function Header({
               <div className="flex items-center gap-2 sm:gap-3">
                 <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 <div className="flex flex-col">
-                  <div className="text-lg sm:text-xl md:text-2xl font-heading font-bold text-foreground-primary tabular-nums">
+                  <div className="text-lg sm:text-xl md:text-2xl font-body font-bold text-foreground-primary tabular-nums">
                     {formatTime(currentTime)}
                   </div>
                   <div className="text-xs sm:text-sm text-muted">
@@ -305,7 +305,7 @@ export function Header({
                 <div className="flex items-center gap-2 sm:gap-3 pl-4 sm:pl-6 border-l border-gray-400 dark:border-white">
                   {getWeatherIcon(weather.icon)}
                   <div className="flex flex-col">
-                    <div className="text-base sm:text-lg font-heading font-semibold text-foreground-primary">
+                    <div className="text-base sm:text-lg font-body font-semibold text-foreground-primary">
                       {weather.temp}°C
                     </div>
                     <div className="text-xs sm:text-sm text-muted">

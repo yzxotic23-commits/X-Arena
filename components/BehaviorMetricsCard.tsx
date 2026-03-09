@@ -82,7 +82,7 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
                     <span className="text-xs sm:text-sm text-muted truncate flex-1">{config.label}</span>
                     <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${config.color} flex-shrink-0`} />
                   </div>
-                  <p className="text-lg sm:text-xl font-heading font-bold text-foreground-primary break-words overflow-wrap-anywhere">
+                  <p className="text-lg sm:text-xl font-body font-bold text-foreground-primary break-words overflow-wrap-anywhere">
                     {config.key === 'depositAmountPerUser' || config.key === 'ggr'
                       ? `$${formatCurrency(value)}`
                       : formatNumber(value)}
@@ -111,7 +111,7 @@ export function BehaviorMetricsCard({ behaviorMetrics }: BehaviorMetricsCardProp
                   className="bg-card-inner rounded-lg p-4 sm:p-5 border border-card-border transition-colors text-center min-w-0"
                 >
                   <p className="text-xs sm:text-sm text-muted mb-2 truncate">{dayConfig.label}</p>
-                  <p className="text-lg sm:text-xl font-heading font-bold text-foreground-primary">
+                  <p className="text-lg sm:text-xl font-body font-bold text-foreground-primary">
                     {formatNumber(value)}
                   </p>
                 </motion.div>

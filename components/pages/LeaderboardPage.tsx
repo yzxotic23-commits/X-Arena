@@ -1703,7 +1703,7 @@ export function LeaderboardPage() {
                   {((userInfo?.fullName === user.name) || (userInfo?.username === user.name) || (rankFullName === user.name) || (rankUsername === user.name)) && (
                     <Badge variant="default" className="text-xs bg-primary text-white font-semibold px-2 py-0.5">You</Badge>
                   )}
-                  <p className="text-sm font-heading font-bold text-foreground-primary">{formatNumber(user.points)} pts</p>
+                  <p className="text-sm font-body font-bold text-foreground-primary">{formatNumber(user.points)} pts</p>
                   {user.categoryTops && user.categoryTops.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 justify-center">
                       {user.categoryTops.map((cat) => (
@@ -1734,7 +1734,7 @@ export function LeaderboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-center gap-3 mb-6">
               <Trophy className="w-6 h-6 text-primary" />
-              <h3 className="text-2xl font-heading font-bold text-foreground-primary">
+              <h3 className="text-xl sm:text-2xl font-heading font-bold leading-tight tracking-tight uppercase text-gray-900 dark:text-white">
                 {translations.leaderboard.rankingIncentiveModule}
               </h3>
             </div>
@@ -1763,7 +1763,7 @@ export function LeaderboardPage() {
                       >
                         <div className="flex items-center gap-2">
                           {getRankIcon(entry.rank)}
-                          <span className={`font-heading font-bold ${entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'}`}>
+                          <span className={`font-body font-bold ${entry.isCurrentUser ? 'text-primary' : 'text-foreground-primary'}`}>
                             #{entry.rank}
                           </span>
                         </div>
@@ -1843,7 +1843,7 @@ export function LeaderboardPage() {
           <div className="space-y-4 mb-12 md:mb-16 lg:mb-20 mt-8 md:mt-12 lg:mt-16">
             <div className="flex items-center justify-center gap-3 mb-6 pt-4 md:pt-6 lg:pt-8">
               <Award className="w-6 h-6 text-primary" />
-              <h3 className="text-2xl font-heading font-bold text-foreground-primary">
+              <h3 className="text-xl sm:text-2xl font-heading font-bold leading-tight tracking-tight uppercase text-gray-900 dark:text-white">
                 {translations.leaderboard.topPerformersByCategory}
               </h3>
             </div>
@@ -1906,7 +1906,7 @@ export function LeaderboardPage() {
                                     <span className="text-xs text-muted">{performer.name}</span>
                                   </div>
                                   <div className="flex items-center justify-center gap-1">
-                                    <p className={`text-base font-heading font-bold ${style.color}`}>
+                                    <p className={`text-base font-body font-bold ${style.color}`}>
                                       {category === 'Highest Deposit'
                                         ? `$${formatNumber(performer.value)}`
                                         : formatNumber(performer.value)}
@@ -1979,13 +1979,13 @@ export function LeaderboardPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                         <div className="text-sm text-muted mb-1">Total Score</div>
-                        <div className="text-2xl font-heading font-bold text-primary">
+                        <div className="text-2xl font-body font-bold text-primary">
                           {formatNumber(selectedMember.score)}
                         </div>
                       </div>
                       <div className="bg-card-inner rounded-lg p-4 border border-card-border">
                         <div className="text-sm text-muted mb-1">Rank</div>
-                        <div className="text-2xl font-heading font-bold text-foreground-primary">
+                        <div className="text-2xl font-body font-bold text-foreground-primary">
                           #{selectedMember.rank}
                         </div>
                       </div>
@@ -1996,25 +1996,25 @@ export function LeaderboardPage() {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">Deposit</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.deposit)}
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">Retention</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.retention)}
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">Reactivation</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.activation)}
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">Referral</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.referral)}
                           </div>
                         </div>
@@ -2024,31 +2024,31 @@ export function LeaderboardPage() {
                       <div className="grid grid-cols-5 gap-2 mt-3">
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">4 - 7 Days</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_4_7 || 0)}
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">8 - 11 Days</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_8_11 || 0)}
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">12 - 15 Days</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_12_15 || 0)}
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">16 - 19 Days</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_16_19 || 0)}
                           </div>
                         </div>
                         <div className="bg-card-inner rounded-lg p-3 border border-card-border">
                           <div className="text-xs text-muted mb-1">20 Days & Above</div>
-                          <div className="text-lg font-heading font-bold text-foreground-primary">
+                          <div className="text-lg font-body font-bold text-foreground-primary">
                             {formatNumber(selectedMember.breakdown.days_20_plus || 0)}
                           </div>
                         </div>

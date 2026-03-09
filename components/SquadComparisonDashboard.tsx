@@ -363,7 +363,7 @@ export function SquadComparisonDashboard({ theme = 'red' }: SquadComparisonDashb
 
           {/* Text with Yellow-Orange Gradient */}
           <div 
-            className="text-3xl md:text-4xl font-heading font-bold"
+            className="text-3xl md:text-4xl font-body font-bold"
             style={{
               background: 'linear-gradient(135deg, #fbbf24, #f97316)',
               WebkitBackgroundClip: 'text',

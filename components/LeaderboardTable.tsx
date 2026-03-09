@@ -76,7 +76,7 @@ export function LeaderboardTable({ leaderboard }: LeaderboardTableProps) {
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
                         {getRankIcon(entry.rank)}
-                        <span className="font-heading font-bold text-foreground-primary">#{entry.rank}</span>
+                        <span className="font-body font-bold text-foreground-primary">#{entry.rank}</span>
                       </div>
                     </td>
                     <td className="py-4 px-4">

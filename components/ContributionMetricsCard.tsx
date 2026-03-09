@@ -80,7 +80,7 @@ export function ContributionMetricsCard({ contributionMetrics }: ContributionMet
                     <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${config.color} flex-shrink-0`} />
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <p className="text-lg sm:text-xl font-heading font-bold text-foreground-primary break-words overflow-wrap-anywhere">
+                    <p className="text-lg sm:text-xl font-body font-bold text-foreground-primary break-words overflow-wrap-anywhere">
                       {formatNumber(value)}
                     </p>
                     <span className="text-xs text-muted">pts</span>

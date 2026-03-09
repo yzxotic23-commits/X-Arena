@@ -41,8 +41,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ["Poppins", "sans-serif"],
-        body: ["Poppins", "sans-serif"],
+        heading: ["Manrope", "sans-serif"],
+        body: ["Inter", "sans-serif"],
         manrope: ["Manrope", "sans-serif"],
         nexokora: ["'Nexokora Techno'", "Orbitron", "sans-serif"],
         inter: ["Inter", "sans-serif"],

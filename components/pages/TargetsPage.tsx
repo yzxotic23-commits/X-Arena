@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target, X } from 'lucide-react';
@@ -419,21 +420,25 @@ export function TargetsPage() {
 
   // Fetch squad GGR targets from database
   const fetchSquadGgrTargets = useCallback(async () => {
+    const defaultTargets = [
+      DEFAULT_GGR_TARGETS[0].value,
+      DEFAULT_GGR_TARGETS[1].value,
+      DEFAULT_GGR_TARGETS[2].value,
+    ];
+
     try {
       const { data, error } = await supabase
         .from('target_settings')
         .select('*')
         .eq('month', selectedMonth)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Failed to fetch squad GGR targets', error);
-        // Use default values if fetch fails
-        setSquadGgrTargets([
-          DEFAULT_GGR_TARGETS[0].value,
-          DEFAULT_GGR_TARGETS[1].value,
-          DEFAULT_GGR_TARGETS[2].value,
-        ]);
+        setSquadGgrTargets(defaultTargets);
+      } else if (!data) {
+        // target_settings for this month is optional; fall back silently
+        setSquadGgrTargets(defaultTargets);
       } else if (data) {
         // Load squad GGR targets based on active squad
         if (activeSquad === 'squad-a') {
@@ -450,12 +455,7 @@ export function TargetsPage() {
       }
     } catch (error) {
       console.error('Error fetching squad GGR targets', error);
-      // Use default values if error
-      setSquadGgrTargets([
-        DEFAULT_GGR_TARGETS[0].value,
-        DEFAULT_GGR_TARGETS[1].value,
-        DEFAULT_GGR_TARGETS[2].value,
-      ]);
+      setSquadGgrTargets(defaultTargets);
     } finally {
       setLoadingSquadTargets(false);
     }
@@ -950,115 +950,134 @@ export function TargetsPage() {
       </div>
 
       {/* Brand Detail Modal */}
-      <AnimatePresence>
-        {isDetailModalOpen && selectedCycle && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setIsDetailModalOpen(false)}
-          >
+      {typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isDetailModalOpen && selectedCycle && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-card border border-card-border rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDetailModalOpen(false)}
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(4px)',
+                padding: '1rem',
+              }}
             >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-card-border">
-                <div>
-                  <h2 className="font-heading text-2xl font-bold text-foreground-primary">
-                    {selectedBrand} - {selectedCycle.name}
-                  </h2>
-                  <p className="text-sm text-muted mt-1">
-                    {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </p>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card-inner border border-card-border rounded-lg shadow-lg w-full flex flex-col hide-scrollbar"
+                style={{ width: '90%', maxWidth: '56rem', maxHeight: '90vh', overflowY: 'auto', margin: 'auto' }}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-6 border-b border-card-border flex-shrink-0">
+                  <div>
+                    <h2 className="font-heading text-2xl font-bold text-foreground-primary">
+                      {selectedBrand} - {selectedCycle.name}
+                    </h2>
+                    <p className="text-sm text-muted mt-1">
+                      {new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsDetailModalOpen(false)}
+                    className="p-2 hover:bg-primary/10 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-foreground-primary" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="p-2 hover:bg-card-inner rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-foreground-primary" />
-                </button>
-              </div>
 
-              {/* Modal Content */}
-              <div className="p-6 overflow-y-auto flex-1">
-                {loadingBrandDetails ? (
-                  <div className="min-h-[300px]">
-                    <ParticleLoading text="LOADING" minHeight="300px" />
-                  </div>
-                ) : brandDetails.length === 0 ? (
-                  <div className="text-center py-12 text-muted">
-                    Tidak ada data untuk brand ini pada cycle ini
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b-2 border-card-border bg-card-inner/30">
-                          <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">
-                            Tanggal
-                          </th>
-                          <th className="text-right py-3 px-4 text-sm font-semibold text-foreground-primary">
-                            Net Profit
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {brandDetails.map((detail, index) => {
-                          const date = new Date(detail.date);
-                          const day = date.getDate();
-                          const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-                          
-                          return (
-                            <tr
-                              key={index}
-                              className="border-b border-card-border hover:bg-card-inner/20 transition-colors"
-                            >
-                              <td className="py-3 px-4 text-sm text-foreground-primary">
-                                {monthName} {String(day).padStart(2, '0')}
-                              </td>
-                              <td className="py-3 px-4 text-sm text-foreground-primary">
-                                <div className="flex justify-end">
-                                  <span className={`font-semibold ${
-                                    detail.net_profit >= 0 ? 'text-green-400' : 'text-red-400'
-                                  }`}>
-                                    {formatCurrency(detail.net_profit)}
-                                  </span>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        {/* Total Row */}
-                        <tr className="border-t-2 border-card-border bg-card-inner/30 font-semibold">
-                          <td className="py-3 px-4 text-sm text-foreground-primary">
-                            Total
-                          </td>
-                          <td className="py-3 px-4 text-sm text-foreground-primary">
-                            <div className="flex justify-end">
-                              <span className={`font-bold ${
-                                brandDetails.reduce((sum, d) => sum + d.net_profit, 0) >= 0 
-                                  ? 'text-green-400' 
-                                  : 'text-red-400'
-                              }`}>
-                                {formatCurrency(brandDetails.reduce((sum, d) => sum + d.net_profit, 0))}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+                {/* Modal Content */}
+                <div className="p-6 overflow-y-auto flex-1">
+                  {loadingBrandDetails ? (
+                    <div className="min-h-[300px]">
+                      <ParticleLoading text="LOADING" minHeight="300px" />
+                    </div>
+                  ) : brandDetails.length === 0 ? (
+                    <div className="text-center py-12 text-muted">
+                      Tidak ada data untuk brand ini pada cycle ini
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b-2 border-card-border bg-card-inner/30">
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-foreground-primary">
+                              Tanggal
+                            </th>
+                            <th className="text-right py-3 px-4 text-sm font-semibold text-foreground-primary">
+                              Net Profit
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {brandDetails.map((detail, index) => {
+                            const date = new Date(detail.date);
+                            const day = date.getDate();
+                            const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+
+                            return (
+                              <tr
+                                key={index}
+                                className="border-b border-card-border hover:bg-primary/5 transition-colors"
+                              >
+                                <td className="py-3 px-4 text-sm text-foreground-primary">
+                                  {monthName} {String(day).padStart(2, '0')}
+                                </td>
+                                <td className="py-3 px-4 text-sm">
+                                  <div className="flex justify-end">
+                                    <span className={`font-semibold ${
+                                      detail.net_profit >= 0
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : 'text-red-600 dark:text-red-400'
+                                    }`}>
+                                      {formatCurrency(detail.net_profit)}
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {/* Total Row */}
+                          <tr className="border-t-2 border-card-border bg-card-inner/30 font-semibold">
+                            <td className="py-3 px-4 text-sm text-foreground-primary">
+                              Total
+                            </td>
+                            <td className="py-3 px-4 text-sm">
+                              <div className="flex justify-end">
+                                <span className={`font-bold ${
+                                  brandDetails.reduce((sum, d) => sum + d.net_profit, 0) >= 0
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : 'text-red-600 dark:text-red-400'
+                                }`}>
+                                  {formatCurrency(brandDetails.reduce((sum, d) => sum + d.net_profit, 0))}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

@@ -60,7 +60,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted mb-1">{translations.overview.targetValue}</p>
-                <p className="text-2xl font-heading font-bold text-foreground-primary">
+                <p className="text-2xl font-body font-bold text-foreground-primary">
                   {formatCurrency(target.value)}
                 </p>
               </div>
@@ -74,7 +74,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                   <span className="text-sm text-muted">Net Profit Squad</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
+                <p className="text-3xl font-body font-bold text-gray-900 dark:text-white">
                   {formatCurrency(target.netProfitSquad || 0)}
                 </p>
               </div>
@@ -85,7 +85,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                   <span className="text-sm text-muted">{translations.overview.remainingGap}</span>
                   <Target className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-2xl font-heading font-bold text-foreground-primary">
+                <p className="text-2xl font-body font-bold text-foreground-primary">
                   {formatCurrency(target.gap)}
                 </p>
               </div>
@@ -96,7 +96,7 @@ export function TargetProgressChart({ target }: TargetProgressChartProps) {
                   <span className="text-sm text-muted">{translations.overview.completionRate}</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
+                <p className="text-3xl font-body font-bold text-gray-900 dark:text-white">
                   {target.completion.toFixed(1)}%
                 </p>
               </div>

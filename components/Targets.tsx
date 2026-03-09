@@ -68,7 +68,7 @@ export function Targets({ target }: TargetsProps) {
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted mb-1">Target Value</p>
-                <p className="text-2xl font-heading font-bold text-foreground-primary">
+                <p className="text-2xl font-body font-bold text-foreground-primary">
                   {formatCurrency(target.value)}
                 </p>
               </div>
@@ -81,7 +81,7 @@ export function Targets({ target }: TargetsProps) {
                   <span className="text-sm text-muted">Completion Rate</span>
                   <Gauge className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
+                <p className="text-3xl font-body font-bold text-gray-900 dark:text-white">
                   {target.completion.toFixed(1)}%
                 </p>
               </div>
@@ -91,7 +91,7 @@ export function Targets({ target }: TargetsProps) {
                   <span className="text-sm text-muted">Remaining Gap</span>
                   <Target className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-2xl font-heading font-bold text-foreground-primary">
+                <p className="text-2xl font-body font-bold text-foreground-primary">
                   {formatCurrency(target.gap)}
                 </p>
               </div>
@@ -122,7 +122,7 @@ export function Targets({ target }: TargetsProps) {
         </CardHeader>
         <CardContent className="relative z-10">
           <div className="bg-card-inner rounded-lg p-6 border border-card-border text-center transition-colors">
-            <p className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-2">
+            <p className="text-4xl font-body font-bold text-gray-900 dark:text-white mb-2">
               ${formatCurrency(target.depositPerUser)}
             </p>
             <p className="text-sm text-muted">Average deposit per user</p>

@@ -2714,14 +2714,14 @@ export function CustomerListingPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={activeTab === 'adjustment' ? 6 : activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 align-middle">
+                    <td colSpan={activeTab === 'adjustment' ? 7 : activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 align-middle">
                       <ParticleLoading text="LOADING" minHeight="180px" />
                     </td>
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>
-                    <td colSpan={activeTab === 'adjustment' ? 6 : activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 text-center">
-                      <div className="flex flex-col items-center gap-3 text-muted">
+                    <td colSpan={activeTab === 'adjustment' ? 7 : activeTab === 'recommend' ? 8 : 7} className="py-16 px-4 align-middle">
+                      <div className="flex min-h-[180px] w-full flex-col items-center justify-center gap-3 text-center text-muted">
                         {fetchError ? (
                           <>
                             <AlertCircle className="w-12 h-12 opacity-50 text-amber-500" />
@@ -3097,162 +3097,152 @@ export function CustomerListingPage() {
       </AnimatePresence>
 
       {/* Add User Modal - For Recommend, Reactivation, Retention, and Extra tabs */}
-      <AnimatePresence>
-        {showAddUserModal && (activeTab === 'recommend' || activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra') && (
-          <>
-            {/* Backdrop */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showAddUserModal && (activeTab === 'recommend' || activeTab === 'reactivation' || activeTab === 'retention' || activeTab === 'extra') && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setShowAddUserModal(false)}
-              style={{ 
+              style={{
                 position: 'fixed',
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
-                width: '100vw',
-                height: '100vh',
-                margin: 0,
-                padding: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
-                zIndex: 99999
-              }}
-            />
-            {/* Modal */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{ 
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                width: '100vw',
-                height: '100vh',
-                margin: 0,
-                padding: 0,
+                zIndex: 99999,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                zIndex: 100000,
-                pointerEvents: 'none'
+                background: 'rgba(0, 0, 0, 0.5)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                padding: '1rem',
               }}
             >
-              <Card className="relative overflow-hidden group w-full max-w-md max-h-[90vh] overflow-y-auto" style={{ pointerEvents: 'auto', margin: '1rem' }}>
-                <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
-                <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
-                <CardHeader className="relative z-10">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <UserPlus className="w-5 h-5 text-primary" />
-                      Add New User
-                    </CardTitle>
-                    <button
-                      onClick={() => setShowAddUserModal(false)}
-                      className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-foreground-primary"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </CardHeader>
-                <CardContent className="relative z-10">
-                  <form onSubmit={(e) => { e.preventDefault(); handleAddUser(); }} className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-foreground-primary">Unique Code</label>
-                      <input
-                        type="text"
-                        name="uniqueCode"
-                        value={newUser.uniqueCode}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                        required
-                        placeholder="e.g., UC009"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      {activeTab === 'recommend' && (
-                        <>
-                          <label className="block text-sm font-semibold text-foreground-primary">Username</label>
-                          <input
-                            type="text"
-                            name="username"
-                            value={newUser.username}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                            placeholder="Enter username"
-                          />
-                        </>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-foreground-primary">Brand</label>
-                      <select
-                        name="brand"
-                        value={newUser.brand}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                        required
-                        disabled={loadingBrands || (isLimitedAccess && userBrand !== null)}
-                      >
-                        <option value="">{loadingBrands ? 'Loading brands...' : 'Select Brand'}</option>
-                        {availableBrands.map((brand) => (
-                          <option key={brand} value={brand}>
-                            {brand}
-                          </option>
-                        ))}
-                      </select>
-                      {isLimitedAccess && userBrand && (
-                        <p className="text-xs text-muted">Brand is automatically set to your assigned brand: {userBrand}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-foreground-primary">Handler</label>
-                      <select
-                        name="handler"
-                        value={newUser.handler}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-                        required
-                        disabled={isLimitedAccess && userShift !== null}
-                      >
-                        <option value="">Select Handler</option>
-                        <option value="Shift A">Shift A</option>
-                        <option value="Shift B">Shift B</option>
-                      </select>
-                      {isLimitedAccess && userShift && (
-                        <p className="text-xs text-muted">Handler is automatically set to your shift: {userShift}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-3 pt-4">
-                      <Button type="submit" variant="default" className="flex-1">
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Add User
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: '100%',
+                  maxWidth: '28rem',
+                  maxHeight: '90vh',
+                  margin: 'auto',
+                }}
+              >
+                <Card className="relative overflow-hidden group w-full max-h-[90vh] overflow-y-auto">
+                  <div className="absolute inset-0 card-gradient-overlay transition-opacity" />
+                  <div className="absolute top-0 right-0 w-32 h-32 card-gradient-blur rounded-full blur-3xl" />
+                  <CardHeader className="relative z-10">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <UserPlus className="w-5 h-5 text-primary" />
+                        Add New User
+                      </CardTitle>
+                      <button
                         onClick={() => setShowAddUserModal(false)}
-                        className="flex-1"
+                        className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-foreground-primary"
                       >
-                        Cancel
-                      </Button>
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
-                  </form>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent className="relative z-10">
+                    <form onSubmit={(e) => { e.preventDefault(); handleAddUser(); }} className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">Unique Code</label>
+                        <input
+                          type="text"
+                          name="uniqueCode"
+                          value={newUser.uniqueCode}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          required
+                          placeholder="e.g., UC009"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        {activeTab === 'recommend' && (
+                          <>
+                            <label className="block text-sm font-semibold text-foreground-primary">Username</label>
+                            <input
+                              type="text"
+                              name="username"
+                              value={newUser.username}
+                              onChange={handleInputChange}
+                              className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                              placeholder="Enter username"
+                            />
+                          </>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">Brand</label>
+                        <select
+                          name="brand"
+                          value={newUser.brand}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          required
+                          disabled={loadingBrands || (isLimitedAccess && userBrand !== null)}
+                        >
+                          <option value="">{loadingBrands ? 'Loading brands...' : 'Select Brand'}</option>
+                          {availableBrands.map((brand) => (
+                            <option key={brand} value={brand}>
+                              {brand}
+                            </option>
+                          ))}
+                        </select>
+                        {isLimitedAccess && userBrand && (
+                          <p className="text-xs text-muted">Brand is automatically set to your assigned brand: {userBrand}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-foreground-primary">Handler</label>
+                        <select
+                          name="handler"
+                          value={newUser.handler}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
+                          required
+                          disabled={isLimitedAccess && userShift !== null}
+                        >
+                          <option value="">Select Handler</option>
+                          <option value="Shift A">Shift A</option>
+                          <option value="Shift B">Shift B</option>
+                        </select>
+                        {isLimitedAccess && userShift && (
+                          <p className="text-xs text-muted">Handler is automatically set to your shift: {userShift}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-3 pt-4">
+                        <Button type="submit" variant="default" className="flex-1">
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Add User
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowAddUserModal(false)}
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </motion.div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Add Bonus Modal - Only for Adjustment tab (React Portal) */}
       {typeof document !== 'undefined' && createPortal(

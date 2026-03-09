@@ -159,7 +159,7 @@ export function TrafficSourceCard({ trafficSource }: TrafficSourceCardProps) {
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-4">
-                      <p className="text-lg font-heading font-bold text-foreground-primary">
+                      <p className="text-lg font-body font-bold text-foreground-primary">
                         {formatNumber(item.value)}
                       </p>
                       <div className="flex-1 max-w-36 bg-progress-track rounded-full h-2 overflow-hidden">

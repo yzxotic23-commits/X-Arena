@@ -73,7 +73,7 @@ export function BaseMetricsCard({ baseMetrics }: BaseMetricsCardProps) {
                     <span className="text-xs sm:text-sm text-muted truncate flex-1">{config.label}</span>
                     <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${config.color} flex-shrink-0`} />
                   </div>
-                  <p className="text-xl sm:text-2xl font-heading font-bold text-foreground-primary break-words overflow-wrap-anywhere">
+                  <p className="text-xl sm:text-2xl font-body font-bold text-foreground-primary break-words overflow-wrap-anywhere">
                     {config.key === 'depositAmount' || config.key === 'grossProfit' 
                       ? `$${formatNumber(value)}`
                       : formatNumber(value)}

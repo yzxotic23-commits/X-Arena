@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Target, Save, RefreshCw, Calendar, TrendingUp } from 'lucide-react';
+import { Target, Save, RefreshCw, Calendar, TrendingUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
 import { useLanguage } from '@/lib/language-context';
 import { t } from '@/lib/translations';
@@ -145,8 +145,17 @@ export function TargetSettingsPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   };
 
+  const currentYear = new Date().getFullYear();
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [displayedYear, setDisplayedYear] = useState(parseInt(getCurrentMonth().split('-')[0], 10));
   const [squadGgr, setSquadGgr] = useState(MOCK_SQUAD_GGR);
+  const monthDropdownRef = useRef<HTMLDivElement>(null);
   
   // Mock data for Squad B
   const MOCK_SQUAD_B_GGR = 266057.26;
@@ -485,9 +494,38 @@ export function TargetSettingsPage() {
     setSaving(false);
   };
 
-  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedMonth(e.target.value);
+  const handleMonthSelect = (monthIndex: number) => {
+    const month = String(monthIndex + 1).padStart(2, '0');
+    setSelectedMonth(`${displayedYear}-${month}`);
+    setShowMonthDropdown(false);
   };
+
+  const getMonthName = (monthStr: string): string => {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('en-US', { month: 'long' });
+  };
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (monthDropdownRef.current && !monthDropdownRef.current.contains(event.target as Node)) {
+        setShowMonthDropdown(false);
+      }
+    }
+
+    if (showMonthDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMonthDropdown]);
+
+  useEffect(() => {
+    const [year] = selectedMonth.split('-');
+    setDisplayedYear(parseInt(year, 10) || currentYear);
+  }, [selectedMonth, currentYear]);
 
   // Handle Target Personal changes
   const handlePersonalChange = (field: string, value: string) => {
@@ -608,16 +646,65 @@ export function TargetSettingsPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <Calendar className="w-5 h-5 text-primary" />
-          <div>
-            <label className="block text-sm font-semibold text-foreground-primary mb-1">
-              Select Month
-            </label>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={handleMonthChange}
-              className="px-4 py-2 bg-white dark:bg-gray-900 border border-card-border rounded-lg text-foreground-primary focus:outline-none focus:border-primary transition-colors"
-            />
+          <div className="flex items-center">
+            <div className="relative" ref={monthDropdownRef}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMonthDropdown((prev) => !prev)}
+                className={`flex items-center gap-2 px-3 py-2 h-10 cursor-pointer select-none min-w-[220px] justify-between border-transparent bg-transparent shadow-none text-foreground-primary hover:bg-primary/10 ${showMonthDropdown ? 'bg-primary/10' : ''}`}
+              >
+                <span className="text-sm font-medium">
+                  {getMonthName(selectedMonth)} {selectedMonth.split('-')[0]}
+                </span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showMonthDropdown ? 'rotate-180' : ''}`} />
+              </Button>
+              {showMonthDropdown && (
+                <div className="absolute top-full left-0 mt-1.5 bg-card-inner border border-card-border rounded-xl shadow-lg z-50 min-w-[320px] overflow-hidden p-3">
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <button
+                      type="button"
+                      onClick={() => setDisplayedYear((prev) => prev - 1)}
+                      className="p-2 rounded-lg text-foreground-primary hover:bg-primary/10 transition-colors"
+                      aria-label="Previous year"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-sm font-body font-bold text-foreground-primary">
+                      {displayedYear}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setDisplayedYear((prev) => prev + 1)}
+                      className="p-2 rounded-lg text-foreground-primary hover:bg-primary/10 transition-colors"
+                      aria-label="Next year"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {months.map((month, index) => {
+                      const monthValue = String(index + 1).padStart(2, '0');
+                      const isSelected = selectedMonth === `${displayedYear}-${monthValue}`;
+                      return (
+                        <button
+                          key={month}
+                          type="button"
+                          onClick={() => handleMonthSelect(index)}
+                          className={`rounded-lg px-3 py-2 text-sm text-left transition-colors select-none ${
+                            isSelected
+                              ? 'bg-primary text-white font-semibold shadow-sm'
+                              : 'text-foreground-primary hover:bg-primary/10'
+                          }`}
+                        >
+                          {month.slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">

@@ -34,9 +34,9 @@
   font-family: 'Nohemi', sans-serif !important;
 }
 
-/* Sidebar pakai Poppins (sama seperti body) */
+/* Sidebar pakai font body utama agar konsisten dengan dashboard */
 .x-arena-sidebar {
-  font-family: 'Poppins', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
 }
 /* @tailwind directives are valid Tailwind CSS syntax */
 @tailwind base;
@@ -129,7 +129,7 @@
   body {
     /* @apply is valid Tailwind CSS syntax */
     @apply text-foreground;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', sans-serif;
     min-height: 100vh;
     width: 100%;
     max-width: 100%;

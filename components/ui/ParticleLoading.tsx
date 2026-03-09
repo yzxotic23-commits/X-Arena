@@ -23,6 +23,7 @@ export function ParticleLoading({ text = 'BATTLE ARENA', minHeight = '70vh' }: P
   const [glitch, setGlitch] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const progressRef = useRef(0);
+  const loadingFontFamily = "'Poppins', sans-serif";
 
   // Detect dark/light mode
   useEffect(() => {
@@ -118,6 +119,7 @@ export function ParticleLoading({ text = 'BATTLE ARENA', minHeight = '70vh' }: P
               marginBottom: 6,
               textTransform: 'uppercase',
               fontWeight: 600,
+              fontFamily: loadingFontFamily,
             }}
           >
             X-ARENA
@@ -129,6 +131,7 @@ export function ParticleLoading({ text = 'BATTLE ARENA', minHeight = '70vh' }: P
               letterSpacing: '0.25em',
               textTransform: 'uppercase',
               color: glitch ? c.titleGlitch : c.title,
+              fontFamily: loadingFontFamily,
               textShadow: glitch
                 ? '2px 0 rgba(230,0,18,0.8), -2px 0 rgba(0,200,255,0.4)'
                 : c.titleShadow,
@@ -199,6 +202,7 @@ export function ParticleLoading({ text = 'BATTLE ARENA', minHeight = '70vh' }: P
               letterSpacing: '0.1em',
               color: c.statusText,
               textTransform: 'uppercase',
+              fontFamily: loadingFontFamily,
               maxWidth: 240,
               overflow: 'hidden',
               whiteSpace: 'nowrap',
@@ -214,6 +218,7 @@ export function ParticleLoading({ text = 'BATTLE ARENA', minHeight = '70vh' }: P
               fontWeight: 700,
               letterSpacing: '0.05em',
               color: c.pctColor,
+              fontFamily: loadingFontFamily,
               textShadow: c.pctShadow,
               fontVariantNumeric: 'tabular-nums',
               minWidth: 52,

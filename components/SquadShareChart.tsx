@@ -66,7 +66,7 @@ export function SquadShareChart({ squad }: SquadShareChartProps) {
                 {/* Center Label */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                   <p className="text-sm text-muted mb-1">{translations.overview.totalShare}</p>
-                  <p className="text-2xl font-heading font-bold text-foreground-primary">
+                  <p className="text-2xl font-body font-bold text-foreground-primary">
                     100%
                   </p>
                 </div>
@@ -80,7 +80,7 @@ export function SquadShareChart({ squad }: SquadShareChartProps) {
                   <span className="text-sm text-muted">{translations.overview.yourContribution}</span>
                   <div className="w-4 h-4 rounded-full bg-primary" />
                 </div>
-                <p className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
+                <p className="text-3xl font-body font-bold text-gray-900 dark:text-white">
                   {formatPercentage(squad.personalShare)}
                 </p>
               </div>
@@ -89,7 +89,7 @@ export function SquadShareChart({ squad }: SquadShareChartProps) {
                   <span className="text-sm text-muted">{translations.overview.squadMembers}</span>
                   <div className="w-4 h-4 rounded-full bg-gray-400 dark:bg-gray-600" />
                 </div>
-                <p className="text-2xl font-heading font-bold text-foreground-primary">
+                <p className="text-2xl font-body font-bold text-foreground-primary">
                   {formatPercentage(100 - squad.personalShare)}
                 </p>
               </div>

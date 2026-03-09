@@ -52,7 +52,7 @@ export function SquadCompare({ squad }: SquadCompareProps) {
                 <span className="text-sm text-muted">Total Squad Score</span>
                 <Crown className="w-5 h-5 text-primary" />
               </div>
-              <div className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
+              <div className="text-3xl font-body font-bold text-gray-900 dark:text-white">
                 {formatNumber(squad.totalScore)}
               </div>
             </div>
@@ -80,7 +80,7 @@ export function SquadCompare({ squad }: SquadCompareProps) {
           <div className="bg-card-inner rounded-lg p-4 border border-card-border transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted">Squad Ranking</span>
-              <span className="text-2xl font-heading font-bold text-foreground-primary">
+              <span className="text-2xl font-body font-bold text-foreground-primary">
                 #{squad.squadRanking} / 10
               </span>
             </div>
