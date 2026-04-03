@@ -2897,45 +2897,46 @@ export function CustomerListingPage() {
         )}
       </Card>
 
-      {/* Import Sidebar - Slide from right */}
-      <AnimatePresence>
-        {showImportSidebar && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              onClick={() => {
-                setShowImportSidebar(false);
-                setSelectedFile(null);
-              }}
-              style={{ 
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                width: '100vw',
-                height: '100vh',
-                margin: 0,
-                padding: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
-                zIndex: 99999
-              }}
-            />
-            {/* Sidebar */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="fixed right-0 top-0 h-screen w-full max-w-md bg-card-inner border-l border-card-border shadow-2xl flex flex-col overflow-hidden"
-              style={{ zIndex: 100000, height: '100vh', minHeight: '100vh', maxHeight: '100vh', paddingTop: 0, marginTop: 0, top: 0 }}
-            >
+      {/* Import sidebar: portal to body + CSS grid so footer actions stay visible */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showImportSidebar && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                onClick={() => {
+                  setShowImportSidebar(false);
+                  setSelectedFile(null);
+                }}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '100vw',
+                  height: '100vh',
+                  margin: 0,
+                  padding: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  backdropFilter: 'blur(4px)',
+                  WebkitBackdropFilter: 'blur(4px)',
+                  zIndex: 99999,
+                }}
+              />
+              {/* top/bottom pinned; middle row scrolls; footer row fixed to panel bottom */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-card-inner border-l border-card-border shadow-2xl grid grid-rows-[auto_minmax(0,1fr)_auto] min-h-0 overflow-hidden"
+                style={{ zIndex: 100000 }}
+              >
               {/* Header */}
               <div className="flex items-center justify-between px-5 sm:px-6 pt-4 sm:pt-5 pb-4 sm:pb-5 border-b border-card-border flex-shrink-0">
                 <h3 className="text-xl sm:text-2xl font-heading font-bold text-foreground-primary">Import</h3>
@@ -2950,12 +2951,12 @@ export function CustomerListingPage() {
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 sm:space-y-8">
+              {/* Scrollable body only */}
+              <div className="min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-4 sm:space-y-5">
                 {/* File Requirements */}
                 <div>
-                  <h4 className="text-base sm:text-lg font-heading font-semibold text-foreground-primary mb-3 sm:mb-4">File Requirements</h4>
-                  <ul className="space-y-2 sm:space-y-2.5 text-sm sm:text-base text-muted">
+                  <h4 className="text-base sm:text-lg font-heading font-semibold text-foreground-primary mb-2 sm:mb-3">File Requirements</h4>
+                  <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base text-muted">
                     <li className="flex items-start gap-2">
                       <span className="text-primary mt-0.5">•</span>
                       <span>Supported formats: Excel (.xlsx, .xls) only</span>
@@ -2993,7 +2994,7 @@ export function CustomerListingPage() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={handleBrowseFiles}
-                  className={`border-2 border-dashed rounded-lg p-10 sm:p-12 min-h-[200px] sm:min-h-[240px] flex items-center justify-center text-center cursor-pointer transition-all ${
+                  className={`border-2 border-dashed rounded-lg p-6 sm:p-8 min-h-[120px] sm:min-h-[160px] flex items-center justify-center text-center cursor-pointer transition-all ${
                     isDragging
                       ? 'border-primary bg-primary/10'
                       : selectedFile
@@ -3063,8 +3064,8 @@ export function CustomerListingPage() {
                 )}
               </div>
 
-              {/* Footer */}
-              <div className="p-5 sm:p-6 border-t border-card-border flex items-center justify-between gap-3">
+              {/* Footer: always visible at bottom of panel; does not scroll away */}
+              <div className="flex-shrink-0 p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom,0px))] border-t border-card-border bg-card-inner flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
                 <button
                   onClick={handleDownloadTemplate}
                   className="text-primary hover:text-primary/80 transition-colors flex items-center gap-2 text-sm sm:text-base font-semibold"
@@ -3092,9 +3093,11 @@ export function CustomerListingPage() {
                 </Button>
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Add User Modal - For Recommend, Reactivation, Retention, and Extra tabs */}
       {typeof document !== 'undefined' && createPortal(
